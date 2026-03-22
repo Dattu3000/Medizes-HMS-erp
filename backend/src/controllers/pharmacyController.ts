@@ -1,0 +1,131 @@
+import { Request, Response } from 'express';
+import { prisma } from '../utils/db';
+import { logAudit } from '../utils/audit';
+
+export const getInventory = async (req: Request, res: Response) => {
+    try {
+        const inventory = await prisma.medicineInventory.findMany({
+            orderBy: { drugName: 'asc' }
+        });
+        res.status(200).json(inventory);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch inventory', error });
+    }
+};
+
+export const dispenseMedicine = async (req: Request, res: Response) => {
+    try {
+        const { patientId, visitId, medicines } = req.body;
+        // medicines: Array<{ drugId, quantity }>
+        const userId = (req as any).user.id;
+
+        if (!medicines || medicines.length === 0) {
+            return res.status(400).json({ message: 'No medicines selected for dispatch' });
+        }
+
+        const billResult = await prisma.$transaction(async (tx) => {
+            let subTotal = 0;
+
+            // Lower inventory counts
+            for (const item of medicines) {
+                const drug = await tx.medicineInventory.findUnique({ where: { id: item.drugId } });
+                if (!drug || drug.stockQuantity < item.quantity) {
+                    throw new Error(`Insufficient stock for ${drug?.drugName || item.drugId}`);
+                }
+
+                await tx.medicineInventory.update({
+                    where: { id: drug.id },
+                    data: { stockQuantity: drug.stockQuantity - item.quantity }
+                });
+
+                subTotal += (drug.unitPrice * item.quantity);
+            }
+
+            // Pharmacy GST is typically 12% overall simplified here
+            const gstAmount = subTotal * 0.12;
+            const netPayable = subTotal + gstAmount;
+
+            const bill = await tx.bill.create({
+                data: {
+                    billNo: `BL-PHAR-${Date.now()}`,
+                    patientId,
+                    visitId: visitId || null,
+                    type: 'PHARMACY',
+                    subTotal,
+                    gstAmount,
+                    discount: 0,
+                    netPayable,
+                    paymentMode: 'CASH',
+                    status: 'UNPAID'
+                }
+            });
+
+            return bill;
+        });
+
+        await logAudit(userId, 'PHARMACY_DISPENSED', { itemsCount: medicines.length, patientId }, req.ip || null);
+
+        res.status(201).json({ message: 'Medicines dispensed & Billed', bill: billResult });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'Failed to dispense', error });
+    }
+};
+
+export const addMedicine = async (req: Request, res: Response) => {
+    try {
+        const { drugName, manufacturer, batchNo, expiryDate, stockQuantity, unitPrice } = req.body;
+        const medicine = await prisma.medicineInventory.create({
+            data: {
+                drugName,
+                manufacturer,
+                batchNo,
+                expiryDate: new Date(expiryDate),
+                stockQuantity: Number(stockQuantity),
+                unitPrice: Number(unitPrice)
+            }
+        });
+        res.status(201).json(medicine);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to add medicine', error });
+    }
+};
+
+export const bulkAddMedicines = async (req: Request, res: Response) => {
+    try {
+        const medicines = req.body;
+        if (!Array.isArray(medicines)) {
+            return res.status(400).json({ message: "Invalid format. Expected an array." });
+        }
+
+        await prisma.$transaction(
+            medicines.map((m: any) => {
+                const stockQty = parseInt(m.stockQuantity) || 0;
+                const price = parseFloat(m.unitPrice) || 0;
+
+                return prisma.medicineInventory.upsert({
+                    where: { drugName: m.drugName },
+                    update: {
+                        stockQuantity: { increment: stockQty },
+                        unitPrice: price,
+                        expiryDate: new Date(m.expiryDate),
+                        batchNo: m.batchNo,
+                        manufacturer: m.manufacturer || ""
+                    },
+                    create: {
+                        drugName: m.drugName,
+                        manufacturer: m.manufacturer || "",
+                        batchNo: m.batchNo,
+                        expiryDate: new Date(m.expiryDate),
+                        stockQuantity: stockQty,
+                        unitPrice: price
+                    }
+                });
+            })
+        );
+
+        res.status(201).json({ message: "Bulk upload successful" });
+    } catch (error) {
+        console.error("Bulk load error", error);
+        res.status(500).json({ message: "Server error", error });
+    }
+};

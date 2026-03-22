@@ -1,0 +1,373 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g., Admin, Billing Staff, Lab, Pharmacy, HR, Accounts, Management
+  permissions String[] // Array of permission strings
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id           String      @id @default(uuid())
+  employeeId   String      @unique // Employee ID
+  email        String?     @unique
+  passwordHash String
+  otpEnabled   Boolean     @default(false)
+  otpSecret    String?
+  isActive     Boolean     @default(true)
+  
+  roleId       String
+  role         Role        @relation(fields: [roleId], references: [id])
+  
+  branchId     String
+  branch       Branch      @relation(fields: [branchId], references: [id])
+  
+  auditLogs    AuditLog[]
+  employee     Employee?
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Employee {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  
+  firstName   String
+  lastName    String
+  department  String?
+  designation String?
+  
+  visits      Visit[]
+  admissions  Admission[]
+  attendances Attendance[]
+  payrolls    Payroll[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   String?  // JSON string or extra details
+  ipAddress String?
+  timestamp DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// LAYER 1: PATIENT MANAGEMENT & BILLING
+// ----------------------------------------------------
+
+model Patient {
+  id              String   @id @default(uuid())
+  uhid            String   @unique // Unique Health ID
+  firstName       String
+  lastName        String
+  age             Int
+  dob             DateTime?
+  gender          String
+  bloodGroup      String?
+  maritalStatus   String?
+  
+  mobile          String
+  email           String?
+  address         String?
+  city            String?
+  state           String?
+  pincode         String?
+  
+  emgName         String?
+  emgRelation     String?
+  emgMobile       String?
+  
+  tpaName         String?
+  policyNo        String?
+  insuranceValid  DateTime?
+  coverageAmt     Float?
+  
+  referredBy      String?
+  
+  visits          Visit[]
+  labOrders       LabOrder[]
+  prescriptions   Prescription[]
+  admissions      Admission[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Visit {
+  id              String   @id @default(uuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  
+  doctorId        String
+  doctor          Employee @relation(fields: [doctorId], references: [id])
+  
+  department      String
+  tokenNo         String
+  status          String   @default("WAITING") // WAITING, IN_CONSULTATION, COMPLETED
+  
+  notes           String?
+  symptoms        String?
+  diagnosis       String?
+
+  bills           Bill[]
+  labOrders       LabOrder[]
+  prescriptions   Prescription[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Bill {
+  id              String   @id @default(uuid())
+  billNo          String   @unique
+  patientId       String?
+  
+  visitId         String?
+  visit           Visit?   @relation(fields: [visitId], references: [id])
+
+  admissionId     String?
+  admission       Admission? @relation(fields: [admissionId], references: [id])
+  
+  type            String   // OPD_CONSULTATION, LAB_DIAGNOSTICS, PHARMACY, IPD_FINAL
+  subTotal        Float
+  gstAmount       Float
+  discount        Float    @default(0)
+  netPayable      Float
+  
+  paymentMode     String   // CASH, CARD, UPI, INSURANCE
+  status          String   @default("UNPAID") // UNPAID, PAID, REFUNDED
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model LabOrder {
+  id              String   @id @default(uuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  
+  visitId         String?
+  visit           Visit?   @relation(fields: [visitId], references: [id])
+  
+  testName        String
+  sacCode         String   @default("999316")
+  price           Float
+  status          String   @default("PENDING") // PENDING, SAMPLE_COLLECTED, RESULT_ENTERED
+  
+  resultText      String?
+  reportPdfUrl    String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Prescription {
+  id              String   @id @default(uuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  
+  visitId         String
+  visit           Visit    @relation(fields: [visitId], references: [id])
+
+  medicines       Json     // Array of { drugName, dosage, frequency, days }
+  status          String   @default("PENDING") // PENDING, DISPENSED
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// LAYER 2: IPD (IN-PATIENT) BILLING & WARD MANAGEMENT
+// ----------------------------------------------------
+
+model Ward {
+  id              String   @id @default(uuid())
+  name            String   // e.g., ICU, General Male, NICU
+  type            String   // GENERAL, SEMI_PRIVATE, PRIVATE, ICU
+  capacity        Int      // Number of beds
+  
+  beds            Bed[]    // Relation to beds
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Bed {
+  id              String   @id @default(uuid())
+  bedNumber       String
+  wardId          String
+  ward            Ward     @relation(fields: [wardId], references: [id])
+  dailyRent       Float    // Daily charge for this specific bed
+  status          String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, MAINTENANCE
+  
+  admissions      Admission[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Admission {
+  id              String   @id @default(uuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  
+  doctorId        String
+  doctor          Employee @relation(fields: [doctorId], references: [id])
+  
+  bedId           String
+  bed             Bed      @relation(fields: [bedId], references: [id])
+  
+  status          String   @default("ADMITTED") // ADMITTED, DISCHARGED
+  
+  admissionDate   DateTime @default(now())
+  dischargeDate   DateTime?
+  
+  depositAmount   Float    @default(0)
+  
+  ipdCharges      IpdCharge[]
+  bills           Bill[]     // Final settlement bill
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model IpdCharge {
+  id              String   @id @default(uuid())
+  admissionId     String
+  admission       Admission @relation(fields: [admissionId], references: [id])
+  
+  chargeType      String   // ROOM_RENT, DOCTOR_VISIT, NURSING, SURGERY_OT, DIET, PHARMACY, CONSUMABLE
+  description     String
+  amount          Float
+  dateAdded       DateTime @default(now())
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// LAYER 3: LAB DIAGNOSTICS & PHARMACY INVENTORY
+// ----------------------------------------------------
+
+model LabCatalog {
+  id              String   @id @default(uuid())
+  testName        String   @unique
+  department      String   // Hematology, Biochemistry, Microbiology
+  price           Float
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model MedicineInventory {
+  id              String   @id @default(uuid())
+  drugName        String   @unique
+  manufacturer    String?
+  batchNo         String
+  expiryDate      DateTime
+  stockQuantity   Int      @default(0)
+  unitPrice       Float
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// LAYER 4: HR MODULE
+// ----------------------------------------------------
+
+model Attendance {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  
+  date        DateTime @default(now())
+  status      String   // PRESENT, ABSENT, HALF_DAY, LEAVE
+  checkIn     DateTime?
+  checkOut    DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([employeeId, date])
+}
+
+model Payroll {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  
+  month       Int
+  year        Int
+  
+  basicSalary Float
+  allowances  Float    @default(0)
+  deductions  Float    @default(0)
+  netSalary   Float
+  
+  status      String   @default("PENDING") // PENDING, PAID
+  paymentDate DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([employeeId, month, year])
+}
+
+// ----------------------------------------------------
+// LAYER 5: ACCOUNTS, EXPENSES & GST/TDS COMPLIANCE
+// ----------------------------------------------------
+
+model Ledger {
+  id          String    @id @default(uuid())
+  name        String    @unique // e.g. "Bank A/c", "Cash A/c", "Sales A/c", "Salary A/c"
+  group       String    // ASSET, LIABILITY, INCOME, EXPENSE
+  balance     Float     @default(0) // Simplistic balance mapping
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Expense {
+  id          String    @id @default(uuid())
+  voucherNo   String    @unique
+  category    String    // RENT, MAINTENANCE, UTILITIES, VENDOR_PAYMENT, MISC
+  description String
+  
+  amount      Float
+  gstAmount   Float     @default(0) // Input Tax Credit (ITC)
+  tdsAmount   Float     @default(0) // TDS Deducted from vendor
+  netAmount   Float     // amount + gstAmount - tdsAmount
+  
+  paymentMode String    // BANK, CASH, UPI, CREDIT
+  status      String    @default("PENDING") // PENDING, PAID
+  date        DateTime  @default(now())
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
