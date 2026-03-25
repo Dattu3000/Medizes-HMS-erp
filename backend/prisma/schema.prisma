@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Branch {
@@ -57,10 +58,34 @@ model Employee {
   department  String?
   designation String?
   
+  // HR Module Expansions
+  managerId       String?
+  manager         Employee?   @relation("ManagerToEmployee", fields: [managerId], references: [id])
+  directReports   Employee[]  @relation("ManagerToEmployee")
+  
+  mobile          String?
+  email           String?
+  joinDate        DateTime?
+  employmentType  String      @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT
+  emergencyContact String?
+  emergencyPhone  String?
+  customFields    Json?
+  
   visits      Visit[]
   admissions  Admission[]
   attendances Attendance[]
   payrolls    Payroll[]
+
+  hrDocuments     HrDocument[]
+  onboardingTasks OnboardingTask[]
+  ownedGoals      Goal[]      @relation("GoalOwner")
+  givenFeedbacks  Feedback[]  @relation("FeedbackGiver")
+  rcvdFeedbacks   Feedback[]  @relation("FeedbackReceiver")
+  surveys         SurveyResponse[]
+  interviews      InterviewSlot[] @relation("Interviewer")
+  createdJobs     JobDefinition[] @relation("HiringManager")
+  oneOnOnesAsMgr  OneOnOneAgenda[] @relation("MgrAgenda")
+  oneOnOnesAsEmp  OneOnOneAgenda[] @relation("EmpAgenda")
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -370,4 +395,192 @@ model Expense {
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// ----------------------------------------------------
+// LAYER 6: EXTENDED HR (GUDHR SYSTEM)
+// ----------------------------------------------------
+
+model HrDocument {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  title       String
+  url         String
+  type        String   // CONTRACT, POLICY, ID_PROOF
+  status      String   @default("PENDING") // PENDING, SIGNED, VERIFIED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OnboardingWorkflow {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  tasks       OnboardingTask[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OnboardingTask {
+  id          String   @id @default(uuid())
+  workflowId  String
+  workflow    OnboardingWorkflow @relation(fields: [workflowId], references: [id])
+  
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  
+  taskName    String
+  assignedTo  String   // IT, HR, MANAGER, SELF
+  status      String   @default("PENDING") // PENDING, COMPLETED
+  dueDate     DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Talent Acquisition
+model JobDefinition {
+  id              String   @id @default(uuid())
+  title           String
+  department      String
+  description     String
+  keywords        String?  // AI suggested keywords
+  status          String   @default("DRAFT") // DRAFT, PUBLISHED, CLOSED
+  
+  hiringManagerId String
+  hiringManager   Employee @relation("HiringManager", fields: [hiringManagerId], references: [id])
+  
+  candidates      Candidate[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Candidate {
+  id          String   @id @default(uuid())
+  jobId       String
+  job         JobDefinition @relation(fields: [jobId], references: [id])
+  
+  firstName   String
+  lastName    String
+  email       String
+  resumeUrl   String?
+  status      String   @default("APPLIED") // APPLIED, SCREENING, INTERVIEW, OFFERED, HIRED, REJECTED
+  
+  scorecards  InterviewScorecard[]
+  interviews  InterviewSlot[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model InterviewSlot {
+  id            String   @id @default(uuid())
+  candidateId   String
+  candidate     Candidate @relation(fields: [candidateId], references: [id])
+  
+  interviewerId String
+  interviewer   Employee @relation("Interviewer", fields: [interviewerId], references: [id])
+  
+  scheduledAt   DateTime
+  durationMins  Int      @default(45)
+  meetingLink   String?
+  status        String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELED
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model InterviewScorecard {
+  id            String   @id @default(uuid())
+  candidateId   String
+  candidate     Candidate @relation(fields: [candidateId], references: [id])
+  
+  interviewerId String
+  
+  competencies  Json     // { "technical": 4, "culture": 5, ... }
+  notes         String?
+  recommendation String  // STRONG_HIRE, HIRE, NO_HIRE
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Performance & Engagement
+model Goal {
+  id            String   @id @default(uuid())
+  title         String
+  level         String   // COMPANY, DEPARTMENT, TEAM, INDIVIDUAL
+  
+  ownerId       String?
+  owner         Employee? @relation("GoalOwner", fields: [ownerId], references: [id])
+  
+  parentGoalId  String?
+  parentGoal    Goal?    @relation("GoalHierarchy", fields: [parentGoalId], references: [id])
+  subGoals      Goal[]   @relation("GoalHierarchy")
+  
+  progress      Int      @default(0) // 0-100%
+  keyResults    Json?    // Array of key results
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Feedback {
+  id            String   @id @default(uuid())
+  fromUserId    String
+  fromUser      Employee @relation("FeedbackGiver", fields: [fromUserId], references: [id])
+  
+  toUserId      String
+  toUser        Employee @relation("FeedbackReceiver", fields: [toUserId], references: [id])
+  
+  content       String
+  type          String   @default("PUBLIC") // PUBLIC, PRIVATE
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model OneOnOneAgenda {
+  id          String   @id @default(uuid())
+  managerId   String
+  manager     Employee @relation("MgrAgenda", fields: [managerId], references: [id])
+  
+  employeeId  String
+  employee    Employee @relation("EmpAgenda", fields: [employeeId], references: [id])
+  
+  date        DateTime
+  topics      Json?    // Added by manager/employee
+  actionItems Json?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Survey {
+  id          String   @id @default(uuid())
+  title       String
+  questions   Json     // List of questions
+  status      String   @default("ACTIVE") // ACTIVE, CLOSED
+  
+  responses   SurveyResponse[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SurveyResponse {
+  id          String   @id @default(uuid())
+  surveyId    String
+  survey      Survey   @relation(fields: [surveyId], references: [id])
+  
+  employeeId  String?  // Optional for anonymity tracking if needed (usually null)
+  employee    Employee? @relation(fields: [employeeId], references: [id])
+  
+  answers     Json     // Answer payload corresponding to questions
+  sentiment   String?  // AI Analyzed sentiment (e.g. POSITIVE, NEUTRAL, NEGATIVE)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
