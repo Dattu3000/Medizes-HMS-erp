@@ -205,27 +205,27 @@ export default function IPDPage() {
     return (
         <>
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">IPD Wards & Billing</h1>
+                <h1 className="text-2xl font-bold text-glass-title tracking-tight">IPD Wards & Billing</h1>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="liquid-glass-card rounded-xl    overflow-hidden">
                 {/* Tabs */}
-                <div className="flex border-b border-slate-200 bg-slate-50">
+                <div className="flex border-b border-white/10 bg-black/20">
                     <button
                         onClick={() => setActiveTab('wards')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'wards' ? 'border-sky-600 justify-center text-sky-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'wards' ? 'border-sky-600 justify-center text-sky-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><BedDouble size={16} /> Wards & Bed Management</div>
                     </button>
                     <button
                         onClick={() => setActiveTab('billing')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'billing' ? 'border-sky-600 justify-center text-sky-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'billing' ? 'border-sky-600 justify-center text-sky-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><IndianRupee size={16} /> Daily Billing & Discharge</div>
                     </button>
                     <button
                         onClick={() => setActiveTab('assets')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'assets' ? 'border-sky-600 justify-center text-sky-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'assets' ? 'border-sky-600 justify-center text-sky-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><FileText size={16} /> Asset Management</div>
                     </button>
@@ -236,10 +236,10 @@ export default function IPDPage() {
                     {activeTab === 'wards' && (
                         <div className="space-y-8">
                             {wards.map((ward) => (
-                                <div key={ward.id} className="border border-slate-200 rounded-lg overflow-hidden">
-                                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                                        <h3 className="font-bold text-slate-800 text-lg">{ward.name}</h3>
-                                        <p className="text-sm text-slate-500">Type: {ward.type} | Total Capacity: {ward.capacity}</p>
+                                <div key={ward.id} className="border border-white/10 rounded-lg overflow-hidden">
+                                    <div className="bg-black/20 px-4 py-3 border-b border-white/10">
+                                        <h3 className="font-bold text-glass-title text-lg">{ward.name}</h3>
+                                        <p className="text-sm text-glass-body">Type: {ward.type} | Total Capacity: {ward.capacity}</p>
                                     </div>
                                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4">
                                         {ward.beds.map((bed: any) => (
@@ -252,11 +252,11 @@ export default function IPDPage() {
                                                 onClick={() => bed.status === 'AVAILABLE' && setSelectedBed({ ...bed, wardName: ward.name })}
                                             >
                                                 <BedDouble size={28} className={`mx-auto mb-2 ${bed.status === 'AVAILABLE' ? 'text-emerald-500' : 'text-rose-500'}`} />
-                                                <div className="font-bold text-slate-800">{bed.bedNumber}</div>
+                                                <div className="font-bold text-glass-title">{bed.bedNumber}</div>
                                                 <div className={`text-xs mt-1 font-semibold ${bed.status === 'AVAILABLE' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {bed.status}
                                                 </div>
-                                                <div className="text-xs text-slate-500 mt-1">₹{bed.dailyRent}/day</div>
+                                                <div className="text-xs text-glass-body mt-1">₹{bed.dailyRent}/day</div>
                                             </div>
                                         ))}
                                     </div>
@@ -265,29 +265,29 @@ export default function IPDPage() {
 
                             {/* ADMISSION PROMPT IF BED SELECTED */}
                             {selectedBed && (
-                                <div className="mt-8 bg-white border border-slate-300 rounded-xl p-6 shadow-xl relative animate-in fade-in slide-in-from-bottom-4">
-                                    <button onClick={() => setSelectedBed(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">✕</button>
-                                    <h3 className="text-xl font-bold text-slate-800 mb-2">Initiate Admission</h3>
-                                    <p className="text-sm text-slate-500 mb-6">Assigning Bed <strong>{selectedBed.bedNumber}</strong> in <strong>{selectedBed.wardName}</strong></p>
+                                <div className="mt-8 bg-white border border-white/20 rounded-xl p-6 shadow-xl relative animate-in fade-in slide-in-from-bottom-4">
+                                    <button onClick={() => setSelectedBed(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+                                    <h3 className="text-xl font-bold text-glass-title mb-2">Initiate Admission</h3>
+                                    <p className="text-sm text-glass-body mb-6">Assigning Bed <strong>{selectedBed.bedNumber}</strong> in <strong>{selectedBed.wardName}</strong></p>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">Search Patient to Admit</label>
+                                            <label className="block text-sm font-medium text-white mb-2">Search Patient to Admit</label>
                                             <div className="flex gap-2 mb-4">
-                                                <input type="text" placeholder="UHID or Mobile..." className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm"
+                                                <input type="text" placeholder="UHID or Mobile..." className="flex-1 px-4 py-2 border border-white/20 rounded-lg text-sm"
                                                     value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && executePatientSearch()} />
-                                                <button onClick={executePatientSearch} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-200">Search</button>
+                                                <button onClick={executePatientSearch} className="bg-slate-100 text-white px-4 py-2 rounded-lg hover:bg-slate-200">Search</button>
                                             </div>
                                             {patientResults.map((p) => (
-                                                <div key={p.id} onClick={() => setSelectedPatientForAdmission(p)} className={`p-3 border rounded text-sm mb-2 cursor-pointer ${selectedPatientForAdmission?.id === p.id ? 'bg-sky-50 border-sky-400' : 'hover:bg-slate-50'}`}>
+                                                <div key={p.id} onClick={() => setSelectedPatientForAdmission(p)} className={`p-3 border rounded text-sm mb-2 cursor-pointer ${selectedPatientForAdmission?.id === p.id ? 'bg-sky-50 border-sky-400' : 'hover:bg-black/20'}`}>
                                                     <strong>{p.firstName} {p.lastName}</strong> ({p.uhid})
                                                 </div>
                                             ))}
                                         </div>
 
                                         <div className={`${!selectedPatientForAdmission ? 'opacity-50 pointer-events-none' : ''}`}>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">Select Primary Doctor</label>
-                                            <select className="w-full px-4 py-2 border border-slate-300 rounded-lg mb-6 text-sm bg-white"
+                                            <label className="block text-sm font-medium text-white mb-2">Select Primary Doctor</label>
+                                            <select className="w-full px-4 py-2 border border-white/20 rounded-lg mb-6 text-sm bg-white"
                                                 value={selectedDoctorId} onChange={e => setSelectedDoctorId(e.target.value)}>
                                                 <option value="">-- Select Specialist --</option>
                                                 {doctors.map(d => <option key={d.id} value={d.id}>Dr. {d.firstName} {d.lastName}</option>)}
@@ -297,7 +297,7 @@ export default function IPDPage() {
                                                 Security Deposit Required: <strong>₹5000</strong>
                                             </div>
 
-                                            <button onClick={handleAdmit} disabled={loading || !selectedDoctorId} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2">
+                                            <button onClick={handleAdmit} disabled={loading || !selectedDoctorId} className="w-full liquid-glass-button text-white border-emerald-500/50 font-bold py-3 rounded-lg flex justify-center items-center gap-2">
                                                 Admit Patient to IPD
                                             </button>
                                         </div>
@@ -312,8 +312,8 @@ export default function IPDPage() {
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
                             {/* Active Admissions Sidebar */}
-                            <div className="md:col-span-4 border border-slate-200 rounded-xl bg-slate-50 overflow-hidden h-fit">
-                                <div className="p-4 bg-white border-b border-slate-200 font-bold text-slate-800">
+                            <div className="md:col-span-4 border border-white/10 rounded-xl bg-black/20 overflow-hidden h-fit">
+                                <div className="p-4 bg-white border-b border-white/10 font-bold text-glass-title">
                                     Active IPD Admissions
                                 </div>
                                 <div className="divide-y divide-slate-200 max-h-[600px] overflow-y-auto">
@@ -323,19 +323,19 @@ export default function IPDPage() {
                                             onClick={() => loadFullAdmissionDetails(adm.id)}
                                             className={`p-4 cursor-pointer hover:bg-sky-50 transition border-l-4 ${selectedAdmission?.id === adm.id ? 'border-l-sky-500 bg-sky-50' : 'border-l-transparent'}`}
                                         >
-                                            <div className="font-bold text-slate-900 text-sm">{adm.patient.firstName} {adm.patient.lastName}</div>
-                                            <div className="text-xs text-slate-500 mt-1">{adm.patient.uhid} • Bed: {adm.bed.bedNumber}</div>
-                                            <div className="text-xs text-slate-500 mt-1">Dr. {adm.doctor.lastName}</div>
+                                            <div className="font-bold text-glass-title text-sm">{adm.patient.firstName} {adm.patient.lastName}</div>
+                                            <div className="text-xs text-glass-body mt-1">{adm.patient.uhid} • Bed: {adm.bed.bedNumber}</div>
+                                            <div className="text-xs text-glass-body mt-1">Dr. {adm.doctor.lastName}</div>
                                         </div>
                                     ))}
-                                    {admissions.length === 0 && <div className="p-6 text-center text-sm text-slate-500">No active admissions</div>}
+                                    {admissions.length === 0 && <div className="p-6 text-center text-sm text-glass-body">No active admissions</div>}
                                 </div>
                             </div>
 
                             {/* Patient IPD Billing Terminal */}
                             <div className="md:col-span-8">
                                 {selectedAdmission ? (
-                                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                                    <div className="border border-white/10 rounded-xl overflow-hidden bg-white shadow-sm">
                                         <div className="bg-sky-900 text-white p-6">
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -354,11 +354,11 @@ export default function IPDPage() {
                                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                                             {/* Form to append charges */}
                                             <div>
-                                                <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Record Daily Charge</h3>
+                                                <h3 className="font-bold text-glass-title mb-4 border-b border-white/5 pb-2">Record Daily Charge</h3>
                                                 <form onSubmit={handleChargeSubmit} className="space-y-4">
                                                     <div>
-                                                        <label className="block text-xs font-semibold text-slate-500 mb-1">Charge Type</label>
-                                                        <select className="w-full text-sm border-slate-300 rounded-lg p-2" value={chargeForm.chargeType} onChange={e => setChargeForm({ ...chargeForm, chargeType: e.target.value })}>
+                                                        <label className="block text-xs font-semibold text-glass-body mb-1">Charge Type</label>
+                                                        <select className="w-full text-sm border-white/20 rounded-lg p-2" value={chargeForm.chargeType} onChange={e => setChargeForm({ ...chargeForm, chargeType: e.target.value })}>
                                                             <option value="ROOM_RENT">Room Rent</option>
                                                             <option value="NURSING">Nursing</option>
                                                             <option value="DOCTOR_VISIT">Doctor Visit</option>
@@ -368,40 +368,40 @@ export default function IPDPage() {
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs font-semibold text-slate-500 mb-1">Description</label>
-                                                        <input required type="text" className="w-full text-sm border-slate-300 rounded-lg p-2" placeholder="e.g. ICU Night Rent" value={chargeForm.description} onChange={e => setChargeForm({ ...chargeForm, description: e.target.value })} />
+                                                        <label className="block text-xs font-semibold text-glass-body mb-1">Description</label>
+                                                        <input required type="text" className="w-full text-sm border-white/20 rounded-lg p-2" placeholder="e.g. ICU Night Rent" value={chargeForm.description} onChange={e => setChargeForm({ ...chargeForm, description: e.target.value })} />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs font-semibold text-slate-500 mb-1">Amount (₹)</label>
-                                                        <input required type="number" className="w-full text-sm border-slate-300 rounded-lg p-2" placeholder="0.00" value={chargeForm.amount} onChange={e => setChargeForm({ ...chargeForm, amount: e.target.value })} />
+                                                        <label className="block text-xs font-semibold text-glass-body mb-1">Amount (₹)</label>
+                                                        <input required type="number" className="w-full text-sm border-white/20 rounded-lg p-2" placeholder="0.00" value={chargeForm.amount} onChange={e => setChargeForm({ ...chargeForm, amount: e.target.value })} />
                                                     </div>
                                                     <button type="submit" disabled={loading} className="w-full bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold py-2 rounded-lg transition">Apply Charge</button>
                                                 </form>
                                             </div>
 
                                             {/* Running Bill Ledger */}
-                                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col h-[400px]">
-                                                <h3 className="font-bold text-slate-800 mb-4 text-center">IPD Running Bill</h3>
+                                            <div className="bg-black/20 border border-white/10 rounded-xl p-4 flex flex-col h-[400px]">
+                                                <h3 className="font-bold text-glass-title mb-4 text-center">IPD Running Bill</h3>
 
                                                 <div className="flex-1 overflow-y-auto pr-2 space-y-2 mb-4">
                                                     {selectedAdmission.ipdCharges?.map((ch: any) => (
-                                                        <div key={ch.id} className="bg-white border border-slate-200 p-2 text-xs rounded shadow-sm flex justify-between items-center">
+                                                        <div key={ch.id} className="bg-white border border-white/10 p-2 text-xs rounded shadow-sm flex justify-between items-center">
                                                             <div>
-                                                                <div className="font-bold text-slate-700">{ch.chargeType}</div>
-                                                                <div className="text-slate-500 truncate max-w-[120px]">{ch.description}</div>
+                                                                <div className="font-bold text-white">{ch.chargeType}</div>
+                                                                <div className="text-glass-body truncate max-w-[120px]">{ch.description}</div>
                                                             </div>
-                                                            <div className="font-bold text-slate-900">₹{ch.amount}</div>
+                                                            <div className="font-bold text-glass-title">₹{ch.amount}</div>
                                                         </div>
                                                     ))}
                                                     {!selectedAdmission.ipdCharges?.length && <p className="text-xs text-center text-slate-400 mt-4">No charges posted yet.</p>}
                                                 </div>
 
-                                                <div className="border-t border-slate-300 pt-4">
-                                                    <div className="flex justify-between text-sm text-slate-600 mb-1">
+                                                <div className="border-t border-white/20 pt-4">
+                                                    <div className="flex justify-between text-sm text-glass-muted mb-1">
                                                         <span>Total Charges</span>
                                                         <span>₹{(selectedAdmission.ipdCharges?.reduce((sum: number, c: any) => sum + c.amount, 0) || 0).toFixed(2)}</span>
                                                     </div>
-                                                    <div className="flex justify-between text-sm text-slate-600 mb-1">
+                                                    <div className="flex justify-between text-sm text-glass-muted mb-1">
                                                         <span>Security Deposit</span>
                                                         <span>-₹{selectedAdmission.depositAmount}</span>
                                                     </div>
@@ -426,16 +426,16 @@ export default function IPDPage() {
                     {activeTab === 'assets' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Create Ward Form */}
-                            <div className="bg-slate-50 border border-slate-200 p-6 rounded-xl">
-                                <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Add New Ward</h3>
+                            <div className="bg-black/20 border border-white/10 p-6 rounded-xl">
+                                <h3 className="font-bold text-glass-title mb-4 border-b border-white/10 pb-2">Add New Ward</h3>
                                 <form onSubmit={handleCreateWard} className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Ward Name</label>
-                                        <input required type="text" className="w-full text-sm border-slate-300 rounded-lg p-2" placeholder="e.g. ICU, General Ward" value={wardForm.name} onChange={e => setWardForm({ ...wardForm, name: e.target.value })} />
+                                        <label className="block text-sm font-medium text-white mb-1">Ward Name</label>
+                                        <input required type="text" className="w-full text-sm border-white/20 rounded-lg p-2" placeholder="e.g. ICU, General Ward" value={wardForm.name} onChange={e => setWardForm({ ...wardForm, name: e.target.value })} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Ward Type</label>
-                                        <select className="w-full text-sm border-slate-300 rounded-lg p-2" value={wardForm.type} onChange={e => setWardForm({ ...wardForm, type: e.target.value })}>
+                                        <label className="block text-sm font-medium text-white mb-1">Ward Type</label>
+                                        <select className="w-full text-sm border-white/20 rounded-lg p-2" value={wardForm.type} onChange={e => setWardForm({ ...wardForm, type: e.target.value })}>
                                             <option value="GENERAL">General</option>
                                             <option value="SEMI_PRIVATE">Semi-Private</option>
                                             <option value="PRIVATE">Private</option>
@@ -444,8 +444,8 @@ export default function IPDPage() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Total Capacity</label>
-                                        <input required type="number" min="1" className="w-full text-sm border-slate-300 rounded-lg p-2" value={wardForm.capacity} onChange={e => setWardForm({ ...wardForm, capacity: e.target.value })} />
+                                        <label className="block text-sm font-medium text-white mb-1">Total Capacity</label>
+                                        <input required type="number" min="1" className="w-full text-sm border-white/20 rounded-lg p-2" value={wardForm.capacity} onChange={e => setWardForm({ ...wardForm, capacity: e.target.value })} />
                                     </div>
                                     <button type="submit" disabled={loading} className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg transition mt-2">
                                         Create Ward
@@ -454,25 +454,25 @@ export default function IPDPage() {
                             </div>
 
                             {/* Create Bed Form */}
-                            <div className="bg-slate-50 border border-slate-200 p-6 rounded-xl">
-                                <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Add Bed to Ward</h3>
+                            <div className="bg-black/20 border border-white/10 p-6 rounded-xl">
+                                <h3 className="font-bold text-glass-title mb-4 border-b border-white/10 pb-2">Add Bed to Ward</h3>
                                 <form onSubmit={handleCreateBed} className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Select Target Ward</label>
-                                        <select required className="w-full text-sm border-slate-300 rounded-lg p-2 bg-white" value={bedForm.wardId} onChange={e => setBedForm({ ...bedForm, wardId: e.target.value })}>
+                                        <label className="block text-sm font-medium text-white mb-1">Select Target Ward</label>
+                                        <select required className="w-full text-sm border-white/20 rounded-lg p-2 bg-white" value={bedForm.wardId} onChange={e => setBedForm({ ...bedForm, wardId: e.target.value })}>
                                             <option value="">-- Select Ward --</option>
                                             {wards.map(w => <option key={w.id} value={w.id}>{w.name} (Type: {w.type})</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Bed Number / ID</label>
-                                        <input required type="text" className="w-full text-sm border-slate-300 rounded-lg p-2" placeholder="e.g. ICU-01, GW-Male-12" value={bedForm.bedNumber} onChange={e => setBedForm({ ...bedForm, bedNumber: e.target.value })} />
+                                        <label className="block text-sm font-medium text-white mb-1">Bed Number / ID</label>
+                                        <input required type="text" className="w-full text-sm border-white/20 rounded-lg p-2" placeholder="e.g. ICU-01, GW-Male-12" value={bedForm.bedNumber} onChange={e => setBedForm({ ...bedForm, bedNumber: e.target.value })} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Daily Rent (₹)</label>
-                                        <input required type="number" min="0" className="w-full text-sm border-slate-300 rounded-lg p-2" value={bedForm.dailyRent} onChange={e => setBedForm({ ...bedForm, dailyRent: e.target.value })} />
+                                        <label className="block text-sm font-medium text-white mb-1">Daily Rent (₹)</label>
+                                        <input required type="number" min="0" className="w-full text-sm border-white/20 rounded-lg p-2" value={bedForm.dailyRent} onChange={e => setBedForm({ ...bedForm, dailyRent: e.target.value })} />
                                     </div>
-                                    <button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition mt-2">
+                                    <button type="submit" disabled={loading} className="w-full liquid-glass-button text-white border-emerald-500/50 font-bold py-2 rounded-lg transition mt-2">
                                         Add Bed
                                     </button>
                                 </form>

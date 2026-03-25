@@ -109,7 +109,7 @@ export default function BillingPage() {
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-glass-title tracking-tight flex items-center gap-2">
                     <Wallet className="text-indigo-600" /> Central Billing & Checkout Desk
                 </h1>
             </div>
@@ -117,7 +117,7 @@ export default function BillingPage() {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 {/* Patient Search */}
                 <div className="md:col-span-4 space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="liquid-glass-card rounded-xl    overflow-hidden">
                         <div className="p-4 bg-slate-800 text-white flex justify-between items-center">
                             <h2 className="font-bold flex items-center gap-2"><User size={18} /> Patient Selection</h2>
                         </div>
@@ -133,12 +133,12 @@ export default function BillingPage() {
                                 </div>
                             ) : (
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Search Patient</label>
+                                    <label className="block text-xs font-semibold text-glass-body mb-2 uppercase tracking-wide">Search Patient</label>
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
                                             placeholder="Enter UHID, Name, or Mobile..."
-                                            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm transition-shadow focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                                            className="flex-1 px-4 py-2 border border-white/20 rounded-lg text-sm transition-shadow focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             onKeyDown={e => e.key === 'Enter' && executeSearch()}
@@ -149,11 +149,11 @@ export default function BillingPage() {
                                     </div>
 
                                     {patients.length > 0 && (
-                                        <div className="mt-4 border rounded-lg overflow-hidden border-slate-200 shadow-sm max-h-60 overflow-y-auto">
+                                        <div className="mt-4 border rounded-lg overflow-hidden border-white/10 shadow-sm max-h-60 overflow-y-auto">
                                             {patients.map(p => (
-                                                <div key={p.id} onClick={() => handleSelectPatient(p)} className="p-3 border-b last:border-0 hover:bg-slate-50 cursor-pointer transition-colors">
-                                                    <div className="font-bold text-slate-800">{p.firstName} {p.lastName}</div>
-                                                    <div className="text-xs text-slate-500 flex justify-between mt-1">
+                                                <div key={p.id} onClick={() => handleSelectPatient(p)} className="p-3 border-b last:border-0 hover:bg-black/20 cursor-pointer transition-colors">
+                                                    <div className="font-bold text-glass-title">{p.firstName} {p.lastName}</div>
+                                                    <div className="text-xs text-glass-body flex justify-between mt-1">
                                                         <span>{p.uhid}</span>
                                                         <span>{p.mobile}</span>
                                                     </div>
@@ -180,21 +180,21 @@ export default function BillingPage() {
                 {/* Billing Workspace */}
                 <div className="md:col-span-8">
                     {!selectedPatient ? (
-                        <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl h-full flex flex-col items-center justify-center p-12 text-slate-400">
+                        <div className="bg-black/20 border-2 border-dashed border-white/10 rounded-xl h-full flex flex-col items-center justify-center p-12 text-slate-400">
                             <Receipt size={64} className="mb-4 opacity-50" />
-                            <h3 className="text-xl font-bold text-slate-500 mb-2">No Patient Selected</h3>
+                            <h3 className="text-xl font-bold text-glass-body mb-2">No Patient Selected</h3>
                             <p className="text-center">Search and select a patient to view their pending bills and process checkout.</p>
                         </div>
                     ) : (
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[500px]">
-                            <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center rounded-t-xl">
-                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><IndianRupee size={18} /> Unpaid Bills Summary</h3>
+                        <div className="liquid-glass-card rounded-xl    flex flex-col min-h-[500px]">
+                            <div className="p-4 bg-black/20 border-b border-white/10 flex justify-between items-center rounded-t-xl">
+                                <h3 className="font-bold text-glass-title flex items-center gap-2"><IndianRupee size={18} /> Unpaid Bills Summary</h3>
                                 <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                                     {bills.length} Pending
                                 </span>
                             </div>
 
-                            <div className="flex-1 p-6 overflow-y-auto bg-slate-50/50">
+                            <div className="flex-1 p-6 overflow-y-auto bg-black/20/50">
                                 {successMsg && (
                                     <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 font-medium shadow-sm">
                                         <CheckCircle2 className="text-emerald-500" size={24} />
@@ -205,7 +205,7 @@ export default function BillingPage() {
                                 {bills.length === 0 ? (
                                     <div className="text-center py-12 text-slate-400">
                                         <CheckCircle2 size={48} className="mx-auto mb-3 text-slate-300" />
-                                        <p className="text-lg font-medium text-slate-500">All Clear!</p>
+                                        <p className="text-lg font-medium text-glass-body">All Clear!</p>
                                         <p className="text-sm">There are no pending bills for this patient.</p>
                                     </div>
                                 ) : (
@@ -216,21 +216,21 @@ export default function BillingPage() {
                                                 <div
                                                     key={bill.id}
                                                     onClick={() => toggleBillSelection(bill.id)}
-                                                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-indigo-500 bg-indigo-50/30 shadow-sm' : 'border-slate-200 bg-white hover:border-indigo-300'}`}
+                                                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-indigo-500 bg-indigo-50/30 shadow-sm' : 'border-white/10 bg-white hover:border-indigo-300'}`}
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex gap-4 items-center">
-                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300'}`}>
+                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-white/20'}`}>
                                                                 {isSelected && <CheckCircle2 size={12} className="text-white" />}
                                                             </div>
                                                             <div>
-                                                                <div className="font-bold text-slate-800">{bill.billNo}</div>
-                                                                <div className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded inline-block mt-1">TYPE: {bill.type}</div>
+                                                                <div className="font-bold text-glass-title">{bill.billNo}</div>
+                                                                <div className="text-xs font-semibold text-glass-body bg-slate-100 px-2 py-0.5 rounded inline-block mt-1">TYPE: {bill.type}</div>
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
-                                                            <div className="text-lg font-black text-slate-900">₹{(bill.subTotal + bill.gstAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                                                            <div className="text-xs text-slate-500 mt-1">{new Date(bill.createdAt).toLocaleDateString()}</div>
+                                                            <div className="text-lg font-black text-glass-title">₹{(bill.subTotal + bill.gstAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                                            <div className="text-xs text-glass-body mt-1">{new Date(bill.createdAt).toLocaleDateString()}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -241,15 +241,15 @@ export default function BillingPage() {
                             </div>
 
                             {/* Checkout Footer Action Box */}
-                            <div className="p-6 bg-white border-t border-slate-200 rounded-b-xl shadow-[0_-4px_15px_rgba(0,0,0,0.02)]">
+                            <div className="p-6 bg-white border-t border-white/10 rounded-b-xl shadow-[0_-4px_15px_rgba(0,0,0,0.02)]">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Apply Discount (₹)</label>
+                                            <label className="block text-xs font-bold text-glass-body uppercase tracking-widest mb-1">Apply Discount (₹)</label>
                                             <input
                                                 type="number"
                                                 min="0"
-                                                className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors"
+                                                className="w-full border border-white/20 p-2.5 rounded-lg text-sm bg-black/20 focus:bg-white transition-colors"
                                                 value={discount || ''}
                                                 onChange={e => setDiscount(Number(e.target.value))}
                                                 placeholder="Enter flat discount amount..."
@@ -259,7 +259,7 @@ export default function BillingPage() {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center text-slate-600 px-2">
+                                        <div className="flex justify-between items-center text-glass-muted px-2">
                                             <span>Subtotal Selected</span>
                                             <span className="font-mono">₹{rawTotal.toFixed(2)}</span>
                                         </div>
@@ -267,7 +267,7 @@ export default function BillingPage() {
                                             <span>Discount Applied</span>
                                             <span className="font-mono">- ₹{(discount || 0).toFixed(2)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-2xl font-black text-slate-900 border-t-2 border-slate-800 pt-3 px-2">
+                                        <div className="flex justify-between items-center text-2xl font-black text-glass-title border-t-2 border-slate-800 pt-3 px-2">
                                             <span>Net Payable</span>
                                             <span>₹{netPayable.toFixed(2)}</span>
                                         </div>

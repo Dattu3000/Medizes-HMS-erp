@@ -80,3 +80,21 @@ export const getOrgChart = async (req: Request, res: Response) => {
         res.status(200).json(employees);
     } catch (error) { res.status(500).json({ message: 'Error fetching org chart', error }); }
 };
+
+// Deploy Onboarding Workflow
+export const deployOnboardingWorkflow = async (req: Request, res: Response) => {
+    try {
+        const { employeeId, templateName } = req.body;
+        const workflow = await prisma.onboardingWorkflow.create({ data: { name: templateName + ' for Employee ' + employeeId } });
+
+        const tasks = [
+            { workflowId: workflow.id, employeeId, taskName: "Provision Salesforce License", assignedTo: "IT" },
+            { workflowId: workflow.id, employeeId, taskName: "Schedule Training", assignedTo: "MANAGER" },
+            { workflowId: workflow.id, employeeId, taskName: "Upload Signed Documents", assignedTo: "SELF" }
+        ];
+
+        await prisma.onboardingTask.createMany({ data: tasks });
+        const createdTasks = await prisma.onboardingTask.findMany({ where: { workflowId: workflow.id } });
+        res.status(201).json({ message: "Workflow deployed", workflow, tasks: createdTasks });
+    } catch (error) { res.status(500).json({ message: "Workflow error", error }); }
+}

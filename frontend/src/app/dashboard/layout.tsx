@@ -39,9 +39,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ];
 
     return (
-        <div className="flex h-screen animated-bg">
+        <div className="flex h-screen liquid-bg">
             {/* Sidebar */}
-            <aside className="w-64 glass-sidebar text-white flex flex-col z-10 transition-all duration-300">
+            <aside className="w-64 liquid-glass-card border-l-0 border-y-0 border-r border-white/10 rounded-none bg-black/40 text-white flex flex-col z-10 transition-all duration-300">
                 <div className="p-6 border-b border-slate-700/50">
                     <h1 className="text-xl font-bold tracking-wider text-blue-400">MEDISYS <span className="text-white">HMS</span></h1>
                     <p className="text-xs text-slate-400 mt-1">Hospital ERP System</p>
@@ -56,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 <li key={item.name}>
                                     <Link
                                         href={item.href}
-                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive ? 'bg-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive ? 'liquid-glass-panel text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                                     >
                                         <Icon size={18} />
                                         <span className="text-sm font-medium">{item.name}</span>
@@ -67,10 +67,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </ul>
                 </nav>
 
-                <div className="p-4 border-t border-slate-700/50">
+                <div className="p-4 border-t border-white/10">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 text-sm text-rose-300 hover:text-white hover:bg-rose-500/80 w-full px-3 py-2.5 rounded-lg transition-all duration-200"
+                        className="flex items-center gap-3 text-sm text-rose-300 bg-rose-500/20 border border-rose-500/30 hover:bg-rose-500/30 w-full px-3 py-2.5 rounded-lg transition-all duration-200"
                     >
                         <LogOut size={18} />
                         <span>Secure Logout</span>
@@ -80,8 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Main Content Pane */}
             <main className="flex-1 flex flex-col overflow-hidden relative">
-                {/* Frosted glass overlay over the main background container */}
-                <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px] z-0 pointer-events-none" />
+                {/* Main Dashboard Space */}
 
                 <div className="flex-1 overflow-y-auto p-8 relative z-10">
                     {children}

@@ -110,29 +110,29 @@ export default function LabPage() {
     return (
         <>
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-glass-title tracking-tight flex items-center gap-2">
                     <Beaker className="text-purple-600" /> Lab Diagnostics Control
                 </h1>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
+            <div className="liquid-glass-card rounded-xl    overflow-hidden min-h-[500px]">
                 {/* Tabs */}
-                <div className="flex border-b border-slate-200 bg-slate-50">
+                <div className="flex border-b border-white/10 bg-black/20">
                     <button
                         onClick={() => setActiveTab('catalog')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'catalog' ? 'border-purple-600 justify-center text-purple-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'catalog' ? 'border-purple-600 justify-center text-purple-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><Activity size={16} /> Catalog & Dispatch</div>
                     </button>
                     <button
                         onClick={() => setActiveTab('orders')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'orders' ? 'border-purple-600 justify-center text-purple-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'orders' ? 'border-purple-600 justify-center text-purple-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><FilePlus2 size={16} /> Specimen Dashboard</div>
                     </button>
                     <button
                         onClick={() => setActiveTab('assets')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'assets' ? 'border-purple-600 justify-center text-purple-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'assets' ? 'border-purple-600 justify-center text-purple-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><Activity size={16} /> Asset Management</div>
                     </button>
@@ -149,21 +149,21 @@ export default function LabPage() {
                                     <div className="bg-white p-4 rounded-xl border border-purple-200 shadow-sm relative">
                                         <button onClick={() => setSelectedPatient(null)} className="absolute top-2 right-2 text-rose-500 text-xs font-bold bg-rose-50 px-2 py-1 rounded">Clear</button>
                                         <p className="text-xs text-purple-600 font-bold uppercase track">Active Selection</p>
-                                        <p className="font-bold mt-1 text-slate-900 text-lg">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                                        <p className="text-sm text-slate-500">{selectedPatient.uhid} | Age: {selectedPatient.age}</p>
+                                        <p className="font-bold mt-1 text-glass-title text-lg">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+                                        <p className="text-sm text-glass-body">{selectedPatient.uhid} | Age: {selectedPatient.age}</p>
                                     </div>
                                 ) : (
                                     <div>
                                         <div className="flex gap-2">
-                                            <input type="text" placeholder="Search UHID..." className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm bg-white" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && executeSearch()} />
+                                            <input type="text" placeholder="Search UHID..." className="flex-1 px-4 py-2 border border-white/20 rounded-lg text-sm bg-white" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && executeSearch()} />
                                             <button onClick={executeSearch} className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 shadow"><Search size={16} /></button>
                                         </div>
                                         {patients.length > 0 && (
-                                            <div className="mt-4 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                            <div className="mt-4 bg-white border border-white/10 rounded-xl overflow-hidden shadow-sm">
                                                 {patients.map(p => (
-                                                    <div key={p.id} onClick={() => { setSelectedPatient(p); setPatients([]); setSearchQuery(''); }} className="p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer">
-                                                        <div className="font-bold text-sm text-slate-800">{p.firstName} {p.lastName}</div>
-                                                        <div className="text-xs text-slate-500">{p.uhid}</div>
+                                                    <div key={p.id} onClick={() => { setSelectedPatient(p); setPatients([]); setSearchQuery(''); }} className="p-3 border-b border-white/5 hover:bg-black/20 cursor-pointer">
+                                                        <div className="font-bold text-sm text-glass-title">{p.firstName} {p.lastName}</div>
+                                                        <div className="text-xs text-glass-body">{p.uhid}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -174,16 +174,16 @@ export default function LabPage() {
 
                             {/* Test Catalog */}
                             <div className="md:col-span-8 space-y-4">
-                                <h3 className="font-bold text-slate-800 mb-4 text-lg border-b pb-2">Lab Test Menu</h3>
+                                <h3 className="font-bold text-glass-title mb-4 text-lg border-b pb-2">Lab Test Menu</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {catalog.map(test => (
-                                        <div key={test.id} className={`border p-4 rounded-xl transition ${selectedPatient ? 'bg-white hover:border-purple-300 hover:shadow-md' : 'bg-slate-50 opacity-60 border-slate-200'}`}>
+                                        <div key={test.id} className={`border p-4 rounded-xl transition ${selectedPatient ? 'bg-white hover:border-purple-300 hover:shadow-md' : 'bg-black/20 opacity-60 border-white/10'}`}>
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h4 className="font-bold text-slate-900">{test.testName}</h4>
+                                                    <h4 className="font-bold text-glass-title">{test.testName}</h4>
                                                     <p className="text-xs font-semibold text-purple-600 bg-purple-50 inline-block px-2 py-1 rounded mt-1">{test.department}</p>
                                                 </div>
-                                                <div className="font-bold text-slate-800 text-lg">₹{test.price}</div>
+                                                <div className="font-bold text-glass-title text-lg">₹{test.price}</div>
                                             </div>
                                             <button
                                                 onClick={() => orderTest(test.id)}
@@ -211,12 +211,12 @@ export default function LabPage() {
                                         <th className="p-4 text-right rounded-tr-xl">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 border border-slate-100">
+                                <tbody className="divide-y divide-white/5 border border-white/5">
                                     {orders.map(o => (
-                                        <tr key={o.id} className="hover:bg-slate-50 leading-relaxed">
-                                            <td className="p-4 text-slate-500 text-xs font-mono">{o.id.substring(0, 8).toUpperCase()}</td>
-                                            <td className="p-4 font-semibold text-slate-800">{o.patient.firstName} {o.patient.lastName}<div className="text-xs text-slate-400 font-normal mt-1">{o.patient.uhid}</div></td>
-                                            <td className="p-4 font-bold text-slate-700">{o.testName}</td>
+                                        <tr key={o.id} className="hover:bg-black/20 leading-relaxed">
+                                            <td className="p-4 text-glass-body text-xs font-mono">{o.id.substring(0, 8).toUpperCase()}</td>
+                                            <td className="p-4 font-semibold text-glass-title">{o.patient.firstName} {o.patient.lastName}<div className="text-xs text-slate-400 font-normal mt-1">{o.patient.uhid}</div></td>
+                                            <td className="p-4 font-bold text-white">{o.testName}</td>
                                             <td className="p-4">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider ${o.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : o.status === 'SAMPLE_COLLECTED' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                                     {o.status.replace('_', ' ')}
@@ -230,7 +230,7 @@ export default function LabPage() {
                                                     <button onClick={() => {
                                                         const result = prompt("Enter Test Result details:");
                                                         if (result) updateOrderStatus(o.id, 'RESULT_ENTERED', result);
-                                                    }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg font-bold shadow-sm transition">Enter Result</button>
+                                                    }} className="liquid-glass-button text-white border-emerald-500/50 px-4 py-1.5 rounded-lg font-bold shadow-sm transition">Enter Result</button>
                                                 )}
                                                 {o.status === 'RESULT_ENTERED' && (
                                                     <div className="text-emerald-600 flex justify-end gap-1 font-bold text-xs bg-emerald-50 w-fit ml-auto px-3 py-1.5 rounded-lg border border-emerald-100">
@@ -247,16 +247,16 @@ export default function LabPage() {
                     )}
 
                     {activeTab === 'assets' && (
-                        <div className="max-w-xl mx-auto bg-slate-50 border border-slate-200 p-6 rounded-xl mt-8">
-                            <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Add New Lab Test to Catalog</h3>
+                        <div className="max-w-xl mx-auto bg-black/20 border border-white/10 p-6 rounded-xl mt-8">
+                            <h3 className="font-bold text-glass-title mb-4 border-b border-white/10 pb-2">Add New Lab Test to Catalog</h3>
                             <form onSubmit={handleAddTest} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Test Name</label>
-                                    <input required type="text" className="w-full text-sm border-slate-300 rounded-lg p-2" placeholder="e.g. Complete Blood Count (CBC)" value={testForm.testName} onChange={e => setTestForm({ ...testForm, testName: e.target.value })} />
+                                    <label className="block text-sm font-medium text-white mb-1">Test Name</label>
+                                    <input required type="text" className="w-full text-sm border-white/20 rounded-lg p-2" placeholder="e.g. Complete Blood Count (CBC)" value={testForm.testName} onChange={e => setTestForm({ ...testForm, testName: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
-                                    <select className="w-full text-sm border-slate-300 rounded-lg p-2" value={testForm.department} onChange={e => setTestForm({ ...testForm, department: e.target.value })}>
+                                    <label className="block text-sm font-medium text-white mb-1">Department</label>
+                                    <select className="w-full text-sm border-white/20 rounded-lg p-2" value={testForm.department} onChange={e => setTestForm({ ...testForm, department: e.target.value })}>
                                         <option value="Pathology">Pathology</option>
                                         <option value="Biochemistry">Biochemistry</option>
                                         <option value="Microbiology">Microbiology</option>
@@ -265,8 +265,8 @@ export default function LabPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Price (₹)</label>
-                                    <input required type="number" min="0" className="w-full text-sm border-slate-300 rounded-lg p-2" value={testForm.price} onChange={e => setTestForm({ ...testForm, price: e.target.value })} />
+                                    <label className="block text-sm font-medium text-white mb-1">Price (₹)</label>
+                                    <input required type="number" min="0" className="w-full text-sm border-white/20 rounded-lg p-2" value={testForm.price} onChange={e => setTestForm({ ...testForm, price: e.target.value })} />
                                 </div>
                                 <button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-lg transition mt-2">
                                     Add Test to Catalog

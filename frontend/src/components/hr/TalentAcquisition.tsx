@@ -18,15 +18,15 @@ export default function TalentAcquisition() {
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-300">
             {/* Header */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="liquid-glass-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Briefcase className="w-6 h-6 text-indigo-600" />
+                    <h2 className="text-3xl font-bold text-glass-title flex items-center gap-2">
+                        <Briefcase className="w-6 h-6 text-indigo-300" />
                         Talent Acquisition
                     </h2>
-                    <p className="text-slate-500">Manage job postings, candidates, and AI-assisted interviews.</p>
+                    <p className="text-glass-body">Manage job postings, candidates, and AI-assisted interviews.</p>
                 </div>
-                <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-sm flex items-center gap-2">
+                <button className="liquid-glass-button px-6 py-2.5 rounded-xl font-medium flex items-center gap-2">
                     <UserPlus className="w-4 h-4" /> Create New Job
                 </button>
             </div>
@@ -34,19 +34,19 @@ export default function TalentAcquisition() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Active Jobs List */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div className="p-5 border-b border-slate-100">
-                            <h3 className="text-lg font-bold text-slate-800">Active Roles</h3>
+                    <div className="liquid-glass-card rounded-2xl overflow-hidden">
+                        <div className="p-5 border-b border-white/10 bg-white/5">
+                            <h3 className="text-lg font-bold text-glass-title">Active Roles</h3>
                         </div>
-                        <div className="divide-y divide-slate-50">
+                        <div className="divide-y divide-white/5">
                             {jobs.map((job) => (
-                                <div key={job.id} className="p-5 hover:bg-slate-50 cursor-pointer transition-colors relative">
-                                    <div className="absolute left-0 top-0 h-full w-1 bg-indigo-500 rounded-r-full opacity-0 hover:opacity-100 transition-opacity"></div>
-                                    <h4 className="font-bold text-slate-800">{job.title}</h4>
-                                    <p className="text-sm text-slate-500">{job.department}</p>
+                                <div key={job.id} className="p-5 hover:bg-white/10 cursor-pointer transition-colors relative">
+                                    <div className="absolute left-0 top-0 h-full w-1 bg-indigo-400 rounded-r-full opacity-0 hover:opacity-100 transition-opacity"></div>
+                                    <h4 className="font-bold text-white">{job.title}</h4>
+                                    <p className="text-sm text-glass-muted">{job.department}</p>
                                     <div className="mt-4 flex items-center justify-between">
-                                        <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full">{job.candidates} Candidates</span>
-                                        <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Published</span>
+                                        <span className="text-xs font-semibold bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 px-3 py-1 rounded-full">{job.candidates} Candidates</span>
+                                        <span className="text-xs font-semibold text-emerald-300 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Published</span>
                                     </div>
                                 </div>
                             ))}
@@ -56,29 +56,29 @@ export default function TalentAcquisition() {
 
                 {/* Candidate Pipeline */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 h-full">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Search className="w-5 h-5 text-blue-500" />
+                    <div className="liquid-glass-card rounded-2xl h-full flex flex-col">
+                        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <h3 className="text-lg font-bold text-glass-title flex items-center gap-2">
+                                <Search className="w-5 h-5 text-blue-300" />
                                 Candidate Pipeline
                             </h3>
-                            <button className="text-sm text-blue-600 font-medium hover:underline">View All</button>
+                            <button className="text-sm text-blue-300 font-medium hover:text-white transition">View All</button>
                         </div>
 
-                        <div className="p-6">
-                            <div className="flex gap-4 mb-6 overflows-x-auto pb-2">
-                                {/* Kanban-style columns simplified for view */}
+                        <div className="p-6 flex-1 overflow-x-auto">
+                            <div className="flex gap-4 min-w-max pb-2">
+                                {/* Kanban-style columns */}
                                 {['Applied', 'Screening', 'Interview', 'Offer'].map((stage) => (
-                                    <div key={stage} className="flex-1 min-w-[200px] bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                        <h4 className="font-bold text-slate-700 mb-4">{stage}</h4>
+                                    <div key={stage} className="w-[280px] bg-black/20 rounded-xl p-4 border border-white/5">
+                                        <h4 className="font-bold text-glass-title mb-4">{stage}</h4>
                                         <div className="space-y-3">
                                             {pipeline.filter(p => p.stage === stage).map(p => (
-                                                <div key={p.id} className="bg-white p-3 rounded-lg shadow-sm border border-slate-100 cursor-move hover:border-indigo-300 transition-colors">
-                                                    <p className="font-semibold text-sm text-slate-800">{p.name}</p>
-                                                    <p className="text-xs text-slate-500 mt-1 line-clamp-1">{p.role}</p>
+                                                <div key={p.id} className="liquid-glass-panel p-4 rounded-xl border border-white/10 cursor-move hover:border-indigo-400/50 transition-colors">
+                                                    <p className="font-semibold text-sm text-white">{p.name}</p>
+                                                    <p className="text-xs text-glass-muted mt-1 line-clamp-1">{p.role}</p>
                                                     {stage === 'Interview' && (
                                                         <div className="mt-3 flex gap-2">
-                                                            <button className="w-full text-xs font-medium bg-blue-50 text-blue-700 py-1.5 rounded flex items-center justify-center gap-1 hover:bg-blue-100 transition">
+                                                            <button className="w-full text-xs font-medium text-white liquid-glass-button py-2 rounded-lg flex items-center justify-center gap-1">
                                                                 <Clock className="w-3 h-3" /> Add Scorecard
                                                             </button>
                                                         </div>
@@ -86,8 +86,8 @@ export default function TalentAcquisition() {
                                                 </div>
                                             ))}
                                             {pipeline.filter(p => p.stage === stage).length === 0 && (
-                                                <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-lg">
-                                                    <p className="text-xs text-slate-400">No candidates</p>
+                                                <div className="text-center p-4 border-2 border-dashed border-white/10 rounded-lg">
+                                                    <p className="text-xs text-white/30">No candidates</p>
                                                 </div>
                                             )}
                                         </div>
@@ -97,13 +97,13 @@ export default function TalentAcquisition() {
                         </div>
 
                         {/* AI Assistance Promo */}
-                        <div className="m-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 flex items-start gap-4">
-                            <div className="p-2 bg-indigo-600 rounded-lg text-white">
+                        <div className="m-6 p-4 bg-indigo-900/40 rounded-xl border border-indigo-400/30 flex items-start gap-4">
+                            <div className="p-2 bg-indigo-500/20 border border-indigo-400/30 rounded-lg text-indigo-200">
                                 <FileText className="w-5 h-5" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-indigo-900">AI Job Description Generator Active</h4>
-                                <p className="text-sm text-indigo-700 mt-1">GUDHR AI is actively checking your drafts for inclusivity and surfacing past applicant matches.</p>
+                                <h4 className="font-bold text-indigo-100">AI Job Description Generator Active</h4>
+                                <p className="text-sm text-indigo-200/80 mt-1">GUDHR AI is actively checking your drafts for inclusivity and surfacing past applicant matches.</p>
                             </div>
                         </div>
                     </div>

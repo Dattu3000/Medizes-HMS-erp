@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
 import { logAudit } from '../utils/audit';
+import { analyzeJobDescription } from '../utils/aiService';
 
 // Job Definitions
 export const getJobs = async (req: Request, res: Response) => {
@@ -13,10 +14,18 @@ export const getJobs = async (req: Request, res: Response) => {
 export const createJob = async (req: Request, res: Response) => {
     try {
         const data = req.body;
-        // AI suggestions hook could optionally be placed here before save
         const job = await prisma.jobDefinition.create({ data });
         res.status(201).json(job);
     } catch (error) { res.status(500).json({ message: 'Error creating job', error }); }
+};
+
+export const analyzeJob = async (req: Request, res: Response) => {
+    try {
+        const { description } = req.body;
+        // Execute AI Job Description logic
+        const aiAnalysis = await analyzeJobDescription(description);
+        res.status(200).json(aiAnalysis);
+    } catch (error) { res.status(500).json({ message: 'Error analyzing job', error }); }
 };
 
 // Candidates
@@ -47,9 +56,18 @@ export const updateCandidateStatus = async (req: Request, res: Response) => {
 // Interviews & Scheduling
 export const scheduleInterview = async (req: Request, res: Response) => {
     try {
-        const data = req.body;
-        const interview = await prisma.interviewSlot.create({ data });
-        res.status(201).json(interview);
+        const { candidateId, interviewerIds, scheduledAt, durationMins } = req.body;
+
+        // Ensure interviewerIds is an array
+        const interviewers = Array.isArray(interviewerIds) ? interviewerIds : [interviewerIds];
+
+        const slots = await Promise.all(interviewers.map(interviewerId =>
+            prisma.interviewSlot.create({
+                data: { candidateId, interviewerId, scheduledAt: new Date(scheduledAt), durationMins, meetingLink: "https://meet.gudhr.com/" + candidateId }
+            })
+        ));
+
+        res.status(201).json({ message: "Interview scheduled across panel", slots });
     } catch (error) { res.status(500).json({ message: 'Error scheduling interview', error }); }
 };
 

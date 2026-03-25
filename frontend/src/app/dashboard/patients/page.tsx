@@ -109,21 +109,21 @@ export default function PatientsPage() {
     return (
         <>
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Patient Management</h1>
+                <h1 className="text-2xl font-bold text-glass-title tracking-tight">Patient Management</h1>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="liquid-glass-card rounded-xl    overflow-hidden">
                 {/* Tabs */}
-                <div className="flex border-b border-slate-200 bg-slate-50">
+                <div className="flex border-b border-white/10 bg-black/20">
                     <button
                         onClick={() => setActiveTab('register')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'register' ? 'border-blue-600 justify-center text-blue-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'register' ? 'border-blue-600 justify-center text-blue-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><Plus size={16} /> New Registration</div>
                     </button>
                     <button
                         onClick={() => setActiveTab('opd')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'opd' ? 'border-blue-600 justify-center text-blue-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'opd' ? 'border-blue-600 justify-center text-blue-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><Stethoscope size={16} /> OPD Booking & Billing</div>
                     </button>
@@ -140,7 +140,7 @@ export default function PatientsPage() {
                                     </div>
                                     <h3 className="text-xl font-bold text-emerald-800 mb-2">Registration Successful</h3>
                                     <p className="text-emerald-600">Patient UHID: <strong className="text-lg bg-emerald-100 px-3 py-1 rounded ml-2">{regSuccess.patient.uhid}</strong></p>
-                                    <button onClick={() => setRegSuccess(null)} className="mt-6 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors">
+                                    <button onClick={() => setRegSuccess(null)} className="mt-6 px-6 py-2 liquid-glass-button text-white border-emerald-500/50 rounded-lg text-sm font-medium transition-colors">
                                         Register Another Patient
                                     </button>
                                 </div>
@@ -148,34 +148,34 @@ export default function PatientsPage() {
                                 <form onSubmit={handleRegister} className="max-w-3xl mx-auto space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">First Name <span className="text-red-500">*</span></label>
-                                            <input required type="text" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
+                                            <label className="block text-sm font-medium text-white mb-1">First Name <span className="text-red-500">*</span></label>
+                                            <input required type="text" className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Last Name <span className="text-red-500">*</span></label>
-                                            <input required type="text" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
+                                            <label className="block text-sm font-medium text-white mb-1">Last Name <span className="text-red-500">*</span></label>
+                                            <input required type="text" className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Age <span className="text-red-500">*</span></label>
-                                            <input required type="number" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                                            <label className="block text-sm font-medium text-white mb-1">Age <span className="text-red-500">*</span></label>
+                                            <input required type="number" className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Gender <span className="text-red-500">*</span></label>
-                                            <select required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })}>
+                                            <label className="block text-sm font-medium text-white mb-1">Gender <span className="text-red-500">*</span></label>
+                                            <select required className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })}>
                                                 <option>Male</option><option>Female</option><option>Other</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Mobile No. <span className="text-red-500">*</span></label>
-                                            <input required type="text" maxLength={10} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
+                                            <label className="block text-sm font-medium text-white mb-1">Mobile No. <span className="text-red-500">*</span></label>
+                                            <input required type="text" maxLength={10} className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Blood Group</label>
-                                            <input type="text" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="O+" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })} />
+                                            <label className="block text-sm font-medium text-white mb-1">Blood Group</label>
+                                            <input type="text" className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="O+" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })} />
                                         </div>
                                     </div>
-                                    <div className="border-t border-slate-100 pt-6"></div>
-                                    <div className="flex justify-end pt-4 border-t border-slate-200">
+                                    <div className="border-t border-white/5 pt-6"></div>
+                                    <div className="flex justify-end pt-4 border-t border-white/10">
                                         <button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow flex items-center gap-2">
                                             {loading ? 'Processing...' : 'Generate UHID & Register'}
                                         </button>
@@ -206,34 +206,34 @@ export default function PatientsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Step 1: Patient Selection */}
                                 <div>
-                                    <h3 className="text-md font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-xs text-slate-500 font-bold">1</span>
+                                    <h3 className="text-md font-semibold text-glass-title mb-4 border-b border-white/5 pb-2 flex items-center gap-2">
+                                        <span className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-xs text-glass-body font-bold">1</span>
                                         Select Patient
                                     </h3>
                                     <div className="flex gap-2 mb-4">
                                         <input
                                             type="text"
                                             placeholder="Search UHID, Mobile, Name..."
-                                            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                            className="flex-1 px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             onKeyDown={e => e.key === 'Enter' && executeSearch()}
                                         />
-                                        <button onClick={executeSearch} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-200 transition">
+                                        <button onClick={executeSearch} className="bg-slate-100 text-white px-4 py-2 rounded-lg hover:bg-slate-200 transition">
                                             <Search size={18} />
                                         </button>
                                     </div>
 
                                     {searchResults.length > 0 && (
-                                        <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-64 overflow-y-auto bg-white mb-4 shadow-inner">
+                                        <div className="border border-white/10 rounded-lg overflow-hidden flex flex-col max-h-64 overflow-y-auto bg-white mb-4 shadow-inner">
                                             {searchResults.map((p) => (
                                                 <button
                                                     key={p.id}
                                                     onClick={() => setSelectedPatient(p)}
-                                                    className={`flex flex-col text-left p-3 border-b border-slate-100 last:border-b-0 hover:bg-blue-50 transition-colors ${selectedPatient?.id === p.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent'}`}
+                                                    className={`flex flex-col text-left p-3 border-b border-white/5 last:border-b-0 hover:bg-blue-50 transition-colors ${selectedPatient?.id === p.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent'}`}
                                                 >
-                                                    <span className="font-semibold text-slate-900 text-sm">{p.firstName} {p.lastName}</span>
-                                                    <span className="text-xs text-slate-500">{p.uhid} • {p.mobile}</span>
+                                                    <span className="font-semibold text-glass-title text-sm">{p.firstName} {p.lastName}</span>
+                                                    <span className="text-xs text-glass-body">{p.uhid} • {p.mobile}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -242,24 +242,24 @@ export default function PatientsPage() {
                                     {selectedPatient && (
                                         <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
                                             <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">Selected Patient</p>
-                                            <p className="font-bold text-slate-900">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                                            <p className="text-sm text-slate-600">{selectedPatient.uhid} • Age: {selectedPatient.age}</p>
+                                            <p className="font-bold text-glass-title">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+                                            <p className="text-sm text-glass-muted">{selectedPatient.uhid} • Age: {selectedPatient.age}</p>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Step 2: Doctor Selection & Bill Details */}
                                 <div className={`${!selectedPatient ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
-                                    <h3 className="text-md font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-xs text-slate-500 font-bold">2</span>
+                                    <h3 className="text-md font-semibold text-glass-title mb-4 border-b border-white/5 pb-2 flex items-center gap-2">
+                                        <span className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-xs text-glass-body font-bold">2</span>
                                         Book & Invoice
                                     </h3>
 
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Assign Doctor</label>
+                                            <label className="block text-sm font-medium text-white mb-1">Assign Doctor</label>
                                             <select
-                                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                                                className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
                                                 value={selectedDoctorId}
                                                 onChange={e => setSelectedDoctorId(e.target.value)}
                                             >
@@ -270,20 +270,20 @@ export default function PatientsPage() {
                                             </select>
                                         </div>
 
-                                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-6 space-y-2">
-                                            <div className="flex justify-between text-sm text-slate-600">
+                                        <div className="bg-black/20 p-4 rounded-lg border border-white/10 mt-6 space-y-2">
+                                            <div className="flex justify-between text-sm text-glass-muted">
                                                 <span>Consultation Fee</span>
                                                 <span>₹500.00</span>
                                             </div>
-                                            <div className="flex justify-between text-sm text-slate-600">
+                                            <div className="flex justify-between text-sm text-glass-muted">
                                                 <span>Registration (First Visit)</span>
                                                 <span>₹100.00</span>
                                             </div>
-                                            <div className="flex justify-between text-sm text-slate-600 border-b border-slate-200 pb-2">
+                                            <div className="flex justify-between text-sm text-glass-muted border-b border-white/10 pb-2">
                                                 <span>GST 18% (SAC: 999311)</span>
                                                 <span>₹108.00</span>
                                             </div>
-                                            <div className="flex justify-between font-bold text-slate-900 pt-1">
+                                            <div className="flex justify-between font-bold text-glass-title pt-1">
                                                 <span>Net Payable</span>
                                                 <span>₹708.00</span>
                                             </div>

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
 import { logAudit } from '../utils/audit';
+import { analyzeSurveySentiment } from '../utils/aiService';
 
 // Goals / OKRs
 export const getGoals = async (req: Request, res: Response) => {
@@ -80,9 +81,21 @@ export const getActiveSurveys = async (req: Request, res: Response) => {
 export const submitSurveyResponse = async (req: Request, res: Response) => {
     try {
         const { surveyId, answers } = req.body;
+
+        // Extract free text strings from answers to analyze sentiment
+        const freeTextResponses: string[] = [];
+        if (Array.isArray(answers)) {
+            answers.forEach((ans: any) => {
+                if (typeof ans.answer === 'string') freeTextResponses.push(ans.answer);
+            });
+        }
+
+        // Perform AI sentiment analysis on the free text responses
+        const aiAnalysis = await analyzeSurveySentiment(freeTextResponses);
+
         const response = await prisma.surveyResponse.create({
-            data: { surveyId, answers }
+            data: { surveyId, answers, sentiment: aiAnalysis.sentiment }
         });
-        res.status(201).json(response);
+        res.status(201).json({ response, aiSentimentScore: aiAnalysis.score });
     } catch (error) { res.status(500).json({ message: 'Error submitting survey response', error }); }
 };

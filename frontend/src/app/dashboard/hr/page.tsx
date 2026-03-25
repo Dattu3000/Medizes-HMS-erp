@@ -11,19 +11,19 @@ export default function HRPage() {
     const [activeTab, setActiveTab] = useState<'ess' | 'manager' | 'talent' | 'executive'>('ess');
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 liquid-bg p-6 rounded-3xl min-h-screen">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Human Resources (GUDHR)</h1>
-                    <p className="text-slate-500 mt-1">Unified Workforce & Talent Intelligence Platform</p>
+                    <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-100 to-indigo-300 drop-shadow-sm">Human Resources (GUDHR)</h1>
+                    <p className="text-glass-body font-medium mt-1">Unified Workforce & Talent Intelligence Platform</p>
                 </div>
             </div>
 
             {/* Navigation Tabs */}
-            <div className="bg-white p-1 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-1">
+            <div className="liquid-glass-panel p-2 rounded-2xl flex flex-wrap gap-2">
                 <button
                     onClick={() => setActiveTab('ess')}
-                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'ess' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'ess' ? 'liquid-glass-button shadow-lg' : 'text-glass-muted hover:bg-white/10 hover:text-white'
                         }`}
                 >
                     <User className="w-4 h-4" /> Employee Hub (ESS)
@@ -31,7 +31,7 @@ export default function HRPage() {
 
                 <button
                     onClick={() => setActiveTab('manager')}
-                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'manager' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'manager' ? 'liquid-glass-button shadow-lg' : 'text-glass-muted hover:bg-white/10 hover:text-white'
                         }`}
                 >
                     <Users className="w-4 h-4" /> Manager Center
@@ -39,7 +39,7 @@ export default function HRPage() {
 
                 <button
                     onClick={() => setActiveTab('talent')}
-                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'talent' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'talent' ? 'liquid-glass-button shadow-lg' : 'text-glass-muted hover:bg-white/10 hover:text-white'
                         }`}
                 >
                     <Briefcase className="w-4 h-4" /> Talent Acquisition
@@ -47,7 +47,7 @@ export default function HRPage() {
 
                 <button
                     onClick={() => setActiveTab('executive')}
-                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'executive' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'executive' ? 'liquid-glass-button shadow-lg' : 'text-glass-muted hover:bg-white/10 hover:text-white'
                         }`}
                 >
                     <BarChart3 className="w-4 h-4" /> Executive Dashboard

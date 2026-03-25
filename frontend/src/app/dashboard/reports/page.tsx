@@ -77,25 +77,25 @@ export default function ReportsPage() {
         <>
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-glass-title tracking-tight flex items-center gap-2">
                     <BarChart3 className="text-violet-600" /> Reports, Analytics & Statutory Compliance
                 </h1>
                 <button
                     onClick={() => load(tab)}
-                    className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold px-4 py-2 rounded-lg text-sm shadow-sm transition flex items-center gap-2"
+                    className="bg-white border border-white/10 text-white hover:bg-black/20 font-bold px-4 py-2 rounded-lg text-sm shadow-sm transition flex items-center gap-2"
                 >
                     <Download size={15} /> Refresh Data
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[600px] flex flex-col">
+            <div className="liquid-glass-card rounded-xl    min-h-[600px] flex flex-col">
                 {/* Tab bar */}
-                <div className="flex border-b border-slate-200 bg-slate-50 rounded-t-xl overflow-x-auto">
+                <div className="flex border-b border-white/10 bg-black/20 rounded-t-xl overflow-x-auto">
                     {tabs.map(t => (
                         <button
                             key={t.id}
                             onClick={() => setTab(t.id)}
-                            className={`flex-1 min-w-[160px] py-4 font-bold text-sm transition-colors border-b-2 ${tab === t.id ? 'border-violet-600 text-violet-700 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                            className={`flex-1 min-w-[160px] py-4 font-bold text-sm transition-colors border-b-2 ${tab === t.id ? 'border-violet-600 text-violet-700 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
                         >
                             <div className="flex justify-center items-center gap-2">
                                 <t.icon size={15} /> {t.label}
@@ -119,36 +119,36 @@ export default function ReportsPage() {
                                 ].map(k => (
                                     <div key={k.label} className={`${k.color} border rounded-xl p-5 shadow-sm transform hover:-translate-y-1 transition duration-300 hover:shadow-md`}>
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{k.label}</span>
+                                            <span className="text-xs font-bold uppercase tracking-wider text-glass-body">{k.label}</span>
                                             <k.icon size={20} className={k.ic} />
                                         </div>
-                                        <div className="text-3xl font-black text-slate-800">{k.value}</div>
-                                        <div className="text-xs text-slate-500 mt-1">{k.sub}</div>
+                                        <div className="text-3xl font-black text-glass-title">{k.value}</div>
+                                        <div className="text-xs text-glass-body mt-1">{k.sub}</div>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Revenue breakdown */}
                             <div>
-                                <h3 className="font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2"><Activity size={16} /> Revenue Breakdown by Module</h3>
+                                <h3 className="font-bold text-glass-title mb-4 pb-2 border-b flex items-center gap-2"><Activity size={16} /> Revenue Breakdown by Module</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {Object.entries(analytics.billing.byModule as Record<string, number>).map(([type, amount]) => {
                                         const p = pct(amount, analytics.billing.totalRevenue);
                                         return (
-                                            <div key={type} className="bg-slate-50 border border-slate-200 rounded-xl p-4 transform hover:scale-[1.01] transition duration-200 hover:shadow-sm">
+                                            <div key={type} className="bg-black/20 border border-white/10 rounded-xl p-4 transform hover:scale-[1.01] transition duration-200 hover:shadow-sm">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-semibold text-slate-700 text-sm">{type.replace(/_/g, ' ')}</span>
-                                                    <span className="font-bold text-slate-900">{fmt(amount)}</span>
+                                                    <span className="font-semibold text-white text-sm">{type.replace(/_/g, ' ')}</span>
+                                                    <span className="font-bold text-glass-title">{fmt(amount)}</span>
                                                 </div>
                                                 <div className="w-full bg-slate-200 rounded-full h-2">
                                                     <div className="bg-violet-500 h-2 rounded-full transition-all" style={{ width: `${p}%` }} />
                                                 </div>
-                                                <div className="text-xs text-slate-500 mt-1 text-right">{p}% of total revenue</div>
+                                                <div className="text-xs text-glass-body mt-1 text-right">{p}% of total revenue</div>
                                             </div>
                                         );
                                     })}
                                     {Object.keys(analytics.billing.byModule).length === 0 && (
-                                        <div className="col-span-2 text-center p-8 bg-slate-50 rounded-xl border text-slate-400">No paid bills recorded yet</div>
+                                        <div className="col-span-2 text-center p-8 bg-black/20 rounded-xl border text-slate-400">No paid bills recorded yet</div>
                                     )}
                                 </div>
                             </div>
@@ -177,7 +177,7 @@ export default function ReportsPage() {
                                         {fmt(Math.abs(balance.netProfitOrLoss))}
                                     </div>
                                 </div>
-                                <div className="text-right text-sm text-slate-600 space-y-1">
+                                <div className="text-right text-sm text-glass-muted space-y-1">
                                     <div>Total Income: <b className="text-emerald-700">{fmt(balance.income.total)}</b></div>
                                     <div>Total Expense: <b className="text-rose-700">{fmt(balance.expenses.total)}</b></div>
                                 </div>
@@ -190,10 +190,10 @@ export default function ReportsPage() {
                                         <TrendingUp size={15} /> Income / Revenue
                                     </div>
                                     <table className="w-full text-sm">
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody className="divide-y divide-white/5">
                                             {Object.entries(balance.income.breakdown as Record<string, number>).map(([k, v]) => (
-                                                <tr key={k} className="hover:bg-slate-50">
-                                                    <td className="px-5 py-3 text-slate-700">{k.replace(/_/g, ' ')}</td>
+                                                <tr key={k} className="hover:bg-black/20">
+                                                    <td className="px-5 py-3 text-white">{k.replace(/_/g, ' ')}</td>
                                                     <td className="px-5 py-3 text-right font-bold text-emerald-700">{fmt(v)}</td>
                                                 </tr>
                                             ))}
@@ -213,10 +213,10 @@ export default function ReportsPage() {
                                         <TrendingDown size={15} /> Expenses / Outflow
                                     </div>
                                     <table className="w-full text-sm">
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody className="divide-y divide-white/5">
                                             {Object.entries(balance.expenses.breakdown as Record<string, number>).map(([k, v]) => (
-                                                <tr key={k} className="hover:bg-slate-50">
-                                                    <td className="px-5 py-3 text-slate-700">{k.replace(/_/g, ' ')}</td>
+                                                <tr key={k} className="hover:bg-black/20">
+                                                    <td className="px-5 py-3 text-white">{k.replace(/_/g, ' ')}</td>
                                                     <td className="px-5 py-3 text-right font-bold text-rose-700">{fmt(v)}</td>
                                                 </tr>
                                             ))}
@@ -238,7 +238,7 @@ export default function ReportsPage() {
                         <div className="space-y-6">
                             {/* Period Filter */}
                             <div className="flex items-center gap-4 flex-wrap">
-                                <label className="text-sm font-bold text-slate-600">Period:</label>
+                                <label className="text-sm font-bold text-glass-muted">Period:</label>
                                 <select className="border rounded-lg px-3 py-2 text-sm bg-white" value={gstMonth} onChange={e => setGstMonth(Number(e.target.value))}>
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                                         <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}</option>
@@ -281,7 +281,7 @@ export default function ReportsPage() {
                                     {/* GSTR-1 Line Items */}
                                     <div>
                                         <div className="flex justify-between items-center mb-3 pb-2 border-b">
-                                            <h3 className="font-bold text-slate-800">GSTR-1: Outward Supply Register ({gst.period})</h3>
+                                            <h3 className="font-bold text-glass-title">GSTR-1: Outward Supply Register ({gst.period})</h3>
                                             <button
                                                 onClick={() => {
                                                     const headers = ['Bill No.', 'Type', 'Taxable Value', 'GST Amount', 'Invoice Total', 'Date'];
@@ -295,9 +295,9 @@ export default function ReportsPage() {
                                                 <Download size={14} /> Export CSV
                                             </button>
                                         </div>
-                                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                        <div className="overflow-x-auto rounded-xl border border-white/10">
                                             <table className="w-full text-left text-xs">
-                                                <thead className="bg-slate-100 text-slate-600 font-semibold">
+                                                <thead className="bg-slate-100 text-glass-muted font-semibold">
                                                     <tr>
                                                         <th className="p-3">Bill No.</th>
                                                         <th className="p-3">Type</th>
@@ -307,22 +307,22 @@ export default function ReportsPage() {
                                                         <th className="p-3">Date</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
+                                                <tbody className="divide-y divide-white/5">
                                                     {gst.gstr1.lines.map((l: any) => (
-                                                        <tr key={l.billNo} className="hover:bg-slate-50">
-                                                            <td className="p-3 font-mono font-bold text-slate-700">{l.billNo}</td>
-                                                            <td className="p-3"><span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">{l.type.replace(/_/g, ' ')}</span></td>
+                                                        <tr key={l.billNo} className="hover:bg-black/20">
+                                                            <td className="p-3 font-mono font-bold text-white">{l.billNo}</td>
+                                                            <td className="p-3"><span className="bg-slate-100 px-2 py-0.5 rounded text-glass-muted">{l.type.replace(/_/g, ' ')}</span></td>
                                                             <td className="p-3 text-right">{fmt(l.taxableValue)}</td>
                                                             <td className="p-3 text-right text-amber-700 font-bold">{fmt(l.gstAmount)}</td>
                                                             <td className="p-3 text-right font-bold">{fmt(l.totalValue)}</td>
-                                                            <td className="p-3 text-slate-500">{new Date(l.date).toLocaleDateString('en-IN')}</td>
+                                                            <td className="p-3 text-glass-body">{new Date(l.date).toLocaleDateString('en-IN')}</td>
                                                         </tr>
                                                     ))}
                                                     {gst.gstr1.lines.length === 0 && (
                                                         <tr><td colSpan={6} className="p-8 text-center text-slate-400">No paid bills for this period</td></tr>
                                                     )}
                                                 </tbody>
-                                                <tfoot className="bg-slate-50 font-black text-sm">
+                                                <tfoot className="bg-black/20 font-black text-sm">
                                                     <tr>
                                                         <td colSpan={2} className="p-3">Totals</td>
                                                         <td className="p-3 text-right">{fmt(gst.gstr1.totalTaxableValue)}</td>
@@ -343,7 +343,7 @@ export default function ReportsPage() {
                         <div className="space-y-6">
                             {/* Period Filter */}
                             <div className="flex items-center gap-4 flex-wrap">
-                                <label className="text-sm font-bold text-slate-600">Period:</label>
+                                <label className="text-sm font-bold text-glass-muted">Period:</label>
                                 <select className="border rounded-lg px-3 py-2 text-sm bg-white" value={prMonth} onChange={e => setPrMonth(Number(e.target.value))}>
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                                         <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}</option>
@@ -386,7 +386,7 @@ export default function ReportsPage() {
                                     {/* Individual Payslips */}
                                     <div>
                                         <div className="flex justify-between items-center mb-3 pb-2 border-b">
-                                            <h3 className="font-bold text-slate-800">Employee Payslips — {payroll.period}</h3>
+                                            <h3 className="font-bold text-glass-title">Employee Payslips — {payroll.period}</h3>
                                             <button
                                                 onClick={() => {
                                                     const headers = ['Employee ID', 'Name', 'Gross Salary', 'EPF', 'ESI', 'PT', 'Other Ded.', 'Net Take-Home'];
@@ -402,7 +402,7 @@ export default function ReportsPage() {
                                         </div>
                                         <div className="space-y-4">
                                             {payroll.payslips.map((p: any) => (
-                                                <div key={p.employeeId} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                                                <div key={p.employeeId} className="bg-white border border-white/10 rounded-xl shadow-sm overflow-hidden">
                                                     {/* Payslip Header */}
                                                     <div className="bg-slate-800 text-white px-5 py-3 flex justify-between items-center">
                                                         <div>
@@ -415,7 +415,7 @@ export default function ReportsPage() {
                                                         </div>
                                                     </div>
                                                     {/* Payslip Body */}
-                                                    <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100 text-sm">
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5 text-sm">
                                                         <div className="p-4">
                                                             <div className="text-xs font-bold text-slate-400 uppercase mb-2">Earnings</div>
                                                             <div className="space-y-1">
@@ -443,13 +443,13 @@ export default function ReportsPage() {
                                                         <div className="p-4 bg-emerald-50">
                                                             <div className="text-xs font-bold text-slate-400 uppercase mb-2">Net Take-Home</div>
                                                             <div className="text-2xl font-black text-emerald-700">{fmt(p.netTakeHome)}</div>
-                                                            <div className="text-xs text-slate-500 mt-1">After all deductions</div>
+                                                            <div className="text-xs text-glass-body mt-1">After all deductions</div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))}
                                             {payroll.payslips.length === 0 && (
-                                                <div className="text-center p-10 bg-slate-50 border border-slate-200 rounded-xl text-slate-400">
+                                                <div className="text-center p-10 bg-black/20 border border-white/10 rounded-xl text-slate-400">
                                                     No PAID payrolls found for {prMonth}/{prYear}
                                                 </div>
                                             )}
