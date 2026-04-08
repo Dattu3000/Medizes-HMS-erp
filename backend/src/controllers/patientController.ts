@@ -127,3 +127,51 @@ export const getDoctors = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Failed to fetch doctors', err });
     }
 };
+
+export const getDoctorEHR = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.id;
+
+        // Find employee mapping
+        const employee = await prisma.employee.findUnique({ where: { userId } });
+        if (!employee) return res.status(403).json({ message: "No employee profile found" });
+
+        // Retrieve active visits for this doctor
+        const visits = await prisma.visit.findMany({
+            where: {
+                doctorId: employee.id,
+                status: { in: ['WAITING', 'IN_CONSULTATION'] }
+            },
+            include: {
+                patient: true
+            },
+            orderBy: { createdAt: 'asc' }
+        });
+
+        res.status(200).json(visits);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to load Doctor EHR active visits', err });
+    }
+};
+
+export const submitClinicalNote = async (req: Request, res: Response) => {
+    try {
+        const { visitId } = req.params;
+        const { notes, status } = req.body;
+        const userId = (req as any).user.id;
+
+        const updatedVisit = await prisma.visit.update({
+            where: { id: String(visitId) },
+            data: {
+                notes,
+                ...(status && { status })
+            }
+        });
+
+        await logAudit(userId, 'EHR_NOTE_ADDED', { visitId }, req.ip || null);
+
+        res.status(200).json({ message: 'Clinical note saved successfully', visit: updatedVisit });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to submit clinical note', error });
+    }
+};
