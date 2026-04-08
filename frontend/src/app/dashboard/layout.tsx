@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const navItems = [
         { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Patient & OPD', href: '/dashboard/patients', icon: Users },
+        { name: 'Doctor\'s EHR', href: '/dashboard/ehr', icon: Stethoscope },
         { name: 'IPD / Wards', href: '/dashboard/ipd', icon: Activity },
         { name: 'Pharmacy', href: '/dashboard/pharmacy', icon: Pill },
         { name: 'Lab Reports', href: '/dashboard/lab', icon: FilePlus2 },
