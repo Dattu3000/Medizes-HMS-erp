@@ -1,34 +1,70 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Calendar, RefreshCcw, Bell, ChevronRight, UserCircle, Activity, Save
 } from 'lucide-react';
 
-const mockVitals = [
-    { id: 1, name: 'Blood Pressure', value: '120/80 mmHg', status: 'normal', icon: '+' },
-    { id: 2, name: 'Heart Rate', value: '72 bpm', status: 'normal', icon: '♥' },
-    { id: 3, name: 'Temperature', value: '98.6°F', status: 'normal', icon: 'T' },
-    { id: 4, name: 'O2 Saturation', value: '99%', status: 'optimal', icon: 'O2' },
-    { id: 5, name: 'Respiratory Rate', value: '16 rpm', status: 'normal', icon: 'R' },
-    { id: 6, name: 'Blood Glucose', value: '110 mg/dL', status: 'elevated', icon: 'G' },
-];
-
-const mockMedications = [
-    { id: 1, name: 'Amlodipine 5mg', dosage: '1 tablet daily' },
-    { id: 2, name: 'Metformin 500mg', dosage: 'Twice daily with meals' },
-    { id: 3, name: 'Atorvastatin 20mg', dosage: 'At bedtime' },
-];
-
 export default function DoctorEHRPage() {
-    const [activeTab, setActiveTab] = useState('Vitals');
-    const [selectedVital, setSelectedVital] = useState(mockVitals[0].id);
-    const [noteContent, setNoteContent] = useState("Patient reports feeling well. Blood pressure is well-controlled on current medication regimen. Continue current treatment plan. Next follow-up in 3 months.");
+    const [activeTab, setActiveTab] = useState('Visits');
+    const [visits, setVisits] = useState<any[]>([]);
+    const [selectedVisit, setSelectedVisit] = useState<any | null>(null);
+    const [noteContent, setNoteContent] = useState("");
     const [saved, setSaved] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const handleSaveNote = () => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+    const loadVisits = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/patients/ehr/visits', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setVisits(data);
+                if (data.length > 0) {
+                    setSelectedVisit(data[0]);
+                    setNoteContent(data[0].notes || "");
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load EHR visits", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadVisits();
+    }, []);
+
+    const handleSaveNote = async () => {
+        if (!selectedVisit) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/patients/ehr/note/${selectedVisit.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ notes: noteContent, status: 'COMPLETED' })
+            });
+
+            if (res.ok) {
+                setSaved(true);
+                // Remove from queue or just show saved
+                setVisits(visits.filter(v => v.id !== selectedVisit.id));
+                setTimeout(() => {
+                    setSaved(false);
+                    setSelectedVisit(null);
+                    setNoteContent("");
+                }, 2000);
+            }
+        } catch (error) {
+            console.error("Failed to save note", error);
+        }
     };
 
     return (
@@ -88,21 +124,26 @@ export default function DoctorEHRPage() {
                             <span>Status</span>
                         </div>
                         <div className="flex-1 overflow-y-auto divide-y divide-gray-100 p-2">
-                            {mockVitals.map(v => (
+                            {visits.map(v => (
                                 <div
                                     key={v.id}
-                                    onClick={() => setSelectedVital(v.id)}
-                                    className={`flex justify-between items-center p-3 rounded-lg cursor-pointer text-sm mb-1 transition-colors ${selectedVital === v.id ? 'bg-teal-50 border border-teal-100 relative' : 'hover:bg-gray-50'
+                                    onClick={() => {
+                                        setSelectedVisit(v);
+                                        setNoteContent(v.notes || "");
+                                    }}
+                                    className={`flex justify-between items-center p-3 rounded-lg cursor-pointer text-sm mb-1 transition-colors ${selectedVisit?.id === v.id ? 'bg-teal-50 border border-teal-100 relative' : 'hover:bg-gray-50'
                                         }`}
                                 >
-                                    {selectedVital === v.id && (
+                                    {selectedVisit?.id === v.id && (
                                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-teal-500 rounded-l-lg"></div>
                                     )}
                                     <span className="font-bold text-gray-700 flex items-center gap-2">
-                                        <span className="text-gray-400 w-4 text-center">{v.icon}</span> {v.name}
+                                        <span className="text-gray-400 w-4 text-center">
+                                            <UserCircle size={14} className="text-teal-600" />
+                                        </span> {v.patient?.firstName} {v.patient?.lastName}
                                     </span>
-                                    <span className={`font-medium ${v.status === 'elevated' ? 'text-red-500' : 'text-gray-500'}`}>
-                                        {v.value}
+                                    <span className={`font-medium text-gray-500`}>
+                                        {new Date(v.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
                             ))}
@@ -192,7 +233,11 @@ export default function DoctorEHRPage() {
                         <h3 className="font-bold text-[13px] tracking-widest text-gray-50 mb-3">Active Medications</h3>
 
                         <div className="bg-white rounded-[12px] overflow-hidden">
-                            {mockMedications.map(med => (
+                            {[
+                                { id: 1, name: 'Amlodipine 5mg', dosage: '1 tablet daily' },
+                                { id: 2, name: 'Metformin 500mg', dosage: 'Twice daily with meals' },
+                                { id: 3, name: 'Atorvastatin 20mg', dosage: 'At bedtime' },
+                            ].map(med => (
                                 <div key={med.id} className="flex justify-between items-center bg-gray-50 px-4 py-3.5 border-b border-gray-100 cursor-pointer hover:bg-gray-100 transition">
                                     <div>
                                         <div className="text-[13px] font-medium text-gray-700">{med.name}</div>

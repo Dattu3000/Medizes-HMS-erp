@@ -1,35 +1,69 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     RefreshCcw, ExternalLink, UserCircle, ChevronRight, CheckCircle2, FlaskConical
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-
-const mockLabOrders = [
-    { id: 'LAP-2024-8-05', patient: 'Liam Smith', testName: 'Complete Blood Count', requestedBy: 'Dr. Highn', priority: 'High', date: 'Oct 26, 2024', status: 'Pending' },
-    { id: 'LAP-2024-8-06', patient: 'Emma Dubois', testName: 'Lipid Panel', requestedBy: 'Dr. Lee', priority: 'Routine', date: 'Oct 26, 2024', status: 'Pending' },
-    { id: 'LAP-2024-8-07', patient: 'Mia Johnson', testName: 'Thyroid Function', requestedBy: 'Dr. Patel', priority: 'Stat', date: 'Oct 26, 2024', status: 'Pending' },
-    { id: 'LAP-2024-8-08', patient: 'Noah Williams', testName: 'Hemoglobin A1c', requestedBy: 'Dr. Highn', priority: 'Routine', date: 'Oct 25, 2024', status: 'Pending' },
-    { id: 'LAP-2024-8-09', patient: 'Olivia Brown', testName: 'Basic Metabolic Panel', requestedBy: 'Dr. Smith', priority: 'Routine', date: 'Oct 25, 2024', status: 'Pending' },
-];
 
 export default function LabOrderManagement() {
     const [activeTab, setActiveTab] = useState('pending');
-    const [orders, setOrders] = useState(mockLabOrders);
-    const [selectedOrder, setSelectedOrder] = useState(mockLabOrders[0]);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [resultText, setResultText] = useState("");
     const [processing, setProcessing] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const handleCompleteOrder = () => {
+    const loadOrders = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/lab/orders', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setOrders(data);
+                if (data.length > 0) setSelectedOrder(data[0]);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadOrders();
+    }, []);
+
+    const handleCompleteOrder = async () => {
+        if (!selectedOrder) return;
         setProcessing(true);
-        setTimeout(() => {
-            setOrders(orders.filter(o => o.id !== selectedOrder.id));
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/lab/order/${selectedOrder.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: 'RESULT_ENTERED',
+                    resultText
+                })
+            });
+
+            if (res.ok) {
+                setOrders(orders.filter(o => o.id !== selectedOrder.id));
+                setSelectedOrder(null);
+                setResultText("");
+                alert("Lab Result saved successfully.");
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
             setProcessing(false);
-            setResultText("");
-            alert("Lab Result saved successfully.");
-        }, 1200);
+        }
     };
 
     return (
@@ -111,17 +145,17 @@ export default function LabOrderManagement() {
                                         <td className="px-4 py-4">
                                             <div className="flex flex-col gap-1">
                                                 <span className="font-bold text-gray-50 flex items-center gap-2">
-                                                    {order.id}
+                                                    {order.id.slice(0, 12)}...
                                                 </span>
-                                                <div className="text-gray-400 flex items-center gap-2 text-[12px]"><UserCircle size={14} className="text-gray-500" /> {order.patient}</div>
+                                                <div className="text-gray-400 flex items-center gap-2 text-[12px]"><UserCircle size={14} className="text-gray-500" /> {order.patient ? `${order.patient.firstName} ${order.patient.lastName}` : 'Unknown Patient'}</div>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="font-medium text-gray-200">{order.testName}</div>
-                                            <div className="text-[12px] text-emerald-400 mt-1">{order.requestedBy} • {order.priority} Pr.</div>
+                                            <div className="text-[12px] text-emerald-400 mt-1">{order.visit?.doctor ? `Dr. ${order.visit.doctor.lastName}` : 'N/A'} • {order.priority || 'Routine'} Pr.</div>
                                         </td>
                                         <td className="px-4 py-4 text-right">
-                                            <span className="text-gray-300 font-medium">{order.date}</span>
+                                            <span className="text-gray-300 font-medium">{new Date(order.createdAt).toLocaleDateString()}</span>
                                         </td>
                                     </tr>
                                 ))}
@@ -146,11 +180,11 @@ export default function LabOrderManagement() {
                             <div className="bg-white rounded-[16px] p-4 text-slate-800 shadow-xl">
                                 <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
                                     <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
-                                        {selectedOrder.patient.charAt(0)}
+                                        {selectedOrder.patient?.firstName?.charAt(0) || 'U'}
                                     </div>
                                     <div>
-                                        <div className="font-bold text-[15px]">{selectedOrder.patient}</div>
-                                        <div className="text-[12px] text-gray-500 mt-0.5">{selectedOrder.id} • {selectedOrder.priority} Priority</div>
+                                        <div className="font-bold text-[15px]">{selectedOrder.patient ? `${selectedOrder.patient.firstName} ${selectedOrder.patient.lastName}` : 'Unknown Patient'}</div>
+                                        <div className="text-[12px] text-gray-500 mt-0.5">{selectedOrder.id.slice(0, 15)}... • {selectedOrder.priority || 'Routine'} Priority</div>
                                     </div>
                                 </div>
                                 <div className="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-[8px] text-[13px] font-semibold flex items-center justify-between mb-2">
