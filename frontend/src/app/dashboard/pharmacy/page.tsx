@@ -207,152 +207,179 @@ export default function PharmacyPage() {
                 {activeTab === 'inventory' && (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                        {/* 70% Inventory Section */}
+                        {/* Left Side: Orders/Inventory Table */}
                         <div className="lg:col-span-8 space-y-6">
-                            <Card padding="none" className="overflow-hidden">
-                                <div className="p-5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
-                                    <h2 className="font-semibold text-gray-50 uppercase text-sm tracking-wider">Drug Inventory</h2>
+                            <div className="bg-white rounded-[16px] overflow-hidden border border-gray-200 h-full shadow-xl">
+                                <div className="p-5 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                                    <h2 className="font-semibold text-gray-700 uppercase text-sm tracking-wider">Drug Inventory</h2>
                                     <Badge variant="neutral">{inventory.length} SKUs Listed</Badge>
                                 </div>
-
-                                <div className="p-0">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Drug Name</TableHead>
-                                                <TableHead>Manufacturer</TableHead>
-                                                <TableHead>Stock Level</TableHead>
-                                                <TableHead>Price</TableHead>
-                                                <TableHead className="text-right">Action</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {inventory.map(drug => (
-                                                <TableRow key={drug.id}>
-                                                    <TableCell>
-                                                        <div className="font-semibold text-gray-50">{drug.drugName}</div>
-                                                        <div className="text-[12px] text-gray-400 mt-0.5">Exp: {new Date(drug.expiryDate).toLocaleDateString()}</div>
-                                                    </TableCell>
-                                                    <TableCell className="text-gray-300">{drug.manufacturer}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={drug.stockQuantity > 100 ? 'success' : 'danger'}>
-                                                            {drug.stockQuantity} Units
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-gray-300">₹{drug.unitPrice.toFixed(2)}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => addToCart(drug)}
-                                                            disabled={drug.stockQuantity === 0}
-                                                        >
-                                                            Add to Cart
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </Card>
+                                <table className="w-full text-left text-[13px] text-gray-700">
+                                    <thead className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-200">
+                                        <tr>
+                                            <th className="font-medium px-4 py-3">Drug Name</th>
+                                            <th className="font-medium px-4 py-3">Manufacturer</th>
+                                            <th className="font-medium px-4 py-3">Stock Level</th>
+                                            <th className="font-medium px-4 py-3 text-right">Price</th>
+                                            <th className="font-medium px-4 py-3 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 font-medium">
+                                        {inventory.map((drug, idx) => (
+                                            <tr key={drug.id} className="hover:bg-gray-50 transition cursor-pointer">
+                                                <TableCell>
+                                                    <div className="font-semibold text-gray-800 flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div> {drug.drugName}
+                                                    </div>
+                                                    <div className="text-[12px] text-gray-400 mt-0.5 ml-3.5">Exp: {new Date(drug.expiryDate).toLocaleDateString()}</div>
+                                                </TableCell>
+                                                <TableCell className="text-gray-500">{drug.manufacturer}</TableCell>
+                                                <TableCell>
+                                                    <span className={`px-2 py-1 rounded-[6px] text-xs font-bold ${drug.stockQuantity > 100 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
+                                                        {drug.stockQuantity} Units
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-gray-500 text-right">₹{drug.unitPrice.toFixed(2)}</TableCell>
+                                                <TableCell className="text-right py-2">
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-[#1e293b] hover:bg-[#0f172a] text-white border-transparent h-8"
+                                                        onClick={() => addToCart(drug)}
+                                                        disabled={drug.stockQuantity === 0}
+                                                    >
+                                                        Add to Cart
+                                                    </Button>
+                                                </TableCell>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        {/* 30% Dispatch Billing Cart */}
-                        <div className="lg:col-span-4 space-y-6 sticky top-0">
-                            <Card padding="none" className="flex flex-col min-h-[600px]">
-                                <div className="p-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center rounded-t-[8px]">
-                                    <h2 className="font-bold flex items-center gap-2 text-gray-50"><ShoppingCart size={18} /> Dispense Cart</h2>
-                                    <Badge variant="neutral">{cart.length} items</Badge>
+                        {/* Right Side: Quick Actions & Cart (Inventory Alert Replica) */}
+                        <div className="lg:col-span-4 flex flex-col gap-6 sticky top-0">
+
+                            {/* QUICK ACTIONS Block */}
+                            <div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-bold text-[13px] tracking-widest text-gray-50">QUICK ACTIONS</h3>
+                                    <div className="flex gap-1">
+                                        <div className="w-1 h-1 rounded-full bg-gray-500"></div><div className="w-1 h-1 rounded-full bg-gray-500"></div><div className="w-1 h-1 rounded-full bg-gray-500"></div>
+                                    </div>
                                 </div>
-
-                                <div className="p-5 border-b border-slate-800">
-                                    <h4 className="text-[12px] font-semibold text-gray-400 mb-3 uppercase tracking-wider">Billing Patient</h4>
-                                    {selectedPatient ? (
-                                        <div className="flex justify-between items-center bg-slate-800 p-3 rounded-[8px] border border-slate-700">
-                                            <div>
-                                                <div className="font-semibold text-gray-50 text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</div>
-                                                <div className="text-[12px] text-gray-400 mt-0.5">{selectedPatient.uhid}</div>
-                                            </div>
-                                            <button onClick={() => setSelectedPatient(null)} className="text-red-400 hover:text-red-300 text-xs font-semibold">Cancel</button>
+                                <div className="bg-white rounded-[16px] p-4 text-slate-800 shadow-xl border border-gray-100">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg">
+                                            R
                                         </div>
-                                    ) : (
-                                        <div className="flex gap-2">
-                                            <Input
-                                                placeholder="Search UHID..."
-                                                value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
-                                                onKeyDown={e => e.key === 'Enter' && executeSearch()}
-                                            />
-                                            <Button variant="secondary" onClick={executeSearch} className="px-4"><Search size={16} /></Button>
-                                        </div>
-                                    )}
-
-                                    {!selectedPatient && patients.length > 0 && (
-                                        <div className="mt-3 text-sm border border-slate-800 rounded-[8px] overflow-hidden bg-slate-950 max-h-32 overflow-y-auto custom-scrollbar shadow-inner">
-                                            {patients.map(p => (
-                                                <div key={p.id} onClick={() => { setSelectedPatient(p); setPatients([]); setSearchQuery(''); }} className="p-3 border-b border-slate-800 last:border-0 hover:bg-slate-800 cursor-pointer transition-colors">
-                                                    <strong className="text-gray-50">{p.firstName} {p.lastName}</strong> <span className="text-gray-400 text-[12px]">({p.uhid})</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex-1 p-5 overflow-y-auto space-y-3 custom-scrollbar">
-                                    {cart.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center bg-slate-950 border border-slate-800 p-3.5 rounded-[8px] text-sm">
-                                            <div className="flex-1">
-                                                <div className="font-semibold text-gray-50">{item.drugName}</div>
-                                                <div className="text-gray-400 text-[12px] mt-0.5">₹{item.unitPrice} per unit</div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    className="w-16 h-8 px-2 border border-slate-700 bg-slate-900 rounded-[6px] text-center text-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                                    value={item.quantity}
-                                                    onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
-                                                    min={0}
-                                                    max={item.stockQuantity}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {cart.length === 0 && (
-                                        <div className="h-full flex flex-col items-center justify-center text-slate-500">
-                                            <ShoppingCart size={40} className="mb-3 opacity-20" />
-                                            <p className="text-sm">Cart is currently empty.</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="p-5 bg-slate-950 border-t border-slate-800 shrink-0">
-                                    <div className="space-y-2 mb-4">
-                                        <div className="flex justify-between text-[13px] text-gray-400">
-                                            <span>Subtotal</span>
-                                            <span>₹{cartSubTotal.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-[13px] text-gray-400">
-                                            <span>GST (12%)</span>
-                                            <span>₹{cartGST.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-lg font-bold text-gray-50 border-t border-slate-800 pt-3 mt-1">
-                                            <span>Net Payable</span>
-                                            <span className="text-blue-400">₹{cartNet.toFixed(2)}</span>
+                                        <div>
+                                            <div className="font-bold text-sm">Pharmacist Access</div>
+                                            <div className="text-[11px] text-gray-500 mt-0.5">Dispense Management active</div>
+                                            <div className="text-[11px] text-gray-500">{new Date().toLocaleDateString()}</div>
                                         </div>
                                     </div>
-
-                                    <Button
-                                        onClick={handleDispense}
-                                        disabled={loading || cart.length === 0 || !selectedPatient}
-                                        fullWidth
-                                        size="lg"
-                                    >
-                                        Dispense & Generate Bill
-                                    </Button>
                                 </div>
-                            </Card>
+                            </div>
+
+                            {/* CART / SELECTED PATIENT Block */}
+                            <div className="flex-1">
+                                <h3 className="font-bold text-[13px] tracking-widest text-gray-50 mb-4 uppercase">Dispense Cart</h3>
+
+                                <div className="bg-white rounded-[16px] text-slate-800 h-full flex flex-col border border-gray-100 shadow-xl overflow-hidden pb-4">
+
+                                    <div className="p-4 bg-gray-50 border-b border-gray-200">
+                                        <h4 className="text-[12px] font-semibold text-gray-500 mb-3 uppercase tracking-wider">Billing Patient</h4>
+                                        {selectedPatient ? (
+                                            <div className="flex justify-between items-center bg-white p-3 rounded-[8px] border border-gray-200 shadow-sm">
+                                                <div>
+                                                    <div className="font-semibold text-gray-800 text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</div>
+                                                    <div className="text-[12px] text-gray-500 mt-0.5">{selectedPatient.uhid}</div>
+                                                </div>
+                                                <button onClick={() => setSelectedPatient(null)} className="text-red-500 hover:text-red-600 text-xs font-semibold">Cancel</button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    placeholder="Search UHID..."
+                                                    value={searchQuery}
+                                                    onChange={e => setSearchQuery(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && executeSearch()}
+                                                    className="bg-white border-gray-300 text-gray-800 focus:ring-emerald-500"
+                                                />
+                                                <Button variant="secondary" onClick={executeSearch} className="px-4 bg-gray-200 text-gray-700 hover:bg-gray-300 border-transparent"><Search size={16} /></Button>
+                                            </div>
+                                        )}
+
+                                        {!selectedPatient && patients.length > 0 && (
+                                            <div className="mt-3 text-sm border border-gray-200 rounded-[8px] overflow-hidden bg-white max-h-32 overflow-y-auto shadow-inner">
+                                                {patients.map(p => (
+                                                    <div key={p.id} onClick={() => { setSelectedPatient(p); setPatients([]); setSearchQuery(''); }} className="p-3 border-b border-gray-100 last:border-0 hover:bg-emerald-50 cursor-pointer transition-colors">
+                                                        <strong className="text-gray-800">{p.firstName} {p.lastName}</strong> <span className="text-gray-500 text-[12px]">({p.uhid})</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Cart Items */}
+                                    <div className="flex-1 p-5 overflow-y-auto space-y-3">
+                                        {cart.map(item => (
+                                            <div key={item.id} className="flex justify-between items-center bg-gray-50 border border-gray-200 p-3.5 rounded-[8px] text-sm">
+                                                <div className="flex-1">
+                                                    <div className="font-semibold text-gray-800">{item.drugName}</div>
+                                                    <div className="text-gray-500 text-[12px] mt-0.5">₹{item.unitPrice} per unit</div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        className="w-16 h-8 px-2 border border-gray-300 bg-white rounded-[6px] text-center text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                                                        value={item.quantity}
+                                                        onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
+                                                        min={0}
+                                                        max={item.stockQuantity}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {cart.length === 0 && (
+                                            <div className="h-24 flex flex-col items-center justify-center text-gray-400 gap-2">
+                                                <ShoppingCart size={24} className="opacity-50" />
+                                                <p className="text-xs font-medium">Cart is currently empty</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Subtotal & Submit */}
+                                    <div className="px-5 pb-2">
+                                        <div className="bg-gray-50 border border-gray-200 rounded-[8px] p-4 mb-4">
+                                            <div className="flex justify-between text-[13px] text-gray-600 mb-2">
+                                                <span>Subtotal</span>
+                                                <span className="font-medium">₹{cartSubTotal.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-[13px] text-gray-600 mb-2">
+                                                <span>GST (12%)</span>
+                                                <span className="font-medium">₹{cartGST.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-200 pt-3 mt-1">
+                                                <span>Net Payable</span>
+                                                <span className="text-emerald-600">₹{cartNet.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={handleDispense}
+                                            disabled={loading || cart.length === 0 || !selectedPatient}
+                                            className="w-full bg-[#1eab89] hover:bg-[#189173] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-[8px] transition shadow-md uppercase tracking-wider text-[13px]"
+                                        >
+                                            Dispense & Generate Bill
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
                         </div>
+
                     </div>
                 )}
 

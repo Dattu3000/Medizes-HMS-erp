@@ -134,44 +134,90 @@ export default function PatientsPage() {
             <div className="pt-2">
                 {/* TAB 1: REGISTRATION */}
                 {activeTab === 'register' && (
-                    <Card padding="lg" className="max-w-[700px]">
+                    <div className="flex flex-col w-full">
                         {regSuccess ? (
-                            <div className="text-center py-10 fade-in">
-                                <CheckCircle2 className="mx-auto w-16 h-16 text-emerald-500 mb-4" />
-                                <h3 className="text-xl font-bold text-gray-50 mb-2">Patient Registered</h3>
-                                <p className="text-gray-400 mb-8">
-                                    Generated UHID: <span className="ml-2 font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-md">{regSuccess.patient.uhid}</span>
-                                </p>
-                                <Button variant="outline" onClick={() => setRegSuccess(null)}>Register Another Patient</Button>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleRegister} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <Input required label="First Name *" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
-                                    <Input required label="Last Name *" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
-                                    <Input required label="Age *" type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
-                                    <Select
-                                        required
-                                        label="Gender *"
-                                        value={form.gender}
-                                        onChange={e => setForm({ ...form, gender: e.target.value })}
-                                        options={[
-                                            { label: 'Male', value: 'Male' },
-                                            { label: 'Female', value: 'Female' },
-                                            { label: 'Other', value: 'Other' }
-                                        ]}
-                                    />
-                                    <Input required label="Mobile No. *" maxLength={10} value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
-                                    <Input label="Blood Group" placeholder="e.g. O+" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })} />
+                            <Card padding="lg" className="max-w-[700px]">
+                                <div className="text-center py-10 fade-in">
+                                    <CheckCircle2 className="mx-auto w-16 h-16 text-emerald-500 mb-4" />
+                                    <h3 className="text-xl font-bold text-gray-50 mb-2">Patient Registered</h3>
+                                    <p className="text-gray-400 mb-8">
+                                        Generated UHID: <span className="ml-2 font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-md">{regSuccess.patient.uhid}</span>
+                                    </p>
+                                    <Button variant="outline" onClick={() => setRegSuccess(null)}>Register Another Patient</Button>
                                 </div>
-                                <div className="pt-2">
-                                    <Button type="submit" disabled={loading} fullWidth>
-                                        {loading ? 'Processing...' : 'Register Patient'}
-                                    </Button>
+                            </Card>
+                        ) : (
+                            <form onSubmit={handleRegister} className="flex flex-col gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+                                    {/* Column 1: Patient Demographics */}
+                                    <div className="lg:col-span-4 flex flex-col">
+                                        <Card padding="lg" className="bg-[#1e293b] flex-1">
+                                            <h3 className="font-bold text-gray-50 text-[15px] mb-6">Patient Demographics</h3>
+                                            <div className="space-y-4">
+                                                <Input required label="First Name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
+                                                <Input required label="Last Name" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
+                                                <Input required label="Age" type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                                                <Select
+                                                    required
+                                                    label="Gender"
+                                                    value={form.gender}
+                                                    onChange={e => setForm({ ...form, gender: e.target.value })}
+                                                    options={[
+                                                        { label: 'Male', value: 'Male' },
+                                                        { label: 'Female', value: 'Female' },
+                                                        { label: 'Other', value: 'Other' }
+                                                    ]}
+                                                />
+                                                <Input label="Blood Group" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })} />
+                                            </div>
+                                        </Card>
+                                    </div>
+
+                                    {/* Column 2: Contact Information */}
+                                    <div className="lg:col-span-4 flex flex-col">
+                                        <Card padding="lg" className="bg-[#1e293b] flex-1">
+                                            <h3 className="font-bold text-gray-50 text-[15px] mb-6">Contact Information</h3>
+                                            <div className="space-y-4">
+                                                <Input required label="Mobile No." maxLength={10} value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
+                                                <Input label="Email Address" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                                                <Input label="City" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
+                                                <Input label="Detailed Address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+                                            </div>
+                                        </Card>
+                                    </div>
+
+                                    {/* Column 3: Quick Actions */}
+                                    <div className="lg:col-span-4 flex flex-col gap-6">
+                                        <Card padding="lg" className="bg-[#1e293b]">
+                                            <h3 className="font-bold text-gray-50 text-[13px] uppercase tracking-widest mb-4">Patient ID</h3>
+                                            <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-[12px] py-6 flex items-center justify-center">
+                                                <span className="text-[20px] font-bold text-emerald-400 tracking-wider">Auto-Generated</span>
+                                            </div>
+                                        </Card>
+                                        <Card padding="lg" className="bg-[#1e293b] flex-1">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h3 className="font-bold text-[13px] tracking-widest text-gray-50">ACTIONS</h3>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <Button type="submit" disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 border-transparent">
+                                                    {loading ? 'Processing...' : 'SAVE & GENERATE ID'}
+                                                </Button>
+                                                <Button type="button" variant="outline" className="w-full" onClick={() => setForm({ firstName: '', lastName: '', age: '', gender: 'Male', mobile: '', email: '', bloodGroup: '', city: '', address: '' })}>
+                                                    CANCEL / CLEAR
+                                                </Button>
+                                                <button type="button" onClick={() => setActiveTab('opd')} className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-700 border border-white/5 text-gray-200 rounded-[30px] px-5 py-3 transition mt-8">
+                                                    <div className="flex items-center gap-3">
+                                                        <Search size={18} className="text-gray-400" />
+                                                        <span className="text-sm font-medium">Search Existing</span>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </Card>
+                                    </div>
                                 </div>
                             </form>
                         )}
-                    </Card>
+                    </div>
                 )}
 
                 {/* TAB 2: OPD BOOKING AND BILLING */}
