@@ -20,6 +20,7 @@ export const getEmployees = async (req: Request, res: Response) => {
 export const getEmployeeProfile = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const userContext = (req as any).user;
         const employee = await prisma.employee.findUnique({
             where: { id: String(id) },
             include: {
@@ -31,6 +32,10 @@ export const getEmployeeProfile = async (req: Request, res: Response) => {
             }
         });
         if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+        // SOC 2 / GDPR Requirement: Log PII access
+        await logAudit(userContext.id, 'VIEW_EMPLOYEE_PROFILE', { viewedEmployeeId: id, userRole: userContext.role });
+
         res.status(200).json(employee);
     } catch (error) { res.status(500).json({ message: 'Error fetching profile', error }); }
 };
@@ -40,10 +45,16 @@ export const updateEmployeeProfile = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const data = req.body;
+        const userContext = (req as any).user;
+
         const updated = await prisma.employee.update({
             where: { id: String(id) },
             data
         });
+
+        // SOC 2 / GDPR Requirement: Log PII mutation
+        await logAudit(userContext.id, 'UPDATE_EMPLOYEE_PROFILE', { updatedEmployeeId: id, changes: Object.keys(data) });
+
         res.status(200).json(updated);
     } catch (error) { res.status(500).json({ message: 'Error updating profile', error }); }
 };
@@ -52,9 +63,14 @@ export const updateEmployeeProfile = async (req: Request, res: Response) => {
 export const uploadHrDocument = async (req: Request, res: Response) => {
     try {
         const { employeeId, title, url, type } = req.body;
+        const userContext = (req as any).user;
+
         const doc = await prisma.hrDocument.create({
             data: { employeeId, title, url, type, status: 'PENDING' }
         });
+
+        await logAudit(userContext.id, 'UPLOAD_HR_DOCUMENT', { employeeId, title, type });
+
         res.status(201).json(doc);
     } catch (error) { res.status(500).json({ message: 'Error adding document', error }); }
 };

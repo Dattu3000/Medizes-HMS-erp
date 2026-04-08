@@ -117,13 +117,13 @@ export default function PatientsPage() {
                 <div className="flex border-b border-white/10 bg-black/20">
                     <button
                         onClick={() => setActiveTab('register')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'register' ? 'border-blue-600 justify-center text-blue-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-all border-b-2 ${activeTab === 'register' ? 'border-blue-400 justify-center text-white bg-white/10' : 'border-transparent text-glass-body hover:text-glass-title hover:bg-white/5'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><Plus size={16} /> New Registration</div>
                     </button>
                     <button
                         onClick={() => setActiveTab('opd')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'opd' ? 'border-blue-600 justify-center text-blue-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
+                        className={`flex-1 py-4 font-medium text-sm transition-all border-b-2 ${activeTab === 'opd' ? 'border-blue-400 justify-center text-white bg-white/10' : 'border-transparent text-glass-body hover:text-glass-title hover:bg-white/5'}`}
                     >
                         <div className="flex justify-center items-center gap-2"><Stethoscope size={16} /> OPD Booking & Billing</div>
                     </button>
@@ -149,29 +149,29 @@ export default function PatientsPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label className="block text-sm font-medium text-white mb-1">First Name <span className="text-red-500">*</span></label>
-                                            <input required type="text" className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
+                                            <input required type="text" className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-white mb-1">Last Name <span className="text-red-500">*</span></label>
-                                            <input required type="text" className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
+                                            <input required type="text" className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-white mb-1">Age <span className="text-red-500">*</span></label>
-                                            <input required type="number" className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                                            <input required type="number" className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-white mb-1">Gender <span className="text-red-500">*</span></label>
-                                            <select required className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })}>
+                                            <select required className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })}>
                                                 <option>Male</option><option>Female</option><option>Other</option>
                                             </select>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-white mb-1">Mobile No. <span className="text-red-500">*</span></label>
-                                            <input required type="text" maxLength={10} className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
+                                            <input required type="text" maxLength={10} className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-white mb-1">Blood Group</label>
-                                            <input type="text" className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="O+" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })} />
+                                            <input type="text" className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="O+" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })} />
                                         </div>
                                     </div>
                                     <div className="border-t border-white/5 pt-6"></div>
@@ -214,7 +214,7 @@ export default function PatientsPage() {
                                         <input
                                             type="text"
                                             placeholder="Search UHID, Mobile, Name..."
-                                            className="flex-1 px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                            className="flex-1 px-4 py-2 bg-white/5 border border-white/20 text-white placeholder-white/30 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm backdrop-blur-sm"
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             onKeyDown={e => e.key === 'Enter' && executeSearch()}
@@ -259,7 +259,7 @@ export default function PatientsPage() {
                                         <div>
                                             <label className="block text-sm font-medium text-white mb-1">Assign Doctor</label>
                                             <select
-                                                className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                                                className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-black/40 text-white backdrop-blur-sm"
                                                 value={selectedDoctorId}
                                                 onChange={e => setSelectedDoctorId(e.target.value)}
                                             >
