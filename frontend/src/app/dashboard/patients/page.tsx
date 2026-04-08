@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Plus, Stethoscope, FileText, CheckCircle2 } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
+import { Card } from '@/components/ui/Card';
 
 export default function PatientsPage() {
     const [activeTab, setActiveTab] = useState<'register' | 'opd'>('register');
@@ -107,202 +111,177 @@ export default function PatientsPage() {
     };
 
     return (
-        <>
+        <div className="space-y-6 max-w-6xl">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-glass-title tracking-tight">Patient Management</h1>
+                <h1 className="text-[24px] font-semibold text-gray-50 tracking-tight">Patient Management</h1>
             </div>
 
-            <div className="liquid-glass-card rounded-xl    overflow-hidden">
-                {/* Tabs */}
-                <div className="flex border-b border-white/10 bg-black/20">
-                    <button
-                        onClick={() => setActiveTab('register')}
-                        className={`flex-1 py-4 font-medium text-sm transition-all border-b-2 ${activeTab === 'register' ? 'border-blue-400 justify-center text-white bg-white/10' : 'border-transparent text-glass-body hover:text-glass-title hover:bg-white/5'}`}
-                    >
-                        <div className="flex justify-center items-center gap-2"><Plus size={16} /> New Registration</div>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('opd')}
-                        className={`flex-1 py-4 font-medium text-sm transition-all border-b-2 ${activeTab === 'opd' ? 'border-blue-400 justify-center text-white bg-white/10' : 'border-transparent text-glass-body hover:text-glass-title hover:bg-white/5'}`}
-                    >
-                        <div className="flex justify-center items-center gap-2"><Stethoscope size={16} /> OPD Booking & Billing</div>
-                    </button>
-                </div>
+            <div className="flex border-b border-slate-800">
+                <button
+                    onClick={() => setActiveTab('register')}
+                    className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'register' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
+                >
+                    <Plus size={16} /> New Registration
+                </button>
+                <button
+                    onClick={() => setActiveTab('opd')}
+                    className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'opd' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
+                >
+                    <Stethoscope size={16} /> OPD Booking & Billing
+                </button>
+            </div>
 
-                <div className="p-6">
-                    {/* TAB 1: REGISTRATION */}
-                    {activeTab === 'register' && (
-                        <div>
-                            {regSuccess ? (
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center mb-6">
-                                    <div className="mx-auto w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-4">
-                                        <CheckCircle2 size={24} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-emerald-800 mb-2">Registration Successful</h3>
-                                    <p className="text-emerald-600">Patient UHID: <strong className="text-lg bg-emerald-100 px-3 py-1 rounded ml-2">{regSuccess.patient.uhid}</strong></p>
-                                    <button onClick={() => setRegSuccess(null)} className="mt-6 px-6 py-2 liquid-glass-button text-white border-emerald-500/50 rounded-lg text-sm font-medium transition-colors">
-                                        Register Another Patient
-                                    </button>
-                                </div>
-                            ) : (
-                                <form onSubmit={handleRegister} className="max-w-3xl mx-auto space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-white mb-1">First Name <span className="text-red-500">*</span></label>
-                                            <input required type="text" className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-white mb-1">Last Name <span className="text-red-500">*</span></label>
-                                            <input required type="text" className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-white mb-1">Age <span className="text-red-500">*</span></label>
-                                            <input required type="number" className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-white mb-1">Gender <span className="text-red-500">*</span></label>
-                                            <select required className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })}>
-                                                <option>Male</option><option>Female</option><option>Other</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-white mb-1">Mobile No. <span className="text-red-500">*</span></label>
-                                            <input required type="text" maxLength={10} className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-white mb-1">Blood Group</label>
-                                            <input type="text" className="w-full px-4 py-2 border border-white/20 bg-white/5 text-white placeholder-white/30 backdrop-blur-sm rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="O+" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })} />
-                                        </div>
-                                    </div>
-                                    <div className="border-t border-white/5 pt-6"></div>
-                                    <div className="flex justify-end pt-4 border-t border-white/10">
-                                        <button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow flex items-center gap-2">
-                                            {loading ? 'Processing...' : 'Generate UHID & Register'}
-                                        </button>
-                                    </div>
-                                </form>
-                            )}
-                        </div>
-                    )}
-
-                    {/* TAB 2: OPD BOOKING AND BILLING */}
-                    {activeTab === 'opd' && (
-                        <div className="max-w-4xl mx-auto flex flex-col gap-6">
-
-                            {/* Success Prompt Layer */}
-                            {opdSuccess && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-2">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2"><FileText size={20} /> OPD Token Generated</h3>
-                                            <p className="text-blue-700 mt-2">Token No: <strong className="bg-white px-2 py-1 rounded border border-blue-200 ml-1">{opdSuccess.visit?.tokenNo}</strong></p>
-                                            <p className="text-sm text-blue-600 mt-2">A Consultation Bill has been auto-queued at the billing counter.</p>
-                                        </div>
-                                        <button onClick={() => setOpdSuccess(null)} className="text-sm border border-blue-300 px-4 py-2 rounded bg-white hover:bg-blue-50 font-medium text-blue-700 transition">Book Another Visit</button>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {/* Step 1: Patient Selection */}
-                                <div>
-                                    <h3 className="text-md font-semibold text-glass-title mb-4 border-b border-white/5 pb-2 flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-xs text-glass-body font-bold">1</span>
-                                        Select Patient
-                                    </h3>
-                                    <div className="flex gap-2 mb-4">
-                                        <input
-                                            type="text"
-                                            placeholder="Search UHID, Mobile, Name..."
-                                            className="flex-1 px-4 py-2 bg-white/5 border border-white/20 text-white placeholder-white/30 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm backdrop-blur-sm"
-                                            value={searchQuery}
-                                            onChange={e => setSearchQuery(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && executeSearch()}
-                                        />
-                                        <button onClick={executeSearch} className="bg-slate-100 text-white px-4 py-2 rounded-lg hover:bg-slate-200 transition">
-                                            <Search size={18} />
-                                        </button>
-                                    </div>
-
-                                    {searchResults.length > 0 && (
-                                        <div className="border border-white/10 rounded-lg overflow-hidden flex flex-col max-h-64 overflow-y-auto bg-white mb-4 shadow-inner">
-                                            {searchResults.map((p) => (
-                                                <button
-                                                    key={p.id}
-                                                    onClick={() => setSelectedPatient(p)}
-                                                    className={`flex flex-col text-left p-3 border-b border-white/5 last:border-b-0 hover:bg-blue-50 transition-colors ${selectedPatient?.id === p.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent'}`}
-                                                >
-                                                    <span className="font-semibold text-glass-title text-sm">{p.firstName} {p.lastName}</span>
-                                                    <span className="text-xs text-glass-body">{p.uhid} • {p.mobile}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {selectedPatient && (
-                                        <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
-                                            <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">Selected Patient</p>
-                                            <p className="font-bold text-glass-title">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                                            <p className="text-sm text-glass-muted">{selectedPatient.uhid} • Age: {selectedPatient.age}</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Step 2: Doctor Selection & Bill Details */}
-                                <div className={`${!selectedPatient ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
-                                    <h3 className="text-md font-semibold text-glass-title mb-4 border-b border-white/5 pb-2 flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-xs text-glass-body font-bold">2</span>
-                                        Book & Invoice
-                                    </h3>
-
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-white mb-1">Assign Doctor</label>
-                                            <select
-                                                className="w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-black/40 text-white backdrop-blur-sm"
-                                                value={selectedDoctorId}
-                                                onChange={e => setSelectedDoctorId(e.target.value)}
-                                            >
-                                                <option value="">-- Select Specialist --</option>
-                                                {doctors.map(d => (
-                                                    <option key={d.id} value={d.id}>Dr. {d.firstName} {d.lastName} ({d.department})</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="bg-black/20 p-4 rounded-lg border border-white/10 mt-6 space-y-2">
-                                            <div className="flex justify-between text-sm text-glass-muted">
-                                                <span>Consultation Fee</span>
-                                                <span>₹500.00</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm text-glass-muted">
-                                                <span>Registration (First Visit)</span>
-                                                <span>₹100.00</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm text-glass-muted border-b border-white/10 pb-2">
-                                                <span>GST 18% (SAC: 999311)</span>
-                                                <span>₹108.00</span>
-                                            </div>
-                                            <div className="flex justify-between font-bold text-glass-title pt-1">
-                                                <span>Net Payable</span>
-                                                <span>₹708.00</span>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={handleBookVisit}
-                                            disabled={loading || !selectedDoctorId}
-                                            className="w-full mt-4 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white py-3 rounded-lg text-sm font-bold shadow flex items-center justify-center gap-2 transition"
-                                        >
-                                            <FileText size={18} /> Generate Token & Bill
-                                        </button>
-                                    </div>
-                                </div>
+            <div className="pt-2">
+                {/* TAB 1: REGISTRATION */}
+                {activeTab === 'register' && (
+                    <Card padding="lg" className="max-w-[700px]">
+                        {regSuccess ? (
+                            <div className="text-center py-10 fade-in">
+                                <CheckCircle2 className="mx-auto w-16 h-16 text-emerald-500 mb-4" />
+                                <h3 className="text-xl font-bold text-gray-50 mb-2">Patient Registered</h3>
+                                <p className="text-gray-400 mb-8">
+                                    Generated UHID: <span className="ml-2 font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-md">{regSuccess.patient.uhid}</span>
+                                </p>
+                                <Button variant="outline" onClick={() => setRegSuccess(null)}>Register Another Patient</Button>
                             </div>
+                        ) : (
+                            <form onSubmit={handleRegister} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <Input required label="First Name *" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
+                                    <Input required label="Last Name *" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
+                                    <Input required label="Age *" type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                                    <Select
+                                        required
+                                        label="Gender *"
+                                        value={form.gender}
+                                        onChange={e => setForm({ ...form, gender: e.target.value })}
+                                        options={[
+                                            { label: 'Male', value: 'Male' },
+                                            { label: 'Female', value: 'Female' },
+                                            { label: 'Other', value: 'Other' }
+                                        ]}
+                                    />
+                                    <Input required label="Mobile No. *" maxLength={10} value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
+                                    <Input label="Blood Group" placeholder="e.g. O+" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })} />
+                                </div>
+                                <div className="pt-2">
+                                    <Button type="submit" disabled={loading} fullWidth>
+                                        {loading ? 'Processing...' : 'Register Patient'}
+                                    </Button>
+                                </div>
+                            </form>
+                        )}
+                    </Card>
+                )}
+
+                {/* TAB 2: OPD BOOKING AND BILLING */}
+                {activeTab === 'opd' && (
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 max-w-5xl">
+
+                        {/* Step 1: Patient Selection */}
+                        <div className="col-span-1 md:col-span-7">
+                            <Card padding="md" className="h-full">
+                                <h3 className="text-sm font-semibold text-gray-50 mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
+                                    <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-gray-300 font-bold">1</span>
+                                    Select Patient
+                                </h3>
+
+                                <div className="flex gap-2 mb-4">
+                                    <Input
+                                        placeholder="Search UHID, Mobile, Name..."
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && executeSearch()}
+                                    />
+                                    <Button variant="secondary" onClick={executeSearch} className="px-4">
+                                        <Search size={18} />
+                                    </Button>
+                                </div>
+
+                                {searchResults.length > 0 && (
+                                    <div className="border border-slate-800 bg-slate-950 rounded-[8px] overflow-hidden flex flex-col max-h-64 overflow-y-auto mb-4 custom-scrollbar">
+                                        {searchResults.map((p) => (
+                                            <button
+                                                key={p.id}
+                                                onClick={() => setSelectedPatient(p)}
+                                                className={`flex flex-col text-left p-3 border-b border-slate-800 last:border-b-0 transition-colors ${selectedPatient?.id === p.id ? 'bg-slate-800 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent hover:bg-slate-900'}`}
+                                            >
+                                                <span className="font-semibold text-gray-50 text-sm">{p.firstName} {p.lastName}</span>
+                                                <span className="text-[12px] text-gray-400">{p.uhid} • {p.mobile}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {selectedPatient && (
+                                    <div className="bg-blue-500/10 rounded-[8px] p-4 border border-blue-500/20 mt-4 rounded-md">
+                                        <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider mb-1">Selected Patient</p>
+                                        <p className="font-semibold text-gray-50">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+                                        <p className="text-sm text-gray-400">{selectedPatient.uhid} • Age: {selectedPatient.age}</p>
+                                    </div>
+                                )}
+                            </Card>
                         </div>
-                    )}
-                </div>
+
+                        {/* Step 2: Doctor Selection & Bill Details */}
+                        <div className={`col-span-1 md:col-span-5 ${!selectedPatient ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
+                            <Card padding="md" className="h-full flex flex-col">
+                                <h3 className="text-sm font-semibold text-gray-50 mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
+                                    <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-gray-300 font-bold">2</span>
+                                    Book & Invoice
+                                </h3>
+
+                                <div className="space-y-4 flex-1">
+                                    <Select
+                                        label="Assign Doctor"
+                                        value={selectedDoctorId}
+                                        onChange={e => setSelectedDoctorId(e.target.value)}
+                                        options={[
+                                            { label: '-- Select Specialist --', value: '' },
+                                            ...doctors.map(d => ({ label: `Dr. ${d.firstName} ${d.lastName} (${d.department})`, value: d.id }))
+                                        ]}
+                                    />
+
+                                    <div className="bg-slate-950 p-4 rounded-[8px] border border-slate-800 space-y-2.5 mt-6">
+                                        <div className="flex justify-between text-[13px] text-gray-400">
+                                            <span>Consultation Fee</span>
+                                            <span className="text-gray-300">₹500.00</span>
+                                        </div>
+                                        <div className="flex justify-between text-[13px] text-gray-400">
+                                            <span>Registration (First Visit)</span>
+                                            <span className="text-gray-300">₹100.00</span>
+                                        </div>
+                                        <div className="flex justify-between text-[13px] text-gray-400 border-b border-slate-800 pb-3">
+                                            <span>GST 18% <span className="text-slate-500">(SAC: 999311)</span></span>
+                                            <span className="text-gray-300">₹108.00</span>
+                                        </div>
+                                        <div className="flex justify-between font-semibold text-gray-50 pt-1">
+                                            <span>Net Payable</span>
+                                            <span className="text-blue-400">₹708.00</span>
+                                        </div>
+                                    </div>
+
+                                    {opdSuccess && (
+                                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-[8px] p-3 text-emerald-400 text-sm flex items-center gap-2">
+                                            <CheckCircle2 size={16} /> Token {opdSuccess.visit?.tokenNo} Generated!
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-6">
+                                    <Button
+                                        onClick={handleBookVisit}
+                                        disabled={loading || !selectedDoctorId || opdSuccess}
+                                        fullWidth
+                                    >
+                                        <FileText size={16} className="mr-2" /> Generate Token & Bill
+                                    </Button>
+                                </div>
+                            </Card>
+                        </div>
+                    </div>
+                )}
             </div>
-        </>
+        </div>
     );
 }

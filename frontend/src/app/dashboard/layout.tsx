@@ -39,10 +39,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ];
 
     return (
-        <div className="flex h-screen liquid-bg">
+        <div className="flex h-screen bg-[#0F172A]">
             {/* Sidebar */}
-            <aside className="w-64 liquid-glass-card border-l-0 border-y-0 border-r border-white/10 rounded-none bg-black/40 text-white flex flex-col z-10 transition-all duration-300">
-                <div className="p-6 border-b border-slate-700/50">
+            <aside className="w-[240px] bg-[#020617] border-r border-[#1F2937] text-white flex flex-col z-10">
+                <div className="p-6 border-b border-[#1F2937]">
                     <h1 className="text-xl font-bold tracking-wider text-blue-400">MEDISYS <span className="text-white">HMS</span></h1>
                     <p className="text-xs text-slate-400 mt-1">Hospital ERP System</p>
                 </div>
@@ -56,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 <li key={item.name}>
                                     <Link
                                         href={item.href}
-                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive ? 'liquid-glass-panel text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-r-lg transition-colors border-l-[3px] ${isActive ? 'bg-[#111827] text-white border-blue-600' : 'text-slate-400 hover:bg-[#111827] hover:text-white border-transparent'}`}
                                     >
                                         <Icon size={18} />
                                         <span className="text-sm font-medium">{item.name}</span>
@@ -67,10 +67,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </ul>
                 </nav>
 
-                <div className="p-4 border-t border-white/10">
+                <div className="p-4 border-t border-[#1F2937]">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 text-sm text-rose-300 bg-rose-500/20 border border-rose-500/30 hover:bg-rose-500/30 w-full px-3 py-2.5 rounded-lg transition-all duration-200"
+                        className="flex items-center gap-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 w-full px-3 py-2.5 rounded-lg transition-colors"
                     >
                         <LogOut size={18} />
                         <span>Secure Logout</span>
@@ -79,10 +79,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Main Content Pane */}
-            <main className="flex-1 flex flex-col overflow-hidden relative">
-                {/* Main Dashboard Space */}
+            <main className="flex-1 flex flex-col overflow-hidden bg-[#0F172A]">
+                {/* 60px Top Bar */}
+                <header className="h-[60px] border-b border-[#1F2937] bg-[#111827] flex items-center justify-between px-8 shrink-0">
+                    <div className="text-sm text-gray-400 font-medium tracking-wide flex items-center gap-2">
+                        <span className="text-blue-500 font-semibold">MEDISYS</span> <span className="text-gray-600">/</span> <span className="text-gray-100">DASHBOARD</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-[#0F172A]">
+                            AD
+                        </div>
+                    </div>
+                </header>
 
-                <div className="flex-1 overflow-y-auto p-8 relative z-10">
+                {/* Main Dashboard Space */}
+                <div className="flex-1 overflow-y-auto p-8 relative">
                     {children}
                 </div>
             </main>

@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Pill, Search, Stethoscope, ShoppingCart, CheckCircle2, UploadCloud, Download } from 'lucide-react';
+import { Pill, Search, ShoppingCart, UploadCloud, Download, CheckCircle2 } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table';
 
 export default function PharmacyPage() {
     const [activeTab, setActiveTab] = useState<'inventory' | 'assets'>('inventory');
@@ -13,7 +18,8 @@ export default function PharmacyPage() {
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
     // Asset Management State
-    const [medForm, setMedForm] = useState({ drugName: '', manufacturer: '', batchNo: '', expiryDate: '', stockQuantity: '', unitPrice: '' });        // Cart state: array of { id, drugName, unitPrice, quantity, stockQuantity }
+    const [medForm, setMedForm] = useState({ drugName: '', manufacturer: '', batchNo: '', expiryDate: '', stockQuantity: '', unitPrice: '' });
+    // Cart state: array of { id, drugName, unitPrice, quantity, stockQuantity }
     const [cart, setCart] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -130,7 +136,6 @@ export default function PharmacyPage() {
             const text = event.target?.result as string;
             const lines = text.split('\n').map(line => line.trim()).filter(line => line);
 
-            // Assume CSV header: drugName,manufacturer,batchNo,expiryDate,stockQuantity,unitPrice
             const medicines = lines.slice(1).map(line => {
                 const parts = line.split(',');
                 return {
@@ -166,7 +171,7 @@ export default function PharmacyPage() {
                 alert("Error importing CSV");
             }
             setLoading(false);
-            e.target.value = ''; // reset input file
+            e.target.value = '';
         };
         reader.readAsText(file);
     };
@@ -176,222 +181,230 @@ export default function PharmacyPage() {
     const cartNet = cartSubTotal + cartGST;
 
     return (
-        <>
+        <div className="space-y-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-glass-title tracking-tight flex items-center gap-2">
-                    <Pill className="text-emerald-500" /> Pharmacy & Dispatch
+                <h1 className="text-[24px] font-semibold text-gray-50 tracking-tight flex items-center gap-2">
+                    <Pill className="text-blue-500" /> Pharmacy & Dispatch
                 </h1>
             </div>
 
-            <div className="liquid-glass-card rounded-xl    overflow-hidden mb-6">
-                <div className="flex border-b border-white/10 bg-black/20">
-                    <button
-                        onClick={() => setActiveTab('inventory')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'inventory' ? 'border-emerald-500 justify-center text-emerald-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
-                    >
-                        <div className="flex justify-center items-center gap-2"><ShoppingCart size={16} /> Inventory & Dispense</div>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('assets')}
-                        className={`flex-1 py-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'assets' ? 'border-emerald-500 justify-center text-emerald-600 bg-white' : 'border-transparent text-glass-body hover:text-glass-title'}`}
-                    >
-                        <div className="flex justify-center items-center gap-2"><Pill size={16} /> Asset Management</div>
-                    </button>
-                </div>
+            <div className="flex border-b border-slate-800">
+                <button
+                    onClick={() => setActiveTab('inventory')}
+                    className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'inventory' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
+                >
+                    <ShoppingCart size={16} /> Inventory & Dispense
+                </button>
+                <button
+                    onClick={() => setActiveTab('assets')}
+                    className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'assets' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
+                >
+                    <Pill size={16} /> Asset Management
+                </button>
             </div>
 
-            {activeTab === 'inventory' && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="pt-2">
+                {activeTab === 'inventory' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                    {/* Inventory Section */}
-                    <div className="md:col-span-8 space-y-6">
-                        <div className="liquid-glass-card rounded-xl    overflow-hidden">
-                            <div className="p-4 bg-black/20 border-b border-white/10 flex justify-between items-center">
-                                <h2 className="font-bold text-glass-title">Drug Inventory</h2>
-                            </div>
-                            <div className="p-4 overflow-x-auto">
-                                <table className="w-full text-left text-sm text-glass-muted">
-                                    <thead className="bg-black/20 text-glass-body font-semibold border-b border-white/10">
-                                        <tr>
-                                            <th className="p-3">Drug Name</th>
-                                            <th className="p-3">Manufacturer</th>
-                                            <th className="p-3">Stock Limit</th>
-                                            <th className="p-3">Price</th>
-                                            <th className="p-3 text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {inventory.map(drug => (
-                                            <tr key={drug.id} className="hover:bg-black/20">
-                                                <td className="p-3 font-semibold text-glass-title">{drug.drugName} <br /><span className="text-xs text-slate-400 font-normal">Exp: {new Date(drug.expiryDate).toLocaleDateString()}</span></td>
-                                                <td className="p-3">{drug.manufacturer}</td>
-                                                <td className="p-3">
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${drug.stockQuantity > 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                                        {drug.stockQuantity}
-                                                    </span>
-                                                </td>
-                                                <td className="p-3">₹{drug.unitPrice.toFixed(2)}</td>
-                                                <td className="p-3 text-right">
-                                                    <button
-                                                        onClick={() => addToCart(drug)}
-                                                        disabled={drug.stockQuantity === 0}
-                                                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1 rounded shadow-sm transition disabled:opacity-50"
-                                                    >
-                                                        Add to Cart
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                        {/* 70% Inventory Section */}
+                        <div className="lg:col-span-8 space-y-6">
+                            <Card padding="none" className="overflow-hidden">
+                                <div className="p-5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                                    <h2 className="font-semibold text-gray-50 uppercase text-sm tracking-wider">Drug Inventory</h2>
+                                    <Badge variant="neutral">{inventory.length} SKUs Listed</Badge>
+                                </div>
+
+                                <div className="p-0">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Drug Name</TableHead>
+                                                <TableHead>Manufacturer</TableHead>
+                                                <TableHead>Stock Level</TableHead>
+                                                <TableHead>Price</TableHead>
+                                                <TableHead className="text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {inventory.map(drug => (
+                                                <TableRow key={drug.id}>
+                                                    <TableCell>
+                                                        <div className="font-semibold text-gray-50">{drug.drugName}</div>
+                                                        <div className="text-[12px] text-gray-400 mt-0.5">Exp: {new Date(drug.expiryDate).toLocaleDateString()}</div>
+                                                    </TableCell>
+                                                    <TableCell className="text-gray-300">{drug.manufacturer}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={drug.stockQuantity > 100 ? 'success' : 'danger'}>
+                                                            {drug.stockQuantity} Units
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-gray-300">₹{drug.unitPrice.toFixed(2)}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => addToCart(drug)}
+                                                            disabled={drug.stockQuantity === 0}
+                                                        >
+                                                            Add to Cart
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </Card>
                         </div>
-                    </div>
 
-                    {/* Dispatch Billing Cart */}
-                    <div className="md:col-span-4 space-y-6">
-                        <div className="liquid-glass-card rounded-xl    flex flex-col h-[600px]">
-                            <div className="p-4 bg-slate-800 text-white flex justify-between items-center rounded-t-xl">
-                                <h2 className="font-bold flex items-center gap-2"><ShoppingCart size={18} /> Dispense Cart</h2>
-                                <span className="bg-slate-700 px-2 py-1 rounded font-bold text-xs">{cart.length} items</span>
-                            </div>
+                        {/* 30% Dispatch Billing Cart */}
+                        <div className="lg:col-span-4 space-y-6 sticky top-0">
+                            <Card padding="none" className="flex flex-col min-h-[600px]">
+                                <div className="p-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center rounded-t-[8px]">
+                                    <h2 className="font-bold flex items-center gap-2 text-gray-50"><ShoppingCart size={18} /> Dispense Cart</h2>
+                                    <Badge variant="neutral">{cart.length} items</Badge>
+                                </div>
 
-                            <div className="p-4 border-b border-white/10">
-                                <label className="block text-xs font-semibold text-glass-body mb-2">Billing Patient</label>
-                                {selectedPatient ? (
-                                    <div className="flex justify-between items-center bg-sky-50 p-3 rounded border border-sky-100">
-                                        <div>
-                                            <div className="font-bold text-sky-900 text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</div>
-                                            <div className="text-xs text-sky-600">{selectedPatient.uhid}</div>
-                                        </div>
-                                        <button onClick={() => setSelectedPatient(null)} className="text-rose-500 text-xs">Clear</button>
-                                    </div>
-                                ) : (
-                                    <div className="flex gap-2">
-                                        <input type="text" placeholder="Search UHID..." className="flex-1 px-3 py-2 border rounded-lg text-sm" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && executeSearch()} />
-                                        <button onClick={executeSearch} className="bg-slate-100 px-3 py-2 rounded-lg"><Search size={16} /></button>
-                                    </div>
-                                )}
-
-                                {!selectedPatient && patients.length > 0 && (
-                                    <div className="mt-2 text-sm border rounded-lg overflow-hidden border-white/10 shadow-sm max-h-32 overflow-y-auto">
-                                        {patients.map(p => (
-                                            <div key={p.id} onClick={() => { setSelectedPatient(p); setPatients([]); setSearchQuery(''); }} className="p-2 border-b last:border-0 hover:bg-black/20 cursor-pointer">
-                                                <strong>{p.firstName} {p.lastName}</strong> ({p.uhid})
+                                <div className="p-5 border-b border-slate-800">
+                                    <h4 className="text-[12px] font-semibold text-gray-400 mb-3 uppercase tracking-wider">Billing Patient</h4>
+                                    {selectedPatient ? (
+                                        <div className="flex justify-between items-center bg-slate-800 p-3 rounded-[8px] border border-slate-700">
+                                            <div>
+                                                <div className="font-semibold text-gray-50 text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</div>
+                                                <div className="text-[12px] text-gray-400 mt-0.5">{selectedPatient.uhid}</div>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex-1 p-4 overflow-y-auto space-y-3">
-                                {cart.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center bg-white border border-white/10 p-3 rounded shadow-sm text-sm">
-                                        <div className="flex-1">
-                                            <div className="font-bold text-glass-title">{item.drugName}</div>
-                                            <div className="text-glass-body text-xs">₹{item.unitPrice} per unit</div>
+                                            <button onClick={() => setSelectedPatient(null)} className="text-red-400 hover:text-red-300 text-xs font-semibold">Cancel</button>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                className="w-16 p-1 border rounded text-center"
-                                                value={item.quantity}
-                                                onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
-                                                min={0}
-                                                max={item.stockQuantity}
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Search UHID..."
+                                                value={searchQuery}
+                                                onChange={e => setSearchQuery(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && executeSearch()}
                                             />
+                                            <Button variant="secondary" onClick={executeSearch} className="px-4"><Search size={16} /></Button>
+                                        </div>
+                                    )}
+
+                                    {!selectedPatient && patients.length > 0 && (
+                                        <div className="mt-3 text-sm border border-slate-800 rounded-[8px] overflow-hidden bg-slate-950 max-h-32 overflow-y-auto custom-scrollbar shadow-inner">
+                                            {patients.map(p => (
+                                                <div key={p.id} onClick={() => { setSelectedPatient(p); setPatients([]); setSearchQuery(''); }} className="p-3 border-b border-slate-800 last:border-0 hover:bg-slate-800 cursor-pointer transition-colors">
+                                                    <strong className="text-gray-50">{p.firstName} {p.lastName}</strong> <span className="text-gray-400 text-[12px]">({p.uhid})</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex-1 p-5 overflow-y-auto space-y-3 custom-scrollbar">
+                                    {cart.map(item => (
+                                        <div key={item.id} className="flex justify-between items-center bg-slate-950 border border-slate-800 p-3.5 rounded-[8px] text-sm">
+                                            <div className="flex-1">
+                                                <div className="font-semibold text-gray-50">{item.drugName}</div>
+                                                <div className="text-gray-400 text-[12px] mt-0.5">₹{item.unitPrice} per unit</div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    className="w-16 h-8 px-2 border border-slate-700 bg-slate-900 rounded-[6px] text-center text-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                    value={item.quantity}
+                                                    onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
+                                                    min={0}
+                                                    max={item.stockQuantity}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {cart.length === 0 && (
+                                        <div className="h-full flex flex-col items-center justify-center text-slate-500">
+                                            <ShoppingCart size={40} className="mb-3 opacity-20" />
+                                            <p className="text-sm">Cart is currently empty.</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-5 bg-slate-950 border-t border-slate-800 shrink-0">
+                                    <div className="space-y-2 mb-4">
+                                        <div className="flex justify-between text-[13px] text-gray-400">
+                                            <span>Subtotal</span>
+                                            <span>₹{cartSubTotal.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-[13px] text-gray-400">
+                                            <span>GST (12%)</span>
+                                            <span>₹{cartGST.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-lg font-bold text-gray-50 border-t border-slate-800 pt-3 mt-1">
+                                            <span>Net Payable</span>
+                                            <span className="text-blue-400">₹{cartNet.toFixed(2)}</span>
                                         </div>
                                     </div>
-                                ))}
-                                {cart.length === 0 && <div className="text-center text-slate-400 mt-10">Cart is empty.</div>}
-                            </div>
 
-                            <div className="p-4 bg-black/20 border-t border-white/10 rounded-b-xl space-y-2">
-                                <div className="flex justify-between text-sm text-glass-muted">
-                                    <span>Subtotal</span>
-                                    <span>₹{cartSubTotal.toFixed(2)}</span>
+                                    <Button
+                                        onClick={handleDispense}
+                                        disabled={loading || cart.length === 0 || !selectedPatient}
+                                        fullWidth
+                                        size="lg"
+                                    >
+                                        Dispense & Generate Bill
+                                    </Button>
                                 </div>
-                                <div className="flex justify-between text-sm text-glass-muted">
-                                    <span>GST (12%)</span>
-                                    <span>₹{cartGST.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between text-lg font-bold text-glass-title border-t border-white/20 pt-2 mt-2">
-                                    <span>Net Payable</span>
-                                    <span>₹{cartNet.toFixed(2)}</span>
-                                </div>
-
-                                <button
-                                    onClick={handleDispense}
-                                    disabled={loading || cart.length === 0 || !selectedPatient}
-                                    className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg shadow-md transition"
-                                >
-                                    Dispense & Generate Bill
-                                </button>
-                            </div>
+                            </Card>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {activeTab === 'assets' && (
-                <div className="max-w-4xl mx-auto space-y-6 mt-4">
-
-                    {/* Bulk Upload Feature */}
-                    <div className="liquid-glass-card p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <div>
-                                <h3 className="font-bold text-glass-title text-lg">Bulk Import Inventory</h3>
-                                <p className="text-sm text-glass-body">Upload a CSV file to automatically log multiple medicines.</p>
-                            </div>
-                            <a href={`data:text/csv;charset=utf-8,${encodeURIComponent("drugName,manufacturer,batchNo,expiryDate,stockQuantity,unitPrice\nParacetamol 500mg,Cipla,BT-1234,2025-12-31,500,2.50\nAspirin 75mg,Bayer,BY-999,2026-05-15,1000,1.25")}`} download="template_pharmacy.csv" className="flex items-center gap-2 text-sm text-sky-600 hover:text-sky-800 font-medium">
-                                <Download size={16} /> Download Template
-                            </a>
-                        </div>
-                        <div className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:bg-black/20 transition cursor-pointer relative">
-                            <input type="file" accept=".csv" onChange={handleCSVUpload} disabled={loading} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" />
-                            <UploadCloud className="mx-auto text-slate-400 mb-2" size={32} />
-                            <p className="font-bold text-white">Click to upload CSV</p>
-                            <p className="text-xs text-glass-body mt-1">or drag and drop here</p>
-                        </div>
-                    </div>
-
-                    {/* Manual Entry Form */}
-                    <div className="bg-black/20 border border-white/10 p-6 rounded-xl">
-                        <h3 className="font-bold text-glass-title mb-4 border-b border-white/10 pb-2">Manual Entry: Add Single Medicine</h3>
-                        <form onSubmit={handleAddMedicine} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-white mb-1">Drug Name *</label>
-                                    <input required type="text" className="w-full text-sm border-white/20 rounded-lg p-2" placeholder="e.g. Paracetamol 500mg" value={medForm.drugName} onChange={e => setMedForm({ ...medForm, drugName: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-white mb-1">Manufacturer</label>
-                                    <input type="text" className="w-full text-sm border-white/20 rounded-lg p-2" placeholder="e.g. Cipla" value={medForm.manufacturer} onChange={e => setMedForm({ ...medForm, manufacturer: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-white mb-1">Batch Number *</label>
-                                    <input required type="text" className="w-full text-sm border-white/20 rounded-lg p-2" placeholder="e.g. BT-8492" value={medForm.batchNo} onChange={e => setMedForm({ ...medForm, batchNo: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-white mb-1">Expiry Date *</label>
-                                    <input required type="date" className="w-full text-sm border-white/20 rounded-lg p-2" value={medForm.expiryDate} onChange={e => setMedForm({ ...medForm, expiryDate: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-white mb-1">Initial Stock Quantity *</label>
-                                    <input required type="number" min="1" className="w-full text-sm border-white/20 rounded-lg p-2" value={medForm.stockQuantity} onChange={e => setMedForm({ ...medForm, stockQuantity: e.target.value })} />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-white mb-1">Unit Price (₹) *</label>
-                                    <input required type="number" step="0.01" min="0" className="w-full text-sm border-white/20 rounded-lg p-2" value={medForm.unitPrice} onChange={e => setMedForm({ ...medForm, unitPrice: e.target.value })} />
+                {activeTab === 'assets' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl items-start">
+                        {/* Bulk Upload Feature */}
+                        <Card padding="lg">
+                            <div className="flex flex-col mb-6 pb-4 border-b border-slate-800">
+                                <h3 className="font-semibold text-gray-50 text-lg mb-1">Bulk Import Inventory</h3>
+                                <div className="flex justify-between items-center w-full">
+                                    <p className="text-[13px] text-gray-400">Upload a CSV file to automatically log medicines.</p>
+                                    <a href={`data:text/csv;charset=utf-8,${encodeURIComponent("drugName,manufacturer,batchNo,expiryDate,stockQuantity,unitPrice\nParacetamol 500mg,Cipla,BT-1234,2025-12-31,500,2.50\nAspirin 75mg,Bayer,BY-999,2026-05-15,1000,1.25")}`} download="template_pharmacy.csv" className="flex items-center gap-1 text-[12px] text-blue-500 hover:text-blue-400 font-medium">
+                                        <Download size={14} /> Download Template
+                                    </a>
                                 </div>
                             </div>
-                            <button type="submit" disabled={loading} className="w-full liquid-glass-button text-white border-emerald-500/50 font-bold py-2.5 rounded-lg shadow transition mt-4">
-                                Stock Medicine Update
-                            </button>
-                        </form>
+
+                            <div className="border-2 border-dashed border-slate-700 bg-slate-900 rounded-[12px] p-10 text-center hover:bg-slate-800 hover:border-slate-600 transition-colors cursor-pointer relative group">
+                                <input type="file" accept=".csv" onChange={handleCSVUpload} disabled={loading} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10" />
+                                <div className="flex flex-col items-center justify-center space-y-3 relative z-0">
+                                    <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-gray-400 group-hover:bg-slate-700 group-hover:text-blue-400 transition-colors">
+                                        <UploadCloud size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-50">Click to upload CSV</p>
+                                        <p className="text-[12px] text-gray-400 mt-0.5">or drag and drop here</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Manual Entry Form */}
+                        <Card padding="lg">
+                            <h3 className="font-semibold text-gray-50 text-md mb-6 border-b border-slate-800 pb-2">Manual Entry: Single Item</h3>
+                            <form onSubmit={handleAddMedicine} className="space-y-4">
+                                <Input required label="Drug Name *" placeholder="e.g. Paracetamol 500mg" value={medForm.drugName} onChange={e => setMedForm({ ...medForm, drugName: e.target.value })} />
+                                <Input label="Manufacturer" placeholder="e.g. Cipla" value={medForm.manufacturer} onChange={e => setMedForm({ ...medForm, manufacturer: e.target.value })} />
+                                <Input required label="Batch Number *" placeholder="e.g. BT-8492" value={medForm.batchNo} onChange={e => setMedForm({ ...medForm, batchNo: e.target.value })} />
+                                <Input required type="date" label="Expiry Date *" value={medForm.expiryDate} onChange={e => setMedForm({ ...medForm, expiryDate: e.target.value })} />
+                                <Input required type="number" min="1" label="Initial Stock Quantity *" value={medForm.stockQuantity} onChange={e => setMedForm({ ...medForm, stockQuantity: e.target.value })} />
+                                <Input required type="number" step="0.01" min="0" label="Unit Price (₹) *" value={medForm.unitPrice} onChange={e => setMedForm({ ...medForm, unitPrice: e.target.value })} />
+
+                                <div className="pt-2">
+                                    <Button type="submit" disabled={loading} fullWidth>
+                                        Submit Inventory Update
+                                    </Button>
+                                </div>
+                            </form>
+                        </Card>
                     </div>
-                </div>
-            )}
-        </>
+                )}
+            </div>
+        </div>
     );
 }
