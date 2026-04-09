@@ -129,3 +129,90 @@ export const bulkAddMedicines = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Server error", error });
     }
 };
+
+// Scenario 2: Pharmacist sees pending prescriptions
+export const getPrescriptionQueue = async (req: Request, res: Response) => {
+    try {
+        const prescriptions = await prisma.prescription.findMany({
+            where: { status: 'PENDING' },
+            include: {
+                patient: true,
+                visit: { include: { doctor: true } }
+            },
+            orderBy: { createdAt: 'asc' }
+        });
+        res.status(200).json(prescriptions);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch prescription queue', error });
+    }
+};
+
+// Scenario 2: Dispense medicines for a prescription (atomic)
+export const dispensePrescription = async (req: Request, res: Response) => {
+    try {
+        const { prescriptionId } = req.body;
+        const userId = (req as any).user.id;
+
+        const prescription = await prisma.prescription.findUnique({
+            where: { id: prescriptionId },
+            include: { visit: true, patient: true }
+        });
+
+        if (!prescription || prescription.status === 'DISPENSED') {
+            return res.status(400).json({ message: 'Prescription not found or already dispensed' });
+        }
+
+        const medicines = prescription.medicines as any[];
+
+        const billResult = await prisma.$transaction(async (tx) => {
+            let subTotal = 0;
+
+            for (const med of medicines) {
+                const drug = await tx.medicineInventory.findUnique({
+                    where: { drugName: med.drugName }
+                });
+                if (!drug || drug.stockQuantity < 1) {
+                    throw new Error(`Insufficient stock for ${med.drugName}`);
+                }
+
+                await tx.medicineInventory.update({
+                    where: { id: drug.id },
+                    data: { stockQuantity: drug.stockQuantity - 1 }
+                });
+
+                subTotal += drug.unitPrice;
+            }
+
+            // Mark prescription as DISPENSED
+            await tx.prescription.update({
+                where: { id: prescriptionId },
+                data: { status: 'DISPENSED' }
+            });
+
+            const gstAmount = subTotal * 0.12;
+            const netPayable = subTotal + gstAmount;
+
+            const bill = await tx.bill.create({
+                data: {
+                    billNo: `BL-PHAR-${Date.now()}`,
+                    patientId: prescription.patientId,
+                    visitId: prescription.visitId || null,
+                    type: 'PHARMACY',
+                    subTotal,
+                    gstAmount,
+                    discount: 0,
+                    netPayable,
+                    paymentMode: 'CASH',
+                    status: 'UNPAID'
+                }
+            });
+
+            return bill;
+        });
+
+        await logAudit(userId, 'PRESCRIPTION_DISPENSED', { prescriptionId }, req.ip || null);
+        res.status(201).json({ message: 'Prescription dispensed & billed', bill: billResult });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'Failed to dispense prescription', error });
+    }
+};

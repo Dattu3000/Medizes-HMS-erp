@@ -138,6 +138,7 @@ model Patient {
   labOrders       LabOrder[]
   prescriptions   Prescription[]
   admissions      Admission[]
+  referrals       Referral[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -202,9 +203,11 @@ model LabOrder {
   testName        String
   sacCode         String   @default("999316")
   price           Float
+  priority        String   @default("ROUTINE") // ROUTINE, HIGH, STAT
   status          String   @default("PENDING") // PENDING, SAMPLE_COLLECTED, RESULT_ENTERED
   
   resultText      String?
+  resultValue     Float?   // Numeric value for critical range checks
   reportPdfUrl    String?
 
   createdAt       DateTime @default(now())
@@ -304,6 +307,43 @@ model LabCatalog {
   testName        String   @unique
   department      String   // Hematology, Biochemistry, Microbiology
   price           Float
+  unit            String?  // e.g., mg/dL, mmol/L
+  criticalMin     Float?   // Lower bound for critical alert
+  criticalMax     Float?   // Upper bound for critical alert
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// CROSS-MODULE: NOTIFICATIONS & REFERRALS
+// ----------------------------------------------------
+
+model Notification {
+  id              String   @id @default(uuid())
+  targetUserId    String   // The user who should see this
+  type            String   // LAB_RESULT, CRITICAL_ALERT, ADMISSION, REFERRAL, PRESCRIPTION
+  title           String
+  body            String
+  priority        String   @default("NORMAL") // NORMAL, HIGH, CRITICAL
+  isRead          Boolean  @default(false)
+  
+  visitId         String?
+  labOrderId      String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Referral {
+  id              String   @id @default(uuid())
+  fromDoctorId    String
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  referralToken   String   @unique @default(uuid())
+  toHospital      String   // Name/ID of destination hospital
+  reason          String
+  status          String   @default("PENDING") // PENDING, ACCEPTED, COMPLETED
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

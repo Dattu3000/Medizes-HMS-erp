@@ -82,16 +82,65 @@ export const orderTest = async (req: Request, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { status, resultText } = req.body;
+        const { status, resultText, resultValue } = req.body;
         const userId = (req as any).user.id;
 
         const order = await prisma.labOrder.update({
             where: { id: String(id) },
             data: {
                 status,
-                ...(resultText && { resultText })
+                ...(resultText && { resultText }),
+                ...(resultValue !== undefined && { resultValue: Number(resultValue) })
+            },
+            include: {
+                visit: { include: { doctor: { include: { user: true } } } },
+                patient: true
             }
         });
+
+        // Scenario 4: Critical Value Detection
+        if (status === 'RESULT_ENTERED' && resultValue !== undefined) {
+            const catalogEntry = await prisma.labCatalog.findUnique({
+                where: { testName: order.testName }
+            });
+
+            if (catalogEntry && (catalogEntry.criticalMin !== null || catalogEntry.criticalMax !== null)) {
+                const val = Number(resultValue);
+                const isCritical =
+                    (catalogEntry.criticalMin !== null && val < catalogEntry.criticalMin) ||
+                    (catalogEntry.criticalMax !== null && val > catalogEntry.criticalMax);
+
+                if (isCritical && order.visit?.doctor?.user) {
+                    // Create CRITICAL notification for the doctor
+                    await prisma.notification.create({
+                        data: {
+                            targetUserId: order.visit.doctor.user.id,
+                            type: 'CRITICAL_ALERT',
+                            title: `⚠️ CRITICAL: ${order.testName}`,
+                            body: `Patient ${order.patient.firstName} ${order.patient.lastName} (${order.patient.uhid}) — Value: ${val} ${catalogEntry.unit || ''} (Range: ${catalogEntry.criticalMin ?? '—'}–${catalogEntry.criticalMax ?? '—'})`,
+                            priority: 'CRITICAL',
+                            visitId: order.visitId,
+                            labOrderId: order.id
+                        }
+                    });
+                }
+            }
+
+            // Also create a normal notification for the doctor that result is ready
+            if (order.visit?.doctor?.user) {
+                await prisma.notification.create({
+                    data: {
+                        targetUserId: order.visit.doctor.user.id,
+                        type: 'LAB_RESULT',
+                        title: `Lab Result Ready: ${order.testName}`,
+                        body: `Results for ${order.patient.firstName} ${order.patient.lastName} are now available.`,
+                        priority: 'NORMAL',
+                        visitId: order.visitId,
+                        labOrderId: order.id
+                    }
+                });
+            }
+        }
 
         await logAudit(userId, 'LAB_ORDER_UPDATED', { orderId: id, status }, req.ip || null);
 

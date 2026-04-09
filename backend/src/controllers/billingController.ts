@@ -95,3 +95,37 @@ export const processPayment = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Server error", error });
     }
 }
+
+// Scenario 1: Aggregate all bills for a visit into a single invoice summary
+export const getVisitInvoice = async (req: Request, res: Response) => {
+    try {
+        const { visitId } = req.params;
+
+        const visit = await prisma.visit.findUnique({
+            where: { id: String(visitId) },
+            include: { patient: true, doctor: true }
+        });
+
+        if (!visit) return res.status(404).json({ message: "Visit not found" });
+
+        const bills = await prisma.bill.findMany({
+            where: { visitId: String(visitId) },
+            orderBy: { createdAt: 'asc' }
+        });
+
+        const summary = {
+            visit,
+            bills,
+            totalSubTotal: bills.reduce((s, b) => s + b.subTotal, 0),
+            totalGst: bills.reduce((s, b) => s + b.gstAmount, 0),
+            totalDiscount: bills.reduce((s, b) => s + b.discount, 0),
+            netPayable: bills.reduce((s, b) => s + b.netPayable, 0),
+            paidAmount: bills.filter(b => b.status === 'PAID').reduce((s, b) => s + b.netPayable, 0),
+            pendingAmount: bills.filter(b => b.status === 'UNPAID').reduce((s, b) => s + b.netPayable, 0)
+        };
+
+        res.status(200).json(summary);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to generate visit invoice", error });
+    }
+}

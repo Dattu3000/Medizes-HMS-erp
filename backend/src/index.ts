@@ -13,6 +13,8 @@ import hrRoutes from './routes/hr';
 import accountsRoutes from './routes/accounts';
 import reportsRoutes from './routes/reports';
 import billingRoutes from './routes/billing';
+import notificationRoutes from './routes/notification';
+import referralRoutes from './routes/referral';
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ app.use('/api/hr', hrRoutes);
 app.use('/api/accounts', accountsRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/referrals', referralRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'UP', timestamp: new Date() });
