@@ -278,6 +278,7 @@ model Admission {
   depositAmount   Float    @default(0)
   
   ipdCharges      IpdCharge[]
+  nursingVitals   NursingVitals[]
   bills           Bill[]     // Final settlement bill
 
   createdAt       DateTime @default(now())
@@ -293,6 +294,23 @@ model IpdCharge {
   description     String
   amount          Float
   dateAdded       DateTime @default(now())
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model NursingVitals {
+  id              String   @id @default(uuid())
+  admissionId     String
+  admission       Admission @relation(fields: [admissionId], references: [id])
+  
+  bp              String?  // e.g. "120/80"
+  heartRate       Int?     // bpm
+  temperature     Float?   // °F or °C
+  spo2            Int?     // percentage
+  respiratoryRate Int?     // breaths/min
+  notes           String?
+  recordedBy      String   // userId of the nurse
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

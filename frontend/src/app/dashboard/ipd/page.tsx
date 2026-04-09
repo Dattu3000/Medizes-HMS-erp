@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BedDouble, Users, IndianRupee, FileText, CheckCircle2 } from 'lucide-react';
+import { BedDouble, Users, IndianRupee, FileText, CheckCircle2, Stethoscope, Heart, Thermometer, Activity } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 
 export default function IPDPage() {
-    const [activeTab, setActiveTab] = useState<'wards' | 'billing' | 'assets'>('wards');
+    const [activeTab, setActiveTab] = useState<'wards' | 'billing' | 'nursing' | 'assets'>('wards');
     const [loading, setLoading] = useState(false);
 
     const [wards, setWards] = useState<any[]>([]);
@@ -30,6 +30,12 @@ export default function IPDPage() {
     // Asset Management State
     const [wardForm, setWardForm] = useState({ name: '', type: 'GENERAL', capacity: '' });
     const [bedForm, setBedForm] = useState({ bedNumber: '', wardId: '', dailyRent: '' });
+
+    // Nursing Vitals State
+    const [nursingAdmission, setNursingAdmission] = useState<any>(null);
+    const [vitalsHistory, setVitalsHistory] = useState<any[]>([]);
+    const [vitalForm, setVitalForm] = useState({ bp: '', heartRate: '', temperature: '', spo2: '', respiratoryRate: '', notes: '' });
+    const [vitalsLoading, setVitalsLoading] = useState(false);
 
     useEffect(() => {
         fetchWards();
@@ -206,6 +212,41 @@ export default function IPDPage() {
         setLoading(false);
     };
 
+    const selectNursingAdmission = async (adm: any) => {
+        setNursingAdmission(adm);
+        fetchVitals(adm.id);
+    };
+
+    const fetchVitals = async (admissionId: string) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/nursing/vitals/${admissionId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setVitalsHistory(await res.json());
+            else setVitalsHistory([]);
+        } catch (err) { console.error(err); setVitalsHistory([]); }
+    };
+
+    const handleRecordVitals = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!nursingAdmission) return;
+        setVitalsLoading(true);
+        try {
+            const res = await fetch('http://localhost:5000/api/nursing/vitals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify({ admissionId: nursingAdmission.id, ...vitalForm })
+            });
+            if (res.ok) {
+                setVitalForm({ bp: '', heartRate: '', temperature: '', spo2: '', respiratoryRate: '', notes: '' });
+                fetchVitals(nursingAdmission.id);
+            } else {
+                alert('Failed to record vitals');
+            }
+        } catch (err) { console.error(err); }
+        setVitalsLoading(false);
+    };
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -224,6 +265,12 @@ export default function IPDPage() {
                     className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'billing' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
                 >
                     <IndianRupee size={16} /> Daily Billing & Discharge
+                </button>
+                <button
+                    onClick={() => { setActiveTab('nursing'); fetchAdmissions(); }}
+                    className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'nursing' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
+                >
+                    <Stethoscope size={16} /> Nursing Vitals
                 </button>
                 <button
                     onClick={() => setActiveTab('assets')}
@@ -251,17 +298,17 @@ export default function IPDPage() {
                                         <div
                                             key={bed.id}
                                             className={`w-[120px] h-[100px] p-2 rounded-[10px] border flex flex-col justify-center items-center cursor-pointer transition-all hover:-translate-y-1 ${bed.status === 'AVAILABLE' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                                                    bed.status === 'MAINTENANCE' ? 'bg-amber-500/10 border-amber-500/30' :
-                                                        'bg-red-500/10 border-red-500/30 opacity-80 cursor-not-allowed'
+                                                bed.status === 'MAINTENANCE' ? 'bg-amber-500/10 border-amber-500/30' :
+                                                    'bg-red-500/10 border-red-500/30 opacity-80 cursor-not-allowed'
                                                 } ${selectedBed?.id === bed.id ? 'ring-2 ring-blue-500 shadow-md scale-105' : ''}`}
                                             onClick={() => bed.status === 'AVAILABLE' && setSelectedBed({ ...bed, wardName: ward.name })}
                                         >
                                             <BedDouble size={28} className={`mb-1 ${bed.status === 'AVAILABLE' ? 'text-emerald-500' :
-                                                    bed.status === 'MAINTENANCE' ? 'text-amber-500' : 'text-red-500'
+                                                bed.status === 'MAINTENANCE' ? 'text-amber-500' : 'text-red-500'
                                                 }`} />
                                             <div className="font-bold text-gray-50 text-[14px]">{bed.bedNumber}</div>
                                             <div className={`text-[10px] uppercase font-bold mt-0.5 ${bed.status === 'AVAILABLE' ? 'text-emerald-400' :
-                                                    bed.status === 'MAINTENANCE' ? 'text-amber-400' : 'text-red-400'
+                                                bed.status === 'MAINTENANCE' ? 'text-amber-400' : 'text-red-400'
                                                 }`}>
                                                 {bed.status}
                                             </div>
@@ -440,7 +487,121 @@ export default function IPDPage() {
                     </div>
                 )}
 
-                {/* TAB 3: ASSET MANAGEMENT */}
+                {/* TAB: NURSING VITALS */}
+                {activeTab === 'nursing' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Left: Active Admissions */}
+                        <div className="lg:col-span-4">
+                            <Card padding="none" className="h-[600px] flex flex-col">
+                                <div className="p-4 bg-slate-950 border-b border-slate-800">
+                                    <h3 className="font-semibold text-gray-50 flex items-center gap-2">
+                                        <Stethoscope size={16} className="text-blue-400" /> Select Patient
+                                    </h3>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                    {admissions.map(adm => (
+                                        <div
+                                            key={adm.id}
+                                            onClick={() => selectNursingAdmission(adm)}
+                                            className={`p-4 cursor-pointer hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-b-0 border-l-[3px] ${nursingAdmission?.id === adm.id ? 'border-l-blue-600 bg-slate-800 text-white' : 'border-l-transparent text-gray-300'}`}
+                                        >
+                                            <div className="font-semibold text-gray-50 text-sm">{adm.patient.firstName} {adm.patient.lastName}</div>
+                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} • Bed: {adm.bed.bedNumber}</div>
+                                        </div>
+                                    ))}
+                                    {admissions.length === 0 && <div className="p-6 text-center text-sm text-gray-500">No active admissions</div>}
+                                </div>
+                            </Card>
+                        </div>
+
+                        {/* Right: Vitals Entry + Timeline */}
+                        <div className="lg:col-span-8">
+                            {nursingAdmission ? (
+                                <div className="space-y-6">
+                                    {/* Vitals Entry Form */}
+                                    <Card padding="lg">
+                                        <h3 className="font-semibold text-gray-50 text-md mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
+                                            <Heart size={16} className="text-red-400" /> Record Vitals — {nursingAdmission.patient.firstName} {nursingAdmission.patient.lastName}
+                                        </h3>
+                                        <form onSubmit={handleRecordVitals} className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            <Input label="Blood Pressure" placeholder="e.g. 120/80" value={vitalForm.bp} onChange={e => setVitalForm({ ...vitalForm, bp: e.target.value })} />
+                                            <Input label="Heart Rate (bpm)" type="number" placeholder="72" value={vitalForm.heartRate} onChange={e => setVitalForm({ ...vitalForm, heartRate: e.target.value })} />
+                                            <Input label="Temperature (°F)" type="number" step="0.1" placeholder="98.6" value={vitalForm.temperature} onChange={e => setVitalForm({ ...vitalForm, temperature: e.target.value })} />
+                                            <Input label="SpO₂ (%)" type="number" placeholder="98" value={vitalForm.spo2} onChange={e => setVitalForm({ ...vitalForm, spo2: e.target.value })} />
+                                            <Input label="Respiratory Rate" type="number" placeholder="16" value={vitalForm.respiratoryRate} onChange={e => setVitalForm({ ...vitalForm, respiratoryRate: e.target.value })} />
+                                            <Input label="Notes" placeholder="Any observations..." value={vitalForm.notes} onChange={e => setVitalForm({ ...vitalForm, notes: e.target.value })} />
+                                            <div className="col-span-full pt-2">
+                                                <Button type="submit" disabled={vitalsLoading} fullWidth>
+                                                    {vitalsLoading ? 'Recording...' : 'Record Vitals'}
+                                                </Button>
+                                            </div>
+                                        </form>
+                                    </Card>
+
+                                    {/* Vitals Timeline */}
+                                    <Card padding="none" className="overflow-hidden">
+                                        <div className="bg-slate-950 px-5 py-4 border-b border-slate-800 flex justify-between items-center">
+                                            <h3 className="font-semibold text-gray-50 flex items-center gap-2">
+                                                <Activity size={16} className="text-emerald-400" /> Vitals Timeline
+                                            </h3>
+                                            <Badge variant="neutral">{vitalsHistory.length} Records</Badge>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-[12px] text-gray-300">
+                                                <thead className="bg-slate-950 text-gray-500 font-semibold border-b border-slate-800">
+                                                    <tr>
+                                                        <th className="px-4 py-3">Time</th>
+                                                        <th className="px-4 py-3">BP</th>
+                                                        <th className="px-4 py-3">HR</th>
+                                                        <th className="px-4 py-3">Temp</th>
+                                                        <th className="px-4 py-3">SpO₂</th>
+                                                        <th className="px-4 py-3">RR</th>
+                                                        <th className="px-4 py-3">Notes</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-800">
+                                                    {vitalsHistory.map((v: any) => (
+                                                        <tr key={v.id} className="hover:bg-slate-900/50 transition">
+                                                            <td className="px-4 py-2.5 text-gray-400 whitespace-nowrap">{new Date(v.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                                                            <td className="px-4 py-2.5 font-semibold text-gray-200">{v.bp || '—'}</td>
+                                                            <td className="px-4 py-2.5">
+                                                                <span className={`font-semibold ${v.heartRate && (v.heartRate > 100 || v.heartRate < 60) ? 'text-red-400' : 'text-gray-200'}`}>
+                                                                    {v.heartRate ?? '—'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-2.5">
+                                                                <span className={`font-semibold ${v.temperature && v.temperature > 100.4 ? 'text-red-400' : 'text-gray-200'}`}>
+                                                                    {v.temperature ? `${v.temperature}°F` : '—'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-2.5">
+                                                                <span className={`font-semibold ${v.spo2 && v.spo2 < 95 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                                    {v.spo2 ? `${v.spo2}%` : '—'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-2.5 text-gray-200">{v.respiratoryRate ?? '—'}</td>
+                                                            <td className="px-4 py-2.5 text-gray-500 max-w-[200px] truncate">{v.notes || '—'}</td>
+                                                        </tr>
+                                                    ))}
+                                                    {vitalsHistory.length === 0 && (
+                                                        <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-600">No vitals recorded yet</td></tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </Card>
+                                </div>
+                            ) : (
+                                <Card padding="lg" className="h-[600px] flex items-center justify-center flex-col shadow-none">
+                                    <Stethoscope size={48} className="mb-4 text-slate-800" />
+                                    <p className="text-gray-500 font-medium text-sm">Select an admitted patient to record vitals.</p>
+                                </Card>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB: ASSET MANAGEMENT */}
                 {activeTab === 'assets' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
                         {/* Create Ward Form */}

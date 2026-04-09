@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Pill, Search, ShoppingCart, UploadCloud, Download, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Pill, Search, ShoppingCart, UploadCloud, Download, CheckCircle2, ClipboardList, UserCircle, Clock, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table';
 
 export default function PharmacyPage() {
-    const [activeTab, setActiveTab] = useState<'inventory' | 'assets'>('inventory');
+    const [activeTab, setActiveTab] = useState<'inventory' | 'rxQueue' | 'assets'>('inventory');
 
     const [inventory, setInventory] = useState<any[]>([]);
     const [patients, setPatients] = useState<any[]>([]);
@@ -23,9 +23,50 @@ export default function PharmacyPage() {
     const [cart, setCart] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
+    // Rx Queue State
+    const [prescriptions, setPrescriptions] = useState<any[]>([]);
+    const [rxLoading, setRxLoading] = useState(false);
+    const [dispensingId, setDispensingId] = useState<string | null>(null);
+
     useEffect(() => {
         fetchInventory();
+        fetchPrescriptions();
     }, []);
+
+    const fetchPrescriptions = useCallback(async () => {
+        setRxLoading(true);
+        try {
+            const res = await fetch('http://localhost:5000/api/pharmacy/prescriptions', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setPrescriptions(await res.json());
+            else setPrescriptions([]);
+        } catch (err) { console.error(err); setPrescriptions([]); }
+        finally { setRxLoading(false); }
+    }, []);
+
+    const handleDispenseRx = async (prescriptionId: string) => {
+        setDispensingId(prescriptionId);
+        try {
+            const res = await fetch('http://localhost:5000/api/pharmacy/dispense-rx', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ prescriptionId })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(`Dispensed! Bill: ${data.bill.billNo} — ₹${data.bill.netPayable.toFixed(2)}`);
+                fetchPrescriptions();
+                fetchInventory();
+            } else {
+                alert(data.message || 'Failed to dispense');
+            }
+        } catch (err) { console.error(err); }
+        finally { setDispensingId(null); }
+    };
 
     const fetchInventory = async () => {
         try {
@@ -194,6 +235,15 @@ export default function PharmacyPage() {
                     className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'inventory' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
                 >
                     <ShoppingCart size={16} /> Inventory & Dispense
+                </button>
+                <button
+                    onClick={() => { setActiveTab('rxQueue'); fetchPrescriptions(); }}
+                    className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'rxQueue' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
+                >
+                    <ClipboardList size={16} /> Rx Queue
+                    {prescriptions.length > 0 && (
+                        <span className="ml-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{prescriptions.length}</span>
+                    )}
                 </button>
                 <button
                     onClick={() => setActiveTab('assets')}
@@ -380,6 +430,79 @@ export default function PharmacyPage() {
                             </div>
                         </div>
 
+                    </div>
+                )}
+
+                {activeTab === 'rxQueue' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <h2 className="text-[16px] font-bold text-gray-50">Pending Prescriptions</h2>
+                                <p className="text-[12px] text-gray-500">{prescriptions.length} prescription(s) awaiting fulfillment</p>
+                            </div>
+                            <Button variant="secondary" onClick={fetchPrescriptions} disabled={rxLoading} size="sm" className="px-4">
+                                {rxLoading ? 'Loading...' : 'Refresh'}
+                            </Button>
+                        </div>
+
+                        {prescriptions.length === 0 ? (
+                            <Card padding="lg" className="flex flex-col items-center justify-center py-16">
+                                <CheckCircle2 size={40} className="text-emerald-500/30 mb-3" />
+                                <p className="text-gray-500 text-sm font-medium">All prescriptions have been dispensed</p>
+                            </Card>
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                {prescriptions.map((rx: any) => (
+                                    <Card key={rx.id} padding="none" className="overflow-hidden border-l-[3px] border-l-blue-500">
+                                        {/* Header */}
+                                        <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center">
+                                                    <UserCircle size={16} className="text-blue-400" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-[13px] font-semibold text-gray-100">
+                                                        {rx.patient?.firstName} {rx.patient?.lastName}
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-500">
+                                                        {rx.patient?.uhid} · Dr. {rx.visit?.doctor?.lastName || '—'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                                                <Clock size={12} />
+                                                {new Date(rx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </div>
+
+                                        {/* Medicine List */}
+                                        <div className="p-4 space-y-1.5">
+                                            {(rx.medicines as any[]).map((med: any, i: number) => (
+                                                <div key={i} className="flex items-center justify-between text-[12px] bg-slate-900/50 rounded-lg px-3 py-2 border border-slate-800">
+                                                    <div className="flex items-center gap-2">
+                                                        <Pill size={12} className="text-emerald-400" />
+                                                        <span className="font-medium text-gray-200">{med.drugName}</span>
+                                                    </div>
+                                                    <span className="text-gray-500">{med.dosage} · {med.frequency} · {med.days}d</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Action */}
+                                        <div className="px-4 pb-4">
+                                            <button
+                                                onClick={() => handleDispenseRx(rx.id)}
+                                                disabled={dispensingId === rx.id}
+                                                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition text-[13px] uppercase tracking-wider flex items-center justify-center gap-2"
+                                            >
+                                                <CheckCircle2 size={14} />
+                                                {dispensingId === rx.id ? 'Dispensing...' : 'Dispense & Bill'}
+                                            </button>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 

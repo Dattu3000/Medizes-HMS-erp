@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -10,13 +10,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const pathname = usePathname();
     const [loading, setLoading] = useState(true);
 
+    // Notifications
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [showNotifPanel, setShowNotifPanel] = useState(false);
+
+    const fetchNotifications = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            const res = await fetch('http://localhost:5000/api/notifications', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) setNotifications(await res.json());
+        } catch (err) { /* silent */ }
+    }, []);
+
+    const markNotifRead = async (id: string) => {
+        try {
+            await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            fetchNotifications();
+        } catch (err) { /* silent */ }
+    };
+
     useEffect(() => {
         if (!localStorage.getItem('token')) {
             router.push('/login');
         } else {
             setLoading(false);
+            fetchNotifications();
+            const interval = setInterval(fetchNotifications, 30000);
+            return () => clearInterval(interval);
         }
-    }, [router]);
+    }, [router, fetchNotifications]);
 
     if (loading) return null;
 
@@ -24,6 +52,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         localStorage.removeItem('token');
         router.push('/login');
     };
+
+    const unreadCount = notifications.filter(n => !n.isRead).length;
 
     const navItems = [
         { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -87,6 +117,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <span className="text-blue-500 font-semibold">MEDISYS</span> <span className="text-gray-600">/</span> <span className="text-gray-100">DASHBOARD</span>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Notification Bell */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowNotifPanel(!showNotifPanel)}
+                                className="p-2 rounded-lg bg-[#0F172A] hover:bg-slate-700 text-gray-400 hover:text-white transition relative"
+                            >
+                                <Bell size={18} />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
+                            </button>
+                            {showNotifPanel && (
+                                <div className="absolute right-0 top-11 w-[380px] bg-[#111827] border border-slate-700 rounded-xl shadow-2xl z-50 max-h-[420px] flex flex-col overflow-hidden">
+                                    <div className="p-3 border-b border-slate-800 flex items-center justify-between shrink-0">
+                                        <span className="text-[13px] font-bold text-gray-200">Notifications</span>
+                                        <button onClick={() => setShowNotifPanel(false)}><X size={14} className="text-gray-500 hover:text-white" /></button>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto">
+                                        {notifications.length === 0 ? (
+                                            <div className="p-8 text-center text-gray-500 text-[13px]">No notifications</div>
+                                        ) : notifications.slice(0, 20).map(n => (
+                                            <div key={n.id} onClick={() => markNotifRead(n.id)}
+                                                className={`p-3 border-b border-slate-800/50 cursor-pointer hover:bg-slate-800/50 transition ${!n.isRead ? 'bg-blue-500/5' : ''}`}>
+                                                <div className="flex items-start gap-2">
+                                                    {n.priority === 'CRITICAL'
+                                                        ? <AlertTriangle size={14} className="text-red-400 mt-0.5 shrink-0" />
+                                                        : <Bell size={14} className="text-blue-400 mt-0.5 shrink-0" />
+                                                    }
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-[12px] font-semibold text-gray-200 truncate">{n.title}</div>
+                                                        <div className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{n.body}</div>
+                                                        <div className="text-[10px] text-gray-600 mt-1">{new Date(n.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                                                    </div>
+                                                    {!n.isRead && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 shrink-0"></div>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-[#0F172A]">
                             AD
                         </div>
