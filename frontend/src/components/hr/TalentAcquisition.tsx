@@ -15,6 +15,33 @@ export default function TalentAcquisition() {
         { id: 3, name: 'Michael T.', stage: 'Offer', role: 'HR Business Partner' },
     ]);
 
+    const [jdText, setJdText] = useState('');
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [aiResult, setAiResult] = useState<any>(null);
+
+    const handleAnalyze = async () => {
+        if (!jdText) return;
+        setIsAnalyzing(true);
+        try {
+            const res = await fetch('http://localhost:5000/api/hr/jobs/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ description: jdText })
+            });
+            if (res.ok) {
+                setAiResult(await res.json());
+            } else {
+                alert('Failed to analyze description');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        setIsAnalyzing(false);
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-300">
             {/* Header */}
@@ -96,15 +123,59 @@ export default function TalentAcquisition() {
                             </div>
                         </div>
 
-                        {/* AI Assistance Promo */}
-                        <div className="m-6 p-4 bg-indigo-900/40 rounded-xl border border-indigo-400/30 flex items-start gap-4">
-                            <div className="p-2 bg-indigo-500/20 border border-indigo-400/30 rounded-lg text-indigo-200">
-                                <FileText className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-indigo-100">AI Job Description Generator Active</h4>
-                                <p className="text-sm text-indigo-200/80 mt-1">GUDHR AI is actively checking your drafts for inclusivity and surfacing past applicant matches.</p>
-                            </div>
+                        {/* AI Job Description Analyzer */}
+                        <div className="m-6 p-6 bg-indigo-900/20 rounded-xl border border-indigo-400/30">
+                            <h3 className="text-lg font-bold text-indigo-100 flex items-center gap-2 mb-4">
+                                <FileText className="w-5 h-5 text-indigo-400" /> AI Job Description Analyzer
+                            </h3>
+                            <textarea
+                                value={jdText}
+                                onChange={e => setJdText(e.target.value)}
+                                placeholder="Paste job description draft here to analyze for inclusivity and bias..."
+                                className="w-full h-[100px] bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:ring-1 focus:ring-indigo-400 focus:outline-none mb-3 resize-none"
+                            />
+                            <button
+                                onClick={handleAnalyze}
+                                disabled={isAnalyzing || !jdText}
+                                className="liquid-glass-button bg-indigo-600/50 hover:bg-indigo-600 px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-50 transition"
+                            >
+                                {isAnalyzing ? 'Analyzing...' : 'Analyze Inclusion Score'}
+                            </button>
+
+                            {aiResult && (
+                                <div className="mt-4 p-4 bg-black/40 rounded-lg text-sm shadow-inner">
+                                    <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3">
+                                        <span className="font-bold text-white">Inclusivity Score:</span>
+                                        <span className={`font-black text-xl ${aiResult.inclusivityScore >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                            {aiResult.inclusivityScore}/100
+                                        </span>
+                                    </div>
+                                    <div className="mb-3">
+                                        <span className="text-white/60 font-medium block mb-1">Keywords Detected:</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {aiResult.recommendedKeywords?.map((k: string, i: number) => (
+                                                <span key={i} className="bg-white/10 px-2 py-0.5 rounded text-xs text-white/80">{k}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {aiResult.biasedTermsFound?.length > 0 && (
+                                        <div className="mb-3">
+                                            <span className="text-rose-400 font-medium block mb-1">Biased Terms Found:</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {aiResult.biasedTermsFound.map((t: string, i: number) => (
+                                                    <span key={i} className="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-xs">{t}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <span className="text-emerald-400 font-medium block mb-1">Suggested Rewrite:</span>
+                                        <p className="text-white/80 text-xs leading-relaxed p-3 bg-white/5 rounded border border-white/5">
+                                            {aiResult.suggestedDescription}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

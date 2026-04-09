@@ -8,8 +8,8 @@ import { authenticate, requireRole } from '../middlewares/authMiddleware';
 const router = Router();
 
 // Define RBAC roles
-const adminRoles = ['SYSTEM_ADMIN', 'HR_ADMIN'];
-const mgtRoles = ['MANAGER', 'SYSTEM_ADMIN', 'HR_ADMIN'];
+const adminRoles = ['Super Admin', 'Admin', 'HR Admin', 'HR'];
+const mgtRoles = ['Super Admin', 'Admin', 'HR Admin', 'HR', 'Doctor'];
 
 // CORE HRIS
 router.get('/employees', authenticate, getEmployees);

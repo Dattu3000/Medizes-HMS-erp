@@ -1,16 +1,18 @@
 import { Router } from 'express';
 import { getWardsAndBeds, admitPatient, getActiveAdmissions, getAdmissionDetails, addIpdCharge, dischargePatient, createWard, createBed } from '../controllers/ipdController';
-import { authenticate } from '../middlewares/authMiddleware';
+import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.get('/wards', authenticate, getWardsAndBeds);
-router.get('/admissions', authenticate, getActiveAdmissions);
-router.get('/admissions/:id', authenticate, getAdmissionDetails);
-router.post('/admit', authenticate, admitPatient);
-router.post('/charge', authenticate, addIpdCharge);
-router.post('/discharge', authenticate, dischargePatient);
-router.post('/wards', authenticate, createWard);
-router.post('/beds', authenticate, createBed);
+const ipdRoles = ['Super Admin', 'Admin', 'Doctor', 'Nurse'];
+
+router.get('/wards', authenticate, requireRole(ipdRoles), getWardsAndBeds);
+router.get('/admissions', authenticate, requireRole(ipdRoles), getActiveAdmissions);
+router.get('/admissions/:id', authenticate, requireRole(ipdRoles), getAdmissionDetails);
+router.post('/admit', authenticate, requireRole(ipdRoles), admitPatient);
+router.post('/charge', authenticate, requireRole(ipdRoles), addIpdCharge);
+router.post('/discharge', authenticate, requireRole(['Super Admin', 'Admin', 'Doctor']), dischargePatient);
+router.post('/wards', authenticate, requireRole(['Super Admin', 'Admin']), createWard);
+router.post('/beds', authenticate, requireRole(['Super Admin', 'Admin']), createBed);
 
 export default router;

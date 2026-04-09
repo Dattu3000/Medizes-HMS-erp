@@ -79,7 +79,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function DoctorEHRPage() {
     const [visits, setVisits] = useState<Visit[]>([]);
     const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
-    const [activeTab, setActiveTab] = useState<'notes' | 'lab' | 'rx' | 'history'>('notes');
+    const [activeTab, setActiveTab] = useState<'notes' | 'lab' | 'rx' | 'history' | 'referrals'>('notes');
     const [loading, setLoading] = useState(true);
 
     // Notes state
@@ -103,6 +103,11 @@ export default function DoctorEHRPage() {
     // Notifications
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotifs, setShowNotifs] = useState(false);
+
+    // Referrals
+    const [myReferrals, setMyReferrals] = useState<any[]>([]);
+    const [referralForm, setReferralForm] = useState({ toHospital: '', reason: '' });
+    const [creatingReferral, setCreatingReferral] = useState(false);
 
     // ─── Data Fetching ──────────────────────────────────
     const loadVisits = useCallback(async () => {
@@ -141,11 +146,19 @@ export default function DoctorEHRPage() {
         } catch (err) { console.error(err); }
     }, []);
 
+    const loadReferrals = useCallback(async () => {
+        try {
+            const res = await apiFetch('/referrals/my-referrals');
+            if (res.ok) setMyReferrals(await res.json());
+        } catch (err) { console.error(err); }
+    }, []);
+
     useEffect(() => {
         loadVisits();
         loadLabCatalog();
         loadInventory();
         loadNotifications();
+        loadReferrals();
 
         // Poll notifications every 30s
         const interval = setInterval(loadNotifications, 30000);
@@ -249,6 +262,30 @@ export default function DoctorEHRPage() {
     const markNotifRead = async (id: string) => {
         await apiFetch(`/notifications/${id}/read`, { method: 'PUT' });
         loadNotifications();
+    };
+
+    // ─── Referrals ──────────────────────────────────────
+    const handleCreateReferral = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedVisit) return;
+        setCreatingReferral(true);
+        try {
+            const res = await apiFetch('/referrals', {
+                method: 'POST',
+                body: JSON.stringify({
+                    patientId: selectedVisit.patient.id,
+                    toHospital: referralForm.toHospital,
+                    reason: referralForm.reason
+                })
+            });
+            if (res.ok) {
+                setReferralForm({ toHospital: '', reason: '' });
+                loadReferrals();
+            } else {
+                alert('Failed to create referral');
+            }
+        } catch (err) { console.error(err); }
+        finally { setCreatingReferral(false); }
     };
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -366,6 +403,7 @@ export default function DoctorEHRPage() {
                             { key: 'lab', label: 'Lab Orders', icon: FlaskConical },
                             { key: 'rx', label: 'Prescriptions', icon: Pill },
                             { key: 'history', label: 'Visit History', icon: Clock },
+                            { key: 'referrals', label: 'Referrals', icon: Send },
                         ] as const).map(tab => (
                             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                                 className={`flex items-center gap-1.5 px-4 py-3 text-[12px] font-semibold transition border-b-2 ${activeTab === tab.key ? 'text-blue-400 border-blue-500' : 'text-gray-500 hover:text-gray-300 border-transparent'}`}>
@@ -560,6 +598,67 @@ export default function DoctorEHRPage() {
                                                 <div>Lab Orders: {selectedVisit.labOrders.length} · Prescriptions: {selectedVisit.prescriptions.length}</div>
                                                 {selectedVisit.diagnosis && <div>Diagnosis: <span className="text-gray-200">{selectedVisit.diagnosis}</span></div>}
                                             </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── REFERRALS TAB ── */}
+                                {activeTab === 'referrals' && (
+                                    <div className="space-y-4">
+                                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                                            <h4 className="text-[12px] font-bold text-gray-400 uppercase tracking-wider mb-3">Create Outward Referral</h4>
+                                            <form onSubmit={handleCreateReferral} className="space-y-3">
+                                                <div>
+                                                    <label className="text-[11px] font-semibold text-gray-500 uppercase block mb-1">Destination Hospital/Clinic</label>
+                                                    <input required type="text" value={referralForm.toHospital} onChange={e => setReferralForm({ ...referralForm, toHospital: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[13px] text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                                                        placeholder="e.g. City General Hospital" />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[11px] font-semibold text-gray-500 uppercase block mb-1">Reason for Referral</label>
+                                                    <textarea required value={referralForm.reason} onChange={e => setReferralForm({ ...referralForm, reason: e.target.value })}
+                                                        className="w-full h-[60px] bg-slate-800 border border-slate-700 rounded-lg p-3 text-[13px] text-gray-200 resize-none focus:outline-none focus:ring-1 focus:ring-blue-600"
+                                                        placeholder="e.g. Needs specialized cardiology consult..." />
+                                                </div>
+                                                <button type="submit" disabled={creatingReferral}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-[12px] font-semibold transition disabled:opacity-50">
+                                                    {creatingReferral ? 'Creating...' : 'Generate Referral'}
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">My Generated Referrals</h4>
+                                            {myReferrals.length === 0 ? (
+                                                <div className="text-[12px] text-gray-500 py-4 text-center">No referrals generated yet</div>
+                                            ) : (
+                                                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                                    {myReferrals.map(ref => (
+                                                        <div key={ref.id} className="bg-slate-900/50 border border-slate-700 rounded-lg p-3">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div>
+                                                                    <div className="text-[13px] font-bold text-gray-200">{ref.patient.firstName} {ref.patient.lastName}</div>
+                                                                    <div className="text-[11px] text-gray-500">To: {ref.toHospital}</div>
+                                                                </div>
+                                                                <StatusBadge status={ref.status} />
+                                                            </div>
+                                                            <div className="text-[12px] text-gray-400 mb-2">{ref.reason}</div>
+                                                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800">
+                                                                <span className="text-[11px] text-gray-500">Token:</span>
+                                                                <span className="text-[11px] font-mono p-1 bg-slate-800 rounded select-all text-blue-400">
+                                                                    {ref.referralToken}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => navigator.clipboard.writeText(ref.referralToken)}
+                                                                    className="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-gray-300 transition"
+                                                                >
+                                                                    Copy
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

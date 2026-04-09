@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { createReferral, getMyReferrals, consumeReferral } from '../controllers/referralController';
-import { authenticate } from '../middlewares/authMiddleware';
+import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.post('/', authenticate, createReferral);
-router.get('/', authenticate, getMyReferrals);
-router.get('/consume/:token', authenticate, consumeReferral);
+const refRoles = ['Super Admin', 'Admin', 'Doctor'];
+
+router.post('/', authenticate, requireRole(refRoles), createReferral);
+router.get('/', authenticate, requireRole(refRoles), getMyReferrals);
+router.get('/consume/:token', authenticate, requireRole(refRoles), consumeReferral);
 
 export default router;
