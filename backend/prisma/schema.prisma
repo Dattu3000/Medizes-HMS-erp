@@ -206,8 +206,15 @@ model LabOrder {
   priority        String   @default("ROUTINE") // ROUTINE, HIGH, STAT
   status          String   @default("PENDING") // PENDING, SAMPLE_COLLECTED, RESULT_ENTERED
   
+  // New Sample Tracking fields
+  sampleStatus    String   @default("PENDING") // PENDING, COLLECTED, IN_ANALYSIS
+  barcode         String?  // Scannable barcode mapping
+  collectedAt     DateTime?
+  
+  // Results
+  resultsPayload  Json?    // Multi-parameter Array: [{ parameter, value, isAbnormal, unit, range }]
   resultText      String?
-  resultValue     Float?   // Numeric value for critical range checks
+  resultValue     Float?   // Retained for backward-compat
   reportPdfUrl    String?
 
   createdAt       DateTime @default(now())
@@ -325,9 +332,11 @@ model LabCatalog {
   testName        String   @unique
   department      String   // Hematology, Biochemistry, Microbiology
   price           Float
-  unit            String?  // e.g., mg/dL, mmol/L
-  criticalMin     Float?   // Lower bound for critical alert
-  criticalMax     Float?   // Upper bound for critical alert
+  unit            String?  // Legacy (single-param)
+  criticalMin     Float?   // Legacy (single-param)
+  criticalMax     Float?   // Legacy (single-param)
+  
+  parameters      Json?    // Array: [{ name, unit, range, criticalMin, criticalMax }]
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

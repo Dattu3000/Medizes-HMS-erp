@@ -31,7 +31,7 @@ interface Patient {
 }
 interface LabOrder {
     id: string; testName: string; status: string; priority: string;
-    resultText?: string; resultValue?: number; createdAt: string;
+    resultText?: string; resultValue?: number; resultsPayload?: any[]; createdAt: string;
 }
 interface Prescription {
     id: string; medicines: any[]; status: string; createdAt: string;
@@ -494,7 +494,15 @@ export default function DoctorEHRPage() {
                                                             </div>
                                                             <div className="text-right">
                                                                 <StatusBadge status={lo.status} />
-                                                                {lo.resultText && <div className="text-[11px] text-emerald-400 mt-1">Result: {lo.resultText}</div>}
+                                                                {lo.status === 'RESULT_ENTERED' ? (
+                                                                    <div className="mt-2 text-right">
+                                                                        <a href={`/dashboard/lab/report/${lo.id}`} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 px-3 py-1.5 rounded-full font-bold inline-flex items-center gap-1 transition">
+                                                                            <FileText size={12} /> View Report
+                                                                        </a>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-[11px] text-gray-500 mt-1">Pending</div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     ))}

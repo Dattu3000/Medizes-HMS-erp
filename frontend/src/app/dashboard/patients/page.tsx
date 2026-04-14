@@ -38,8 +38,16 @@ export default function PatientsPage() {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await res.json();
-            setDoctors(data);
-        } catch (err) { console.error(err) }
+            if (res.ok && Array.isArray(data)) {
+                setDoctors(data);
+            } else {
+                console.error("Failed to fetch doctors:", data);
+                setDoctors([]);
+            }
+        } catch (err) {
+            console.error(err);
+            setDoctors([]);
+        }
     };
 
     const executeSearch = async () => {
@@ -49,8 +57,16 @@ export default function PatientsPage() {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await res.json();
-            setSearchResults(data);
-        } catch (err) { console.error(err) }
+            if (res.ok && Array.isArray(data)) {
+                setSearchResults(data);
+            } else {
+                console.error("Failed to search patients:", data);
+                setSearchResults([]);
+            }
+        } catch (err) {
+            console.error(err);
+            setSearchResults([]);
+        }
     };
 
     const handleRegister = async (e: React.FormEvent) => {

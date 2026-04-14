@@ -131,15 +131,18 @@ export const getDoctors = async (req: Request, res: Response) => {
 export const getDoctorEHR = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.id;
+        const userRole = (req as any).user.role; // Extract user role from token payload
 
         // Find employee mapping
         const employee = await prisma.employee.findUnique({ where: { userId } });
         if (!employee) return res.status(403).json({ message: "No employee profile found" });
 
-        // Retrieve active visits for this doctor with full clinical data
+        const isAdmin = userRole === 'Super Admin' || userRole === 'Admin';
+
+        // Retrieve active visits for this doctor (or all if Admin) with full clinical data
         const visits = await prisma.visit.findMany({
             where: {
-                doctorId: employee.id,
+                ...(isAdmin ? {} : { doctorId: employee.id }),
                 status: { in: ['WAITING', 'IN_CONSULTATION'] }
             },
             include: {

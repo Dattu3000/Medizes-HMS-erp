@@ -200,6 +200,10 @@ export const getPayrollCompliance = async (req: Request, res: Response) => {
 // ─────────────────────────────────────────
 export const getAnalytics = async (req: Request, res: Response) => {
     try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
         const [
             totalPatients,
             totalVisits,
@@ -209,7 +213,9 @@ export const getAnalytics = async (req: Request, res: Response) => {
             pendingLabOrders,
             paidBills,
             unpaidBills,
-            totalEmployees
+            totalEmployees,
+            recentVisits,
+            recentAdmissions
         ] = await Promise.all([
             prisma.patient.count(),
             prisma.visit.count(),
@@ -219,7 +225,15 @@ export const getAnalytics = async (req: Request, res: Response) => {
             prisma.labOrder.count({ where: { status: 'PENDING' } }),
             prisma.bill.findMany({ where: { status: 'PAID' }, select: { netPayable: true, type: true } }),
             prisma.bill.count({ where: { status: 'UNPAID' } }),
-            prisma.employee.count()
+            prisma.employee.count(),
+            prisma.visit.findMany({
+                where: { createdAt: { gte: sevenDaysAgo } },
+                select: { createdAt: true, department: true }
+            }),
+            prisma.admission.findMany({
+                where: { createdAt: { gte: sevenDaysAgo } },
+                select: { createdAt: true }
+            })
         ]);
 
         const revenueByModule: Record<string, number> = {};
@@ -229,12 +243,49 @@ export const getAnalytics = async (req: Request, res: Response) => {
             totalRevenue += b.netPayable;
         }
 
+        // Generate 7-day flow trend
+        const flowTrend = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
+
+            const startOfDay = new Date(d);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(d);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const outpatientCount = recentVisits.filter(v => v.createdAt >= startOfDay && v.createdAt <= endOfDay).length;
+            const inpatientCount = recentAdmissions.filter(a => a.createdAt >= startOfDay && a.createdAt <= endOfDay).length;
+
+            flowTrend.push({
+                name: dayStr,
+                outpatient: outpatientCount,
+                inpatient: inpatientCount
+            });
+        }
+
+        // Generate department distribution
+        const deptCounts: Record<string, number> = {};
+        for (const v of recentVisits) {
+            const dept = v.department || 'General';
+            deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+        }
+        const departmentLoad = Object.keys(deptCounts).map(key => ({
+            name: key,
+            value: deptCounts[key]
+        }));
+
         res.status(200).json({
             patients: { total: totalPatients, visits: totalVisits },
             ipd: { total: totalAdmissions, active: activeAdmissions },
             lab: { total: totalLabOrders, pending: pendingLabOrders },
             billing: { totalRevenue, unpaid: unpaidBills, byModule: revenueByModule },
-            hr: { employees: totalEmployees }
+            hr: { employees: totalEmployees },
+            charts: {
+                flowTrend,
+                departmentLoad
+            }
         });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching analytics', error });

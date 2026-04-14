@@ -28,6 +28,10 @@ export default function PharmacyPage() {
     const [rxLoading, setRxLoading] = useState(false);
     const [dispensingId, setDispensingId] = useState<string | null>(null);
 
+    // AI Safety State
+    const [aiLoadingFor, setAiLoadingFor] = useState<string | null>(null);
+    const [aiAnalysis, setAiAnalysis] = useState<Record<string, any>>({});
+
     useEffect(() => {
         fetchInventory();
         fetchPrescriptions();
@@ -66,6 +70,30 @@ export default function PharmacyPage() {
             }
         } catch (err) { console.error(err); }
         finally { setDispensingId(null); }
+    };
+
+    const handleRunAISafetyCheck = async (prescriptionId: string, medicines: any[]) => {
+        setAiLoadingFor(prescriptionId);
+        try {
+            const res = await fetch('http://localhost:5000/api/pharmacy/ai/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ medicines })
+            });
+            const data = await res.json();
+            if (res.ok && data.analysis) {
+                setAiAnalysis(prev => ({ ...prev, [prescriptionId]: data.analysis }));
+            } else {
+                alert('Analysis failed: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setAiLoadingFor(null);
+        }
     };
 
     const fetchInventory = async () => {
@@ -488,12 +516,61 @@ export default function PharmacyPage() {
                                             ))}
                                         </div>
 
+                                        {/* AI Analysis Panel */}
+                                        {aiAnalysis[rx.id] && (
+                                            <div className="mx-4 mb-4 p-3 bg-slate-900 border border-slate-700/50 rounded-lg text-[12px] shadow-inner">
+                                                <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 text-gray-400">
+                                                    <span className="font-bold flex items-center gap-1.5"><AlertTriangle size={14} className="text-purple-400" /> AI Safety Insights</span>
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${aiAnalysis[rx.id].overallRisk === 'HIGH' ? 'bg-red-500/20 text-red-500' : aiAnalysis[rx.id].overallRisk === 'MODERATE' ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
+                                                        Risk: {aiAnalysis[rx.id].overallRisk}
+                                                    </span>
+                                                </div>
+
+                                                {aiAnalysis[rx.id].interactions.length > 0 && (
+                                                    <div className="mb-3 space-y-2">
+                                                        <div className="text-red-400 font-bold mb-1 uppercase tracking-wider text-[10px]">Drug Interactions</div>
+                                                        {aiAnalysis[rx.id].interactions.map((i: any, idx: number) => (
+                                                            <div key={idx} className="bg-red-500/5 border-l-2 border-red-500 pl-2">
+                                                                <span className="font-semibold text-gray-200">{i.description}</span>
+                                                                <div className="text-gray-500 mt-0.5">{i.recommendation}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {aiAnalysis[rx.id].costSavings.length > 0 && (
+                                                    <div className="mb-2 space-y-2">
+                                                        <div className="text-emerald-400 font-bold mb-1 uppercase tracking-wider text-[10px]">Cost Savings Found</div>
+                                                        {aiAnalysis[rx.id].costSavings.map((s: any, idx: number) => (
+                                                            <div key={idx} className="bg-emerald-500/5 border-l-2 border-emerald-500 pl-2">
+                                                                <span className="font-semibold text-gray-200">Switch {s.original} ➔ {s.alternative}</span>
+                                                                <div className="text-emerald-500/70 mt-0.5">Estimated Savings: {s.savingsEst}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {(aiAnalysis[rx.id].interactions.length === 0 && aiAnalysis[rx.id].costSavings.length === 0) && (
+                                                    <div className="text-gray-500 italic">No significant interactions found. Safe to dispense.</div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* Action */}
-                                        <div className="px-4 pb-4">
+                                        <div className="px-4 pb-4 flex gap-2">
+                                            <button
+                                                onClick={() => handleRunAISafetyCheck(rx.id, rx.medicines)}
+                                                disabled={aiLoadingFor === rx.id}
+                                                className="flex-1 bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border border-purple-600/30 disabled:opacity-50 disabled:cursor-not-allowed font-bold py-2.5 rounded-lg transition text-[11px] uppercase tracking-wider flex items-center justify-center gap-2"
+                                            >
+                                                <AlertTriangle size={14} />
+                                                {aiLoadingFor === rx.id ? 'Analyzing...' : 'AI Safety Check'}
+                                            </button>
+
                                             <button
                                                 onClick={() => handleDispenseRx(rx.id)}
                                                 disabled={dispensingId === rx.id}
-                                                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition text-[13px] uppercase tracking-wider flex items-center justify-center gap-2"
+                                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition text-[11px] uppercase tracking-wider flex items-center justify-center gap-2"
                                             >
                                                 <CheckCircle2 size={14} />
                                                 {dispensingId === rx.id ? 'Dispensing...' : 'Dispense & Bill'}

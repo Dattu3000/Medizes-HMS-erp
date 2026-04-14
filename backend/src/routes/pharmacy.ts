@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getInventory, dispenseMedicine, addMedicine, bulkAddMedicines, getPrescriptionQueue, dispensePrescription } from '../controllers/pharmacyController';
+import { getInventory, dispenseMedicine, addMedicine, bulkAddMedicines, getPrescriptionQueue, dispensePrescription, analyzePrescriptionAI } from '../controllers/pharmacyController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -12,5 +12,6 @@ router.post('/inventory', authenticate, requireRole(pharmRoles), addMedicine);
 router.post('/inventory/bulk', authenticate, requireRole(pharmRoles), bulkAddMedicines);
 router.get('/prescriptions', authenticate, requireRole(pharmRoles), getPrescriptionQueue);
 router.post('/dispense-rx', authenticate, requireRole(pharmRoles), dispensePrescription);
+router.post('/ai/analyze', authenticate, requireRole(pharmRoles), analyzePrescriptionAI);
 
 export default router;

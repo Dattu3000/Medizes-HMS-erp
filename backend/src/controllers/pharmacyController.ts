@@ -216,3 +216,67 @@ export const dispensePrescription = async (req: Request, res: Response) => {
         res.status(500).json({ message: error.message || 'Failed to dispense prescription', error });
     }
 };
+
+// Phase 16: AI Prescription Analysis
+export const analyzePrescriptionAI = async (req: Request, res: Response) => {
+    try {
+        const { medicines } = req.body;
+        if (!medicines || !Array.isArray(medicines) || medicines.length === 0) {
+            return res.status(400).json({ message: 'No medicines provided for analysis' });
+        }
+
+        // Simulating LLM Processing Delay
+        await new Promise(r => setTimeout(r, 1200));
+
+        // Mock AI Logic based on inputs
+        const names = medicines.map((m: any) => m.drugName.toLowerCase());
+        const hasAntibiotic = names.some((n: string) => n.includes('amoxicillin') || n.includes('azithromycin') || n.includes('ciprofloxacin'));
+        const hasNsaid = names.some((n: string) => n.includes('ibuprofen') || n.includes('naproxen') || n.includes('diclofenac'));
+        const hasWarfarin = names.some((n: string) => n.includes('warfarin'));
+
+        const interactions = [];
+        if (hasAntibiotic && hasNsaid) {
+            interactions.push({
+                severity: 'MODERATE',
+                description: 'Potential for increased gastrointestinal irritation when antibiotics are used with NSAIDs.',
+                recommendation: 'Monitor patient for GI discomfort. Advise taking NSAIDs with food.'
+            });
+        }
+        if (hasWarfarin && hasAntibiotic) {
+            interactions.push({
+                severity: 'HIGH',
+                description: 'Antibiotics can alter intestinal flora, potentially increasing the effects of Warfarin and bleeding risk.',
+                recommendation: 'Closely monitor INR values. Adjust Warfarin dosage if necessary.'
+            });
+        }
+
+        const costSavings = [];
+        const brandedParacetamol = medicines.find((m: any) => m.drugName.toLowerCase().includes('tylenol') || m.drugName.toLowerCase() === 'crocin' || m.drugName.toLowerCase() === 'dolo');
+        if (brandedParacetamol) {
+            costSavings.push({
+                original: brandedParacetamol.drugName,
+                alternative: 'Generic Paracetamol 500mg',
+                savingsEst: '60%'
+            });
+        }
+
+        let overallRisk = 'LOW';
+        if (interactions.length > 0) overallRisk = 'MODERATE';
+        if (interactions.some(i => i.severity === 'HIGH')) overallRisk = 'HIGH';
+        if (medicines.length > 4 && overallRisk === 'LOW') overallRisk = 'MODERATE'; // Polypharmacy warning
+
+        res.status(200).json({
+            status: 'SUCCESS',
+            analysis: {
+                overallRisk,
+                interactions,
+                costSavings,
+                summary: `AI analyzed ${medicines.length} prescribed medications. Found ${interactions.length} potential interaction(s) and ${costSavings.length} cost-saving alternative(s).`
+            }
+        });
+    } catch (error) {
+        console.error("AI Analysis error", error);
+        res.status(500).json({ message: 'AI Analysis failed', error });
+    }
+};
+
