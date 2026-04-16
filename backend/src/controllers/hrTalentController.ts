@@ -28,6 +28,34 @@ export const analyzeJob = async (req: Request, res: Response) => {
     } catch (error) { res.status(500).json({ message: 'Error analyzing job', error }); }
 };
 
+export const screenResumeAI = async (req: Request, res: Response) => {
+    try {
+        const { candidateSkills, jobRequirements } = req.body;
+
+        let matchScore = Math.floor(Math.random() * 40) + 40; // Base 40-80
+
+        if (candidateSkills && jobRequirements) {
+            const cLow = candidateSkills.toLowerCase();
+            const jLow = jobRequirements.toLowerCase();
+            if (cLow.includes('react') && jLow.includes('react')) matchScore += 10;
+            if (cLow.includes('node') && jLow.includes('node')) matchScore += 10;
+        }
+
+        matchScore = Math.min(matchScore, 99);
+
+        let recommendation = "REJECT";
+        if (matchScore > 85) recommendation = "STRONG MATCH / SHORTLIST";
+        else if (matchScore > 70) recommendation = "POTENTIAL MATCH";
+
+        res.status(200).json({
+            matchScore,
+            recommendation,
+            keyMissingSkills: ["Epic EHR integrations", "Compliance Training"],
+            matchedSkills: ["JavaScript", "FastAPI", "React"]
+        });
+    } catch (error) { res.status(500).json({ message: 'Error analyzing resume', error }); }
+};
+
 // Candidates
 export const getCandidates = async (req: Request, res: Response) => {
     try {

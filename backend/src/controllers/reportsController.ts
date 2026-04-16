@@ -291,3 +291,371 @@ export const getAnalytics = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error fetching analytics', error });
     }
 };
+
+// ═══════════════════════════════════════════════
+// EXPERT: DOCTOR-WISE REVENUE
+// ═══════════════════════════════════════════════
+export const getRevenueByDoctor = async (req: Request, res: Response) => {
+    try {
+        const { from, to } = req.query;
+        const dateFilter: any = {};
+        if (from) dateFilter.gte = new Date(String(from));
+        if (to) dateFilter.lte = new Date(String(to));
+
+        const billWhere: any = { status: 'PAID' };
+        if (from || to) billWhere.createdAt = dateFilter;
+
+        // Bills via visits linked to doctors
+        const bills = await prisma.bill.findMany({
+            where: { ...billWhere, visitId: { not: null } },
+            include: {
+                visit: {
+                    include: {
+                        doctor: {
+                            include: { user: { select: { employeeId: true } } }
+                        }
+                    }
+                }
+            }
+        });
+
+        const doctorMap: Record<string, { name: string; department: string; revenue: number; billCount: number }> = {};
+        let totalRevenue = 0;
+
+        for (const bill of bills) {
+            if (!bill.visit?.doctor) continue;
+            const doc = bill.visit.doctor;
+            const key = doc.id;
+            const net = bill.subTotal - bill.discount;
+            if (!doctorMap[key]) {
+                doctorMap[key] = {
+                    name: `Dr. ${doc.firstName} ${doc.lastName}`,
+                    department: doc.department || 'General',
+                    revenue: 0,
+                    billCount: 0
+                };
+            }
+            doctorMap[key].revenue += net;
+            doctorMap[key].billCount += 1;
+            totalRevenue += net;
+        }
+
+        const ranked = Object.values(doctorMap)
+            .sort((a, b) => b.revenue - a.revenue)
+            .map((d, i) => ({
+                rank: i + 1,
+                ...d,
+                percentage: totalRevenue > 0 ? ((d.revenue / totalRevenue) * 100).toFixed(1) : '0.0',
+                avgPerBill: d.billCount > 0 ? (d.revenue / d.billCount).toFixed(0) : '0'
+            }));
+
+        res.status(200).json({ doctors: ranked, totalRevenue, doctorCount: ranked.length });
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating doctor revenue', error });
+    }
+};
+
+// ═══════════════════════════════════════════════
+// EXPERT: DEPARTMENT-WISE P&L
+// ═══════════════════════════════════════════════
+export const getRevenueByDepartment = async (req: Request, res: Response) => {
+    try {
+        const bills = await prisma.bill.findMany({
+            where: { status: 'PAID', visitId: { not: null } },
+            include: { visit: { select: { department: true } } }
+        });
+
+        const deptMap: Record<string, { revenue: number; gst: number; billCount: number }> = {};
+
+        for (const bill of bills) {
+            const dept = bill.visit?.department || 'General';
+            if (!deptMap[dept]) deptMap[dept] = { revenue: 0, gst: 0, billCount: 0 };
+            deptMap[dept].revenue += (bill.subTotal - bill.discount);
+            deptMap[dept].gst += bill.gstAmount;
+            deptMap[dept].billCount += 1;
+        }
+
+        // Direct IPD/Lab/Pharmacy bills (no visit)
+        const directBills = await prisma.bill.findMany({
+            where: { status: 'PAID', visitId: null }
+        });
+        for (const bill of directBills) {
+            const dept = bill.type.replace(/_/g, ' ');
+            if (!deptMap[dept]) deptMap[dept] = { revenue: 0, gst: 0, billCount: 0 };
+            deptMap[dept].revenue += (bill.subTotal - bill.discount);
+            deptMap[dept].gst += bill.gstAmount;
+            deptMap[dept].billCount += 1;
+        }
+
+        const totalRevenue = Object.values(deptMap).reduce((s, d) => s + d.revenue, 0);
+        const departments = Object.entries(deptMap)
+            .sort((a, b) => b[1].revenue - a[1].revenue)
+            .map(([name, data]) => ({
+                department: name,
+                ...data,
+                percentage: totalRevenue > 0 ? ((data.revenue / totalRevenue) * 100).toFixed(1) : '0.0'
+            }));
+
+        res.status(200).json({ departments, totalRevenue });
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating department revenue', error });
+    }
+};
+
+// ═══════════════════════════════════════════════
+// EXPERT: COLLECTION EFFICIENCY
+// ═══════════════════════════════════════════════
+export const getCollectionEfficiency = async (req: Request, res: Response) => {
+    try {
+        const months: any[] = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+            const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+            const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+
+            const [totalBills, paidBills] = await Promise.all([
+                prisma.bill.findMany({ where: { createdAt: { gte: startOfMonth, lte: endOfMonth } } }),
+                prisma.bill.findMany({ where: { status: 'PAID', createdAt: { gte: startOfMonth, lte: endOfMonth } } })
+            ]);
+
+            const totalBilled = totalBills.reduce((s, b) => s + b.netPayable, 0);
+            const totalCollected = paidBills.reduce((s, b) => s + b.netPayable, 0);
+
+            months.push({
+                month: label,
+                billed: totalBilled,
+                collected: totalCollected,
+                efficiency: totalBilled > 0 ? ((totalCollected / totalBilled) * 100).toFixed(1) : '100.0',
+                outstanding: totalBilled - totalCollected
+            });
+        }
+
+        const overallBilled = months.reduce((s, m) => s + m.billed, 0);
+        const overallCollected = months.reduce((s, m) => s + m.collected, 0);
+
+        res.status(200).json({
+            months,
+            overall: {
+                billed: overallBilled,
+                collected: overallCollected,
+                efficiency: overallBilled > 0 ? ((overallCollected / overallBilled) * 100).toFixed(1) : '100.0'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating collection efficiency', error });
+    }
+};
+
+// ═══════════════════════════════════════════════
+// EXPERT: REVENUE TREND (6 Months)
+// ═══════════════════════════════════════════════
+export const getRevenueTrend = async (req: Request, res: Response) => {
+    try {
+        const months: any[] = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+            const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+
+            const bills = await prisma.bill.findMany({
+                where: { status: 'PAID', createdAt: { gte: startOfMonth, lte: endOfMonth } }
+            });
+
+            const revenue = bills.reduce((s, b) => s + (b.subTotal - b.discount), 0);
+            const gst = bills.reduce((s, b) => s + b.gstAmount, 0);
+
+            months.push({
+                month: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                revenue,
+                gst,
+                billCount: bills.length
+            });
+        }
+
+        for (let i = 1; i < months.length; i++) {
+            const prev = months[i - 1].revenue;
+            const curr = months[i].revenue;
+            months[i].growth = prev > 0 ? (((curr - prev) / prev) * 100).toFixed(1) : '0.0';
+        }
+        if (months.length > 0) months[0].growth = '0.0';
+
+        res.status(200).json({ months });
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating revenue trend', error });
+    }
+};
+
+// ═══════════════════════════════════════════════
+// EXPERT: EXPENSE TREND (6 Months)
+// ═══════════════════════════════════════════════
+export const getExpenseTrend = async (req: Request, res: Response) => {
+    try {
+        const months: any[] = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+            const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+
+            const [expenses, payrolls] = await Promise.all([
+                prisma.expense.findMany({ where: { status: 'PAID', createdAt: { gte: startOfMonth, lte: endOfMonth } } }),
+                prisma.payroll.findMany({ where: { status: 'PAID', month: d.getMonth() + 1, year: d.getFullYear() } })
+            ]);
+
+            const opex = expenses.reduce((s, e) => s + e.amount, 0);
+            const payroll = payrolls.reduce((s, p) => s + p.netSalary, 0);
+
+            months.push({
+                month: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                operatingExpenses: opex,
+                payroll,
+                total: opex + payroll
+            });
+        }
+
+        res.status(200).json({ months });
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating expense trend', error });
+    }
+};
+
+// ═══════════════════════════════════════════════
+// EXPERT: BED OCCUPANCY ANALYTICS
+// ═══════════════════════════════════════════════
+export const getBedOccupancy = async (req: Request, res: Response) => {
+    try {
+        const [wards, totalBeds, occupiedBeds] = await Promise.all([
+            prisma.ward.findMany({ include: { beds: true } }),
+            prisma.bed.count(),
+            prisma.bed.count({ where: { status: 'OCCUPIED' } })
+        ]);
+
+        const wardStats = wards.map(w => {
+            const total = w.beds.length;
+            const occupied = w.beds.filter((b: any) => b.status === 'OCCUPIED').length;
+            return {
+                ward: w.name,
+                type: w.type,
+                totalBeds: total,
+                occupied,
+                available: total - occupied,
+                occupancyRate: total > 0 ? ((occupied / total) * 100).toFixed(1) : '0.0'
+            };
+        });
+
+        res.status(200).json({
+            overall: {
+                totalBeds,
+                occupied: occupiedBeds,
+                available: totalBeds - occupiedBeds,
+                occupancyRate: totalBeds > 0 ? ((occupiedBeds / totalBeds) * 100).toFixed(1) : '0.0'
+            },
+            wards: wardStats
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating bed occupancy', error });
+    }
+};
+
+// ═══════════════════════════════════════════════
+// EXPERT: LAB VOLUME ANALYTICS
+// ═══════════════════════════════════════════════
+export const getLabVolume = async (req: Request, res: Response) => {
+    try {
+        const orders = await prisma.labOrder.findMany({
+            select: { testName: true, status: true, createdAt: true }
+        });
+
+        const testMap: Record<string, { total: number; completed: number; pending: number }> = {};
+        for (const o of orders) {
+            if (!testMap[o.testName]) testMap[o.testName] = { total: 0, completed: 0, pending: 0 };
+            testMap[o.testName].total += 1;
+            if (o.status === 'RESULT_ENTERED') testMap[o.testName].completed += 1;
+            else testMap[o.testName].pending += 1;
+        }
+
+        const tests = Object.entries(testMap)
+            .sort((a, b) => b[1].total - a[1].total)
+            .map(([name, data]) => ({ testName: name, ...data }));
+
+        const months: any[] = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+            const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+
+            const count = orders.filter(o => {
+                const created = new Date(o.createdAt);
+                return created >= startOfMonth && created <= endOfMonth;
+            }).length;
+
+            months.push({
+                month: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                orders: count
+            });
+        }
+
+        res.status(200).json({
+            totalOrders: orders.length,
+            byTest: tests,
+            monthlyTrend: months
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating lab volume', error });
+    }
+};
+
+// ═══════════════════════════════════════════════
+// EXPERT: PATIENT DEMOGRAPHICS
+// ═══════════════════════════════════════════════
+export const getPatientDemographics = async (req: Request, res: Response) => {
+    try {
+        const patients = await prisma.patient.findMany({
+            select: { age: true, gender: true, city: true, state: true, bloodGroup: true }
+        });
+
+        const ageBuckets: Record<string, number> = { '0-18': 0, '19-35': 0, '36-50': 0, '51-65': 0, '65+': 0 };
+        for (const p of patients) {
+            if (p.age <= 18) ageBuckets['0-18']++;
+            else if (p.age <= 35) ageBuckets['19-35']++;
+            else if (p.age <= 50) ageBuckets['36-50']++;
+            else if (p.age <= 65) ageBuckets['51-65']++;
+            else ageBuckets['65+']++;
+        }
+
+        const genderCounts: Record<string, number> = {};
+        for (const p of patients) {
+            genderCounts[p.gender] = (genderCounts[p.gender] || 0) + 1;
+        }
+
+        const bloodGroupCounts: Record<string, number> = {};
+        for (const p of patients) {
+            const bg = p.bloodGroup || 'Unknown';
+            bloodGroupCounts[bg] = (bloodGroupCounts[bg] || 0) + 1;
+        }
+
+        const cityCounts: Record<string, number> = {};
+        for (const p of patients) {
+            const city = p.city || 'Unknown';
+            cityCounts[city] = (cityCounts[city] || 0) + 1;
+        }
+        const topCities = Object.entries(cityCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([city, count]) => ({ city, count }));
+
+        res.status(200).json({
+            totalPatients: patients.length,
+            ageBuckets,
+            genderDistribution: genderCounts,
+            bloodGroups: bloodGroupCounts,
+            topCities
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating demographics', error });
+    }
+};

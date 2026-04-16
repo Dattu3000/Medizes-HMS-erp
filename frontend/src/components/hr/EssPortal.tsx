@@ -4,9 +4,36 @@ import { useState, useEffect } from 'react';
 import { Plane, FileText, CheckSquare, Settings, Bell, BookOpen } from 'lucide-react';
 
 export default function EssPortal() {
-    const [tasks, setTasks] = useState([{ id: 1, name: "Upload ID Proof", status: "PENDING" }]);
+    const [tasks, setTasks] = useState<any[]>([]);
     const [paystubs, setPaystubs] = useState([{ month: 'February', year: 2026, amount: 4500 }]);
     const [ptoBalance] = useState(14);
+
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
+    const fetchTasks = async () => {
+        try {
+            const res = await fetch('http://localhost:5000/api/hr/onboarding/my-tasks', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setTasks(await res.json());
+        } catch (err) { console.error(err); }
+    };
+
+    const handleCompleteTask = async (id: string) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/hr/onboarding/tasks/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ status: 'COMPLETED' })
+            });
+            if (res.ok) fetchTasks();
+        } catch (err) { console.error(err); }
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-300">
@@ -97,14 +124,22 @@ export default function EssPortal() {
                         </h3>
                     </div>
                     <div className="p-4 space-y-2">
-                        {tasks.map((task) => (
+                        {tasks.filter(t => t.status === 'PENDING').map((task) => (
                             <div key={task.id} className="flex items-center justify-between p-4 bg-black/10 hover:bg-white/10 border border-white/5 rounded-xl transition-colors">
-                                <span className="font-medium text-glass-body">{task.name}</span>
-                                <button className="text-sm font-medium text-white liquid-glass-button px-4 py-1.5 rounded-lg">
+                                <span className="font-medium text-glass-body">{task.taskName}</span>
+                                <button
+                                    onClick={() => handleCompleteTask(task.id)}
+                                    className="text-sm font-medium text-white liquid-glass-button px-4 py-1.5 rounded-lg"
+                                >
                                     Complete
                                 </button>
                             </div>
                         ))}
+                        {tasks.filter(t => t.status === 'PENDING').length === 0 && (
+                            <div className="text-center py-8 text-glass-muted italic text-sm">
+                                All caught up! No pending tasks.
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

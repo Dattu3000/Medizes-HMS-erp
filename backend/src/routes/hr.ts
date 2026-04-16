@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { markAttendance, getAttendance, getPayroll, generatePayroll, processPayroll } from '../controllers/hrController';
-import { getEmployees, getEmployeeProfile, updateEmployeeProfile, uploadHrDocument, signHrDocument, getOrgChart, deployOnboardingWorkflow } from '../controllers/hrCoreController';
-import { getJobs, createJob, getCandidates, addCandidate, updateCandidateStatus, scheduleInterview, submitScorecard, analyzeJob } from '../controllers/hrTalentController';
+import { getEmployees, getEmployeeProfile, updateEmployeeProfile, uploadHrDocument, signHrDocument, getOrgChart, deployOnboardingWorkflow, autoGenerateShifts, getShifts, getMyOnboardingTasks, updateOnboardingTaskStatus, getHrStrategicAnalytics } from '../controllers/hrCoreController';
+import { getJobs, createJob, getCandidates, addCandidate, updateCandidateStatus, scheduleInterview, submitScorecard, analyzeJob, screenResumeAI } from '../controllers/hrTalentController';
 import { getGoals, createGoal, getFeedback, submitFeedback, getOneOnOneAgendas, createOneOnOneAgenda, getActiveSurveys, submitSurveyResponse } from '../controllers/hrPerformanceController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
@@ -19,6 +19,13 @@ router.put('/employees/:id', authenticate, requireRole(adminRoles), updateEmploy
 router.post('/documents', authenticate, requireRole(adminRoles), uploadHrDocument);
 router.put('/documents/:id/sign', authenticate, signHrDocument);
 router.post('/onboarding/deploy', authenticate, requireRole(mgtRoles), deployOnboardingWorkflow);
+router.get('/onboarding/my-tasks', authenticate, getMyOnboardingTasks);
+router.put('/onboarding/tasks/:id', authenticate, updateOnboardingTaskStatus);
+router.get('/analytics/strategic', authenticate, getHrStrategicAnalytics);
+
+// ADVANCED SHIFTS
+router.get('/shifts', authenticate, getShifts);
+router.post('/shifts/auto-generate', authenticate, requireRole(mgtRoles), autoGenerateShifts);
 
 // LEGACY (ATTENDANCE & PAYROLL)
 router.post('/attendance', authenticate, markAttendance);
@@ -36,6 +43,7 @@ router.post('/candidates', authenticate, requireRole(mgtRoles), addCandidate);
 router.put('/candidates/:id/status', authenticate, requireRole(mgtRoles), updateCandidateStatus);
 router.post('/interviews/schedule', authenticate, requireRole(mgtRoles), scheduleInterview);
 router.post('/interviews/scorecard', authenticate, submitScorecard);
+router.post('/talent/resume-screen', authenticate, requireRole(mgtRoles), screenResumeAI);
 
 // PERFORMANCE & ENGAGEMENT
 router.get('/goals', authenticate, getGoals);

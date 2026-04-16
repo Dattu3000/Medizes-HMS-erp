@@ -1,8 +1,26 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, DollarSign, Activity } from 'lucide-react';
 
 export default function StrategicDashboard() {
+    const [data, setData] = useState<any>(null);
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, []);
+
+    const fetchAnalytics = async () => {
+        try {
+            const res = await fetch('http://localhost:5000/api/hr/analytics/strategic', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setData(await res.json());
+        } catch (err) { console.error(err); }
+    };
+
+    if (!data) return <div className="text-white p-8">Loading analytics...</div>;
+
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-300">
             {/* Header */}
@@ -29,7 +47,7 @@ export default function StrategicDashboard() {
                         <span className="flex items-center text-xs font-bold text-emerald-200 bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 rounded-full"><TrendingUp className="w-3 h-3 mr-1" /> +12%</span>
                     </div>
                     <div className="mt-4">
-                        <h3 className="text-3xl font-bold text-glass-title">1,245</h3>
+                        <h3 className="text-3xl font-bold text-glass-title">{data.headcount}</h3>
                         <p className="text-sm font-medium text-glass-muted mt-1 uppercase tracking-wide">Total Headcount</p>
                     </div>
                 </div>
@@ -42,7 +60,7 @@ export default function StrategicDashboard() {
                         <span className="flex items-center text-xs font-bold text-rose-200 bg-rose-500/20 border border-rose-500/30 px-3 py-1 rounded-full"><TrendingUp className="w-3 h-3 mr-1" /> +2.1%</span>
                     </div>
                     <div className="mt-4">
-                        <h3 className="text-3xl font-bold text-glass-title">8.4%</h3>
+                        <h3 className="text-3xl font-bold text-glass-title">{data.turnover}%</h3>
                         <p className="text-sm font-medium text-glass-muted mt-1 uppercase tracking-wide">Annual Turnover</p>
                     </div>
                 </div>
@@ -55,7 +73,7 @@ export default function StrategicDashboard() {
                         <span className="flex items-center text-xs font-bold text-emerald-200 bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 rounded-full"><TrendingUp className="w-3 h-3 mr-1" /> +5%</span>
                     </div>
                     <div className="mt-4">
-                        <h3 className="text-3xl font-bold text-glass-title">$4.2M</h3>
+                        <h3 className="text-3xl font-bold text-glass-title">$240K</h3>
                         <p className="text-sm font-medium text-glass-muted mt-1 uppercase tracking-wide">Q1 Payroll Run</p>
                     </div>
                 </div>
@@ -67,7 +85,7 @@ export default function StrategicDashboard() {
                         </div>
                     </div>
                     <div className="mt-4">
-                        <h3 className="text-3xl font-bold text-glass-title">22 Days</h3>
+                        <h3 className="text-3xl font-bold text-glass-title">{data.hiring.avgTimeToFill} Days</h3>
                         <p className="text-sm font-medium text-glass-muted mt-1 uppercase tracking-wide">Avg Time-to-Fill</p>
                     </div>
                 </div>
@@ -83,11 +101,11 @@ export default function StrategicDashboard() {
                         <div>
                             <div className="flex justify-between text-sm mb-2">
                                 <span className="font-semibold text-glass-body">Gender Breakdown</span>
-                                <span className="text-glass-muted">48% F / 52% M</span>
+                                <span className="text-glass-muted">{data.diversity.female}% F / {data.diversity.male}% M</span>
                             </div>
                             <div className="flex w-full h-4 rounded-full overflow-hidden bg-black/20 shadow-inner">
-                                <div className="bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: '48%' }}></div>
-                                <div className="bg-gradient-to-r from-blue-400 to-cyan-400" style={{ width: '52%' }}></div>
+                                <div className="bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${data.diversity.female}%` }}></div>
+                                <div className="bg-gradient-to-r from-blue-400 to-cyan-400" style={{ width: `${data.diversity.male}%` }}></div>
                             </div>
                         </div>
 
@@ -109,11 +127,11 @@ export default function StrategicDashboard() {
                 <div className="liquid-glass-card p-6 border-emerald-500/30">
                     <h3 className="text-xl font-bold text-glass-title mb-6">Pulse Survey Sentiment (AI)</h3>
                     <div className="flex flex-col items-center justify-center p-6 border-4 border-emerald-400/30 bg-emerald-500/10 rounded-full w-48 h-48 mx-auto relative mb-4 shadow-[0_0_30px_rgba(52,211,153,0.2)]">
-                        <span className="text-6xl font-black text-emerald-300 drop-shadow-md">82</span>
+                        <span className="text-6xl font-black text-emerald-300 drop-shadow-md">{data.sentiment}</span>
                         <span className="text-sm font-bold text-emerald-100/80 mt-1 uppercase tracking-widest">eNPS Score</span>
                     </div>
                     <div className="text-center">
-                        <p className="text-glass-body text-sm">AI Analysis indicates <strong className="text-emerald-300 font-bold">High Morale</strong>.</p>
+                        <p className="text-glass-body text-sm">AI Analysis indicates <strong className="text-emerald-300 font-bold">{data.sentiment > 70 ? 'High Morale' : 'Normal Morale'}</strong>.</p>
                         <p className="text-xs text-glass-muted mt-2 block mx-auto max-w-sm">"Work-life balance" and "Team Collaboration" are top trending themes from text feedback.</p>
                     </div>
                 </div>

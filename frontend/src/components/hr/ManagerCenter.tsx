@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Users, Target, CalendarDays, CheckCircle, AlertCircle, BarChart2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Target, CalendarDays, CheckCircle, AlertCircle, BarChart2, CalendarClock, Bot } from 'lucide-react';
 
 export default function ManagerCenter() {
     const [approvals] = useState([
@@ -12,6 +12,54 @@ export default function ManagerCenter() {
     const [upcoming1on1s] = useState([
         { id: 1, employee: 'Sarah Smith', time: 'Today, 2:00 PM', agendaItems: 3 }
     ]);
+
+    const [shifts, setShifts] = useState<any[]>([]);
+    const [goals, setGoals] = useState<any[]>([]);
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    useEffect(() => {
+        fetchShifts();
+        fetchGoals();
+    }, []);
+
+    const fetchShifts = async () => {
+        try {
+            const res = await fetch('http://localhost:5000/api/hr/shifts', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setShifts(await res.json());
+        } catch (e) { console.error(e); }
+    };
+
+    const fetchGoals = async () => {
+        try {
+            const res = await fetch('http://localhost:5000/api/hr/goals', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setGoals(await res.json());
+        } catch (err) { console.error(err); }
+    };
+
+    const handleAutoGenerate = async () => {
+        setIsGenerating(true);
+        try {
+            const payload = { targetDate: new Date().toISOString(), department: null };
+            const res = await fetch('http://localhost:5000/api/hr/shifts/auto-generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert("Smart Shifts Generated Successfully based on availability and burnout constraints.");
+                fetchShifts();
+            } else {
+                alert("Failed to generate shifts. Please check backend.");
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        setIsGenerating(false);
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-300">
@@ -66,25 +114,25 @@ export default function ManagerCenter() {
                                 <Target className="w-5 h-5 text-blue-300" />
                                 <h3 className="text-lg font-bold text-glass-title">Team OKRs (Q1)</h3>
                             </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span className="font-medium text-glass-body">Launch Mobile App v2</span>
-                                        <span className="text-blue-300 font-bold">75%</span>
+                            <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2">
+                                {goals.length > 0 ? goals.map(goal => (
+                                    <div key={goal.id}>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="font-medium text-glass-body">{goal.title}</span>
+                                            <span className="text-blue-300 font-bold">{goal.progress}%</span>
+                                        </div>
+                                        <div className="w-full bg-black/20 rounded-full h-2">
+                                            <div
+                                                className={`h-2 rounded-full bg-gradient-to-r ${goal.progress >= 70 ? 'from-emerald-400 to-teal-500' : goal.progress >= 40 ? 'from-blue-400 to-indigo-500' : 'from-amber-400 to-orange-500'}`}
+                                                style={{ width: `${goal.progress}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
-                                    <div className="w-full bg-black/20 rounded-full h-2">
-                                        <div className="bg-gradient-to-r from-blue-400 to-indigo-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                                )) : (
+                                    <div className="text-center py-6 text-glass-muted italic text-sm">
+                                        No team goals set for this period.
                                     </div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span className="font-medium text-glass-body">Reduce Bug Backlog</span>
-                                        <span className="text-amber-300 font-bold">40%</span>
-                                    </div>
-                                    <div className="w-full bg-black/20 rounded-full h-2">
-                                        <div className="bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full" style={{ width: '40%' }}></div>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
@@ -136,6 +184,69 @@ export default function ManagerCenter() {
                     </div>
                 </div>
             </div>
+
+            {/* Smart Shift Intelligence */}
+            <div className="liquid-glass-card p-6 mt-6 border-indigo-500/20">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-indigo-500/20 p-2 rounded-xl text-indigo-400">
+                            <CalendarClock className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-glass-title">Shift Intelligence & Roster</h3>
+                            <p className="text-sm text-glass-body mt-0.5">Automated Hospital Deployment scheduling analyzing burnout thresholds.</p>
+                        </div>
+                    </div>
+                    <button onClick={handleAutoGenerate} disabled={isGenerating} className="liquid-glass-button bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-100 font-bold px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2 border border-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <Bot className="w-4 h-4" /> {isGenerating ? 'Synthesizing...' : 'AI Auto-Generate Upcoming Roster'}
+                    </button>
+                </div>
+
+                {shifts.length === 0 ? (
+                    <div className="py-12 flex flex-col justify-center items-center text-glass-muted border-2 border-dashed border-white/10 rounded-2xl">
+                        <CalendarDays className="w-10 h-10 mb-3 opacity-30" />
+                        <p className="font-semibold text-lg">No Active Shifts Scheduled</p>
+                        <p className="text-sm opacity-70 mt-1">Deploy the AI Generator to organize next week's availability.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {shifts.map((s, idx) => (
+                            <div key={idx} className={`p-4 rounded-xl border ${s.isBurnoutRisk ? 'bg-rose-500/10 border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.1)]' : 'bg-black/20 border-white/10'}`}>
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <div className="font-bold text-white text-md">
+                                            {s.employee?.firstName} {s.employee?.lastName}
+                                        </div>
+                                        <div className="text-xs text-indigo-300 font-semibold">{s.roleType} // {s.department}</div>
+                                    </div>
+                                    {s.isBurnoutRisk && (
+                                        <span className="bg-rose-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded animate-pulse">
+                                            BURNOUT RISK
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="space-y-1 mt-3 pt-3 border-t border-white/10 text-sm">
+                                    <div className="flex justify-between text-glass-body">
+                                        <span>Start:</span>
+                                        <span className="font-semibold text-white">{new Date(s.startTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                    </div>
+                                    <div className="flex justify-between text-glass-body">
+                                        <span>End:</span>
+                                        <span className="font-semibold text-white">{new Date(s.endTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                    </div>
+                                </div>
+                                {s.isBurnoutRisk && s.burnoutReason && (
+                                    <div className="mt-3 bg-rose-500/20 text-rose-200 text-xs p-2 rounded border border-rose-500/30">
+                                        <AlertCircle className="w-3 h-3 inline mr-1" />
+                                        {s.burnoutReason}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
         </div>
     );
 }

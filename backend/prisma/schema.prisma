@@ -75,6 +75,7 @@ model Employee {
   admissions  Admission[]
   attendances Attendance[]
   payrolls    Payroll[]
+  shifts      ShiftSlot[]
 
   hrDocuments     HrDocument[]
   onboardingTasks OnboardingTask[]
@@ -139,6 +140,7 @@ model Patient {
   prescriptions   Prescription[]
   admissions      Admission[]
   referrals       Referral[]
+  receivables     AccountsReceivable[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -431,18 +433,62 @@ model Payroll {
   @@unique([employeeId, month, year])
 }
 
+model ShiftSlot {
+  id            String   @id @default(uuid())
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  
+  startTime     DateTime
+  endTime       DateTime
+  department    String?  // ER, ICU, OPD
+  roleType      String?  // Shift Lead, Nurse, Surgeon
+  status        String   @default("SCHEDULED") // SCHEDULED, COMPLETED, NO_SHOW, CANCELLED
+  
+  isBurnoutRisk Boolean  @default(false)
+  burnoutReason String?  // e.g., "Back-to-back shift", "Over 48h week limit"
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 // ----------------------------------------------------
 // LAYER 5: ACCOUNTS, EXPENSES & GST/TDS COMPLIANCE
 // ----------------------------------------------------
 
 model Ledger {
   id          String    @id @default(uuid())
-  name        String    @unique // e.g. "Bank A/c", "Cash A/c", "Sales A/c", "Salary A/c"
-  group       String    // ASSET, LIABILITY, INCOME, EXPENSE
-  balance     Float     @default(0) // Simplistic balance mapping
+  code        String?   @unique // Chart of Accounts code e.g. "1001", "2001"
+  name        String    @unique // e.g. "Bank A/c", "Cash A/c", "Sales A/c"
+  group       String    // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
+  accountType String    @default("DETAIL") // CONTROL (parent) or DETAIL (postable)
+  balance     Float     @default(0)
+  isActive    Boolean   @default(true)
+  
+  parentId    String?   // For hierarchical Chart of Accounts
+  parent      Ledger?   @relation("LedgerHierarchy", fields: [parentId], references: [id])
+  children    Ledger[]  @relation("LedgerHierarchy")
+  
+  transactions  Transaction[]
+  journalLines  JournalLine[]
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model Transaction {
+  id              String   @id @default(uuid())
+  ledgerId        String
+  ledger          Ledger   @relation(fields: [ledgerId], references: [id])
+  
+  type            String   // CREDIT (Adds to ledger balance), DEBIT (Subtracts from ledger balance)
+  amount          Float
+  description     String   
+  
+  referenceId     String?  // Can link to Bill.id, Expense.id, etc.
+  referenceType   String?  // 'BILL', 'EXPENSE'
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Expense {
@@ -462,6 +508,100 @@ model Expense {
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// ── DOUBLE-ENTRY JOURNAL SYSTEM ──
+
+model JournalEntry {
+  id          String   @id @default(uuid())
+  entryNo     String   @unique // e.g. JE-000001
+  date        DateTime @default(now())
+  narration   String   // Description of the transaction
+  status      String   @default("POSTED") // DRAFT, POSTED, VOID
+  
+  referenceId   String?  // Link to Bill.id, Expense.id, Payroll.id
+  referenceType String?  // BILL, EXPENSE, PAYROLL, MANUAL
+  
+  lines       JournalLine[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model JournalLine {
+  id              String   @id @default(uuid())
+  journalEntryId  String
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id])
+  
+  ledgerId        String
+  ledger          Ledger   @relation(fields: [ledgerId], references: [id])
+  
+  debit           Float    @default(0)
+  credit          Float    @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ── AR / AP TRACKING ──
+
+model AccountsReceivable {
+  id          String   @id @default(uuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  billId      String?  // Links to the unpaid Bill
+  amount      Float
+  dueDate     DateTime @default(now())
+  status      String   @default("OUTSTANDING") // OUTSTANDING, PARTIALLY_PAID, SETTLED
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AccountsPayable {
+  id          String   @id @default(uuid())
+  vendorName  String
+  expenseId   String?  // Links to Expense
+  
+  amount      Float
+  dueDate     DateTime @default(now())
+  status      String   @default("OUTSTANDING") // OUTSTANDING, PARTIALLY_PAID, SETTLED
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ── FINANCIAL PERIOD MANAGEMENT ──
+
+model FinancialPeriod {
+  id          String   @id @default(uuid())
+  month       Int      // 1-12
+  year        Int
+  status      String   @default("OPEN") // OPEN, CLOSED, LOCKED
+  closedById  String?
+  closedAt    DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([month, year])
+}
+
+// ── DEPARTMENT BUDGET ──
+
+model Budget {
+  id          String   @id @default(uuid())
+  department  String
+  month       Int
+  year        Int
+  allocated   Float    // Budgeted amount
+  spent       Float    @default(0) // Actual spent
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([department, month, year])
 }
 
 // ----------------------------------------------------

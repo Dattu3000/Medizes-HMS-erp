@@ -82,7 +82,26 @@ export const processPayment = async (req: Request, res: Response) => {
             }
 
             // Sync with Accounts Ledger -> Increase Cash/Bank Balance and Revenue
-            // For now just create an audit log
+            // 1. Get or create Bank A/c
+            const cashLedger = await tx.ledger.upsert({
+                where: { name: 'Cash A/c' },
+                update: { balance: { increment: Math.max(finalNetPayable, 0) } },
+                create: { name: 'Cash A/c', group: 'ASSET', balance: Math.max(finalNetPayable, 0) }
+            });
+
+            // 2. Create the Ledger Transaction
+            if (finalNetPayable > 0) {
+                await tx.transaction.create({
+                    data: {
+                        ledgerId: cashLedger.id,
+                        type: 'CREDIT',
+                        amount: finalNetPayable,
+                        description: `Bulk payment settlement for ${bills.length} bill(s)`,
+                        referenceId: bills[0].id,
+                        referenceType: 'BILL'
+                    }
+                });
+            }
         });
 
         if (userId) {
