@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
 import { logAudit } from '../utils/audit';
+import { callGemma } from '../utils/aiService';
 
 export const getWardsAndBeds = async (req: Request, res: Response) => {
     try {
@@ -198,5 +199,56 @@ export const createBed = async (req: Request, res: Response) => {
         res.status(201).json(bed);
     } catch (error) {
         res.status(500).json({ message: 'Failed to create bed', error });
+    }
+};
+
+// Phase 26C: AI-Powered Discharge Summary
+export const generateDischargeSummaryAI = async (req: Request, res: Response) => {
+    try {
+        const { admissionId } = req.body;
+        if (!admissionId) return res.status(400).json({ message: 'Admission ID is required' });
+
+        const admission = await prisma.admission.findUnique({
+            where: { id: admissionId },
+            include: {
+                patient: true,
+                doctor: true,
+                bed: { include: { ward: true } },
+                ipdCharges: true
+            }
+        });
+
+        if (!admission) return res.status(404).json({ message: 'Admission not found' });
+
+        const chargesSummary = admission.ipdCharges.map((c: any) => `${c.chargeType}: ${c.description} (₹${c.amount})`).join('; ');
+
+        const prompt = `You are a senior hospital physician writing a formal discharge summary.
+        Patient: ${admission.patient.firstName} ${admission.patient.lastName}, Age: ${admission.patient.age || 'N/A'}, Gender: ${admission.patient.gender || 'N/A'}.
+        Admitted by: Dr. ${admission.doctor?.lastName || 'Unknown'}.
+        Ward: ${admission.bed?.ward?.name || 'N/A'}, Bed: ${admission.bed?.bedNumber || 'N/A'}.
+        Admission Date: ${admission.admissionDate}.
+        Discharge Date: ${admission.dischargeDate || 'Pending'}.
+        Charges/Treatments recorded: ${chargesSummary || 'None recorded'}.
+        Deposit: ₹${admission.depositAmount}.
+
+        Return ONLY a valid JSON object matching this exact shape:
+        {
+          "summary": "Brief clinical narrative of the stay",
+          "diagnosis": "Primary and secondary diagnoses",
+          "treatmentGiven": ["List of treatments/procedures performed"],
+          "medicationsOnDischarge": ["List of medications prescribed at discharge"],
+          "followUpInstructions": ["List of follow-up care instructions"]
+        }
+        Do NOT wrap the JSON in Markdown formatting. Return pure JSON object only.`;
+
+        const dischargeSummary = await callGemma(prompt);
+
+        res.status(200).json({
+            status: 'SUCCESS',
+            dischargeSummary
+        });
+    } catch (error) {
+        console.error("AI Discharge Summary error", error);
+        res.status(500).json({ message: 'AI Discharge Summary generation failed', error });
     }
 };

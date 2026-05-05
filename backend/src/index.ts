@@ -16,6 +16,7 @@ import billingRoutes from './routes/billing';
 import notificationRoutes from './routes/notification';
 import referralRoutes from './routes/referral';
 import nursingRoutes from './routes/nursing';
+import trainingRoutes from './routes/training';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/nursing', nursingRoutes);
+app.use('/api/training', trainingRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'UP', timestamp: new Date() });

@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -10,7 +10,7 @@ export default function DashboardOverview() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/reports/analytics', {
+        fetch(`${API_BASE}/api/reports/analytics`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
             .then(res => res.json())

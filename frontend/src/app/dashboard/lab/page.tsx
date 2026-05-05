@@ -1,9 +1,10 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import {
     RefreshCcw, UserCircle, FlaskConical, CheckCircle2, Play, Box
 } from 'lucide-react';
+import SmartLabReport from '@/components/lab/SmartLabReport';
 
 export default function LabOrderManagement() {
     const [activeTab, setActiveTab] = useState('pending');
@@ -25,8 +26,8 @@ export default function LabOrderManagement() {
             setLoading(true);
             const token = localStorage.getItem('token');
             const [ordersRes, catalogRes] = await Promise.all([
-                fetch('http://localhost:5000/api/lab/orders', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('http://localhost:5000/api/lab/catalog', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`${API_BASE}/api/lab/orders`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${API_BASE}/api/lab/catalog`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             if (ordersRes.ok && catalogRes.ok) {
@@ -59,7 +60,7 @@ export default function LabOrderManagement() {
         setProcessing(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/lab/order/${selectedOrder.id}/sample`, {
+            const res = await fetch(`${API_BASE}/api/lab/order/${selectedOrder.id}/sample`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -102,7 +103,7 @@ export default function LabOrderManagement() {
                 });
             }
 
-            const res = await fetch(`http://localhost:5000/api/lab/order/${selectedOrder.id}`, {
+            const res = await fetch(`${API_BASE}/api/lab/order/${selectedOrder.id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -214,7 +215,7 @@ export default function LabOrderManagement() {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-50">{selectedOrder.patient?.firstName} {selectedOrder.patient?.lastName}</h3>
-                                        <p className="text-sm text-gray-400 mt-1">UHID: {selectedOrder.patient?.uhid} • Dr. {selectedOrder.visit?.doctor?.lastName}</p>
+                                        <p className="text-sm text-gray-400 mt-1">UHID: {selectedOrder.patient?.uhid} â€¢ Dr. {selectedOrder.visit?.doctor?.lastName}</p>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-lg font-bold text-emerald-400">{selectedOrder.testName}</div>
@@ -312,37 +313,7 @@ export default function LabOrderManagement() {
 
                                 {/* Completed Report View */}
                                 {selectedOrder.status === 'RESULT_ENTERED' && (
-                                    <div className="bg-white rounded-xl p-6 shadow-2xl relative text-slate-800">
-                                        <div className="absolute top-0 right-0 rounded-bl-xl bg-emerald-500 text-white text-xs font-bold px-4 py-2">
-                                            VERIFIED REPORT
-                                        </div>
-                                        <h3 className="text-xl font-bold mb-6 text-slate-900">Laboratory Results</h3>
-
-                                        {selectedOrder.resultsPayload ? (
-                                            <table className="w-full text-left text-sm mb-6 border border-slate-200">
-                                                <thead className="bg-slate-100">
-                                                    <tr>
-                                                        <th className="p-3 border-b border-slate-200">Test Parameter</th>
-                                                        <th className="p-3 border-b border-slate-200 font-bold">Result</th>
-                                                        <th className="p-3 border-b border-slate-200 text-xs text-slate-500">Ref. Range</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {(selectedOrder.resultsPayload as any[]).map(r => (
-                                                        <tr key={r.parameter} className="border-b border-slate-100">
-                                                            <td className="p-3">{r.parameter}</td>
-                                                            <td className={`p-3 font-bold ${r.isAbnormal ? 'text-red-600' : 'text-slate-800'}`}>
-                                                                {r.value} {r.unit} {r.isAbnormal && '⚠️'}
-                                                            </td>
-                                                            <td className="p-3 text-slate-500">{r.range}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        ) : (
-                                            <div className="p-4 bg-slate-50 text-slate-700 rounded-lg whitespace-pre-wrap">{selectedOrder.resultText}</div>
-                                        )}
-                                    </div>
+                                    <SmartLabReport order={selectedOrder} />
                                 )}
                             </div>
                         </div>

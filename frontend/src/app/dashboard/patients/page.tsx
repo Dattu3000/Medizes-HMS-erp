@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { Search, Plus, Stethoscope, FileText, CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
@@ -34,7 +34,7 @@ export default function PatientsPage() {
 
     const fetchDoctors = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/patient/doctors', {
+            const res = await fetch(`${API_BASE}/api/patient/doctors`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await res.json();
@@ -53,7 +53,7 @@ export default function PatientsPage() {
     const executeSearch = async () => {
         if (!searchQuery) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/patient/search?query=${searchQuery}`, {
+            const res = await fetch(`${API_BASE}/api/patient/search?query=${searchQuery}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await res.json();
@@ -74,7 +74,7 @@ export default function PatientsPage() {
         setLoading(true);
         setRegSuccess(null);
         try {
-            const res = await fetch('http://localhost:5000/api/patient/register', {
+            const res = await fetch(`${API_BASE}/api/patient/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ export default function PatientsPage() {
         setLoading(true);
         try {
             const doc = doctors.find(d => d.id === selectedDoctorId);
-            const res = await fetch('http://localhost:5000/api/patient/visit', {
+            const res = await fetch(`${API_BASE}/api/patient/visit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -269,7 +269,7 @@ export default function PatientsPage() {
                                                 className={`flex flex-col text-left p-3 border-b border-slate-800 last:border-b-0 transition-colors ${selectedPatient?.id === p.id ? 'bg-slate-800 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent hover:bg-slate-900'}`}
                                             >
                                                 <span className="font-semibold text-gray-50 text-sm">{p.firstName} {p.lastName}</span>
-                                                <span className="text-[12px] text-gray-400">{p.uhid} • {p.mobile}</span>
+                                                <span className="text-[12px] text-gray-400">{p.uhid} â€¢ {p.mobile}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -279,7 +279,7 @@ export default function PatientsPage() {
                                     <div className="bg-blue-500/10 rounded-[8px] p-4 border border-blue-500/20 mt-4 rounded-md">
                                         <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider mb-1">Selected Patient</p>
                                         <p className="font-semibold text-gray-50">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                                        <p className="text-sm text-gray-400">{selectedPatient.uhid} • Age: {selectedPatient.age}</p>
+                                        <p className="text-sm text-gray-400">{selectedPatient.uhid} â€¢ Age: {selectedPatient.age}</p>
                                     </div>
                                 )}
                             </Card>

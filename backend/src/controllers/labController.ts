@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
+import { callGemma } from '../utils/aiService';
 import { logAudit } from '../utils/audit';
 
 export const getCatalog = async (req: Request, res: Response) => {
@@ -239,49 +240,19 @@ export const generateLabInterpretationAI = async (req: Request, res: Response) =
             return res.status(400).json({ message: 'No results provided for analysis' });
         }
 
-        // Simulating LLM Processing Delay
-        await new Promise(r => setTimeout(r, 1500));
+        const prompt = `You are an AI Clinical Pathologist. Analyze the following laboratory test parameter results. Focus particularly on properties marked "isAbnormal": true.
+        Return ONLY a valid JSON object matching this exact shape: 
+        {"clinicalSummary": "Overall analysis sentence", "differentials": ["List of potential diagnoses"], "recommendations": ["List of actionable doctor suggestions"]}.
+        Do NOT wrap the JSON in Markdown formatting like \`\`\`json. Return pure JSON object only.
+        
+        Test Results Payload:
+        ${JSON.stringify(resultsPayload)}`;
 
-        const abnormals = resultsPayload.filter((r: any) => r.isAbnormal);
-
-        let clinicalSummary = "All tested parameters reside within normal physiological ranges. No acute pathological indicators detected.";
-        const differentials: string[] = [];
-        const recommendations: string[] = [];
-
-        if (abnormals.length > 0) {
-            clinicalSummary = `Identified ${abnormals.length} abnormal parameter(s) requiring clinical correlation.`;
-
-            for (const param of abnormals) {
-                const name = param.parameter.toLowerCase();
-                if (name.includes('hemoglobin') || name.includes('hgb')) {
-                    differentials.push('Anemia (Microcytic/Macrocytic depending on MCV), acute blood loss, or bone marrow suppression.');
-                    recommendations.push('Consider ordering Iron Studies, B12/Folate levels, and a Reticulocyte count.');
-                } else if (name.includes('wbc') || name.includes('white blood cell')) {
-                    differentials.push('Leukocytosis/Leukopenia: Potential bacterial/viral infection, severe inflammation, or tissue necrosis.');
-                    recommendations.push('Evaluate for clinical signs of infection. Consider CRP/ESR and blood cultures if febrile.');
-                } else if (name.includes('glucose') || name.includes('sugar')) {
-                    differentials.push('Hyper/Hypoglycemia: Potential Diabetes Mellitus or impaired glucose tolerance.');
-                    recommendations.push('Advise HbA1c testing for 3-month glycemic control assessment. Lifestyle modifications recommended.');
-                } else if (name.includes('platelet')) {
-                    differentials.push('Thrombocytopenia/Thrombocytosis: Viral infection, immune destruction, or marrow irregularities.');
-                    recommendations.push('Review medication profile for drug-induced etiology. Monitor for bleeding risks.');
-                }
-            }
-
-            if (differentials.length === 0) {
-                // Generic fallback for unmapped parameters
-                differentials.push(`Aberrant levels in ${abnormals.map((a: any) => a.parameter).join(', ')}. Clinical context required.`);
-                recommendations.push('Repeat test if spurious result suspected. Consult specialist if symptoms persist.');
-            }
-        }
+        const interpretation = await callGemma(prompt);
 
         res.status(200).json({
             status: 'SUCCESS',
-            interpretation: {
-                clinicalSummary,
-                differentials,
-                recommendations
-            }
+            interpretation
         });
     } catch (error) {
         console.error("AI Lab Interpretation error", error);

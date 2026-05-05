@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { ShieldCheck, UserPlus, Building, KeyRound, CheckCircle2 } from 'lucide-react';
 
@@ -27,7 +27,7 @@ export default function AdminPage() {
 
     const fetchMetadata = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/admin/meta', {
+            const res = await fetch(`${API_BASE}/api/admin/meta`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await res.json();
@@ -46,7 +46,7 @@ export default function AdminPage() {
         setSuccessData(null);
 
         try {
-            const res = await fetch('http://localhost:5000/api/admin/employees', {
+            const res = await fetch(`${API_BASE}/api/admin/employees`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { Rocket, UserCheck, ClipboardList, Send, CheckCircle2, Clock } from 'lucide-react';
 
@@ -16,7 +16,7 @@ export default function OnboardingEngine() {
 
     const fetchEmployees = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/hr/employees', {
+            const res = await fetch(`${API_BASE}/api/hr/employees`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setEmployees(await res.json());
@@ -27,7 +27,7 @@ export default function OnboardingEngine() {
         if (!selectedEmployee) return;
         setIsDeploying(true);
         try {
-            const res = await fetch('http://localhost:5000/api/hr/onboarding/deploy', {
+            const res = await fetch(`${API_BASE}/api/hr/onboarding/deploy`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

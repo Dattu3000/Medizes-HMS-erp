@@ -1,4 +1,41 @@
 import OpenAI from 'openai';
+import axios from 'axios';
+
+const GEMMA_INVOKE_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
+const GEMMA_MODEL = "google/gemma-3n-e4b-it";
+
+/**
+ * Centralized Gemma AI caller via NVIDIA API.
+ * Sends a prompt and returns parsed JSON.
+ */
+export async function callGemma(prompt: string, maxTokens: number = 1024): Promise<any> {
+    const apiKey = process.env.NVIDIA_API_KEY;
+    if (!apiKey) {
+        throw new Error('NVIDIA_API_KEY is not set in environment variables.');
+    }
+
+    const headers = {
+        "Authorization": `Bearer ${apiKey}`,
+        "Accept": "application/json"
+    };
+
+    const payload = {
+        model: GEMMA_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: maxTokens,
+        temperature: 0.20,
+        top_p: 0.70,
+        stream: false
+    };
+
+    const response = await axios.post(GEMMA_INVOKE_URL, payload, { headers });
+    let content: string = response.data.choices[0].message.content;
+
+    // Strip potential markdown code fences
+    content = content.replace(/```json/gi, "").replace(/```/g, "").trim();
+
+    return JSON.parse(content);
+}
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,

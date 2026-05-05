@@ -327,7 +327,7 @@ export default function AccountsPage() {
                     {tab === 'trial' && trialBalance && (
                         <div className="space-y-4">
                             <div className={`p-4 rounded-xl border-2 text-center font-bold ${trialBalance.totals.isBalanced ? 'border-emerald-400 bg-emerald-600/10 text-emerald-400' : 'border-rose-400 bg-rose-600/10 text-rose-400'}`}>
-                                {trialBalance.totals.isBalanced ? '✅ Books are Balanced — Debits equal Credits' : '⚠️ Imbalance Detected — Books do not balance'}
+                                {trialBalance.totals.isBalanced ? 'Books are Balanced — Debits equal Credits' : 'Imbalance Detected — Books do not balance'}
                             </div>
                             <div className="overflow-x-auto rounded-xl border border-white/10">
                                 <table className="w-full text-xs">
@@ -357,7 +357,7 @@ export default function AccountsPage() {
                         <div className="space-y-4 max-w-3xl mx-auto">
                             {[
                                 {
-                                    title: '🏥 Operating Activities', items: [
+                                    title: 'Operating Activities', items: [
                                         { label: 'Cash from Patients', value: cashFlow.operating.cashFromPatients, positive: true },
                                         { label: 'Cash to Vendors', value: cashFlow.operating.cashToVendors, positive: false },
                                         { label: 'Cash to Employees', value: cashFlow.operating.cashToEmployees, positive: false },
@@ -365,12 +365,12 @@ export default function AccountsPage() {
                                     ], total: cashFlow.operating.total
                                 },
                                 {
-                                    title: '🏗️ Investing Activities', items: [
+                                    title: 'Investing Activities', items: [
                                         { label: 'Equipment Purchases', value: cashFlow.investing.equipmentPurchases, positive: false },
                                     ], total: cashFlow.investing.total
                                 },
                                 {
-                                    title: '💳 Financing Activities', items: [
+                                    title: 'Financing Activities', items: [
                                         { label: 'Loan Repayments', value: cashFlow.financing.loanRepayments, positive: false },
                                     ], total: cashFlow.financing.total
                                 },

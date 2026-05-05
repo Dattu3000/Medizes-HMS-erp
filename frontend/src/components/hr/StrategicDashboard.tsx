@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, DollarSign, Activity } from 'lucide-react';
 
@@ -12,7 +12,7 @@ export default function StrategicDashboard() {
 
     const fetchAnalytics = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/hr/analytics/strategic', {
+            const res = await fetch(`${API_BASE}/api/hr/analytics/strategic`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setData(await res.json());

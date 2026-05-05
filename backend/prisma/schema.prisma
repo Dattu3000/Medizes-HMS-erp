@@ -12,782 +12,657 @@ model Branch {
   id        String   @id @default(uuid())
   name      String
   location  String?
-  users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  users     User[]
 }
 
 model Role {
   id          String   @id @default(uuid())
-  name        String   @unique // e.g., Admin, Billing Staff, Lab, Pharmacy, HR, Accounts, Management
-  permissions String[] // Array of permission strings
-  users       User[]
+  name        String   @unique
+  permissions String[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  users       User[]
 }
 
 model User {
-  id           String      @id @default(uuid())
-  employeeId   String      @unique // Employee ID
-  email        String?     @unique
+  id           String     @id @default(uuid())
+  employeeId   String     @unique
+  email        String?    @unique
   passwordHash String
-  otpEnabled   Boolean     @default(false)
+  otpEnabled   Boolean    @default(false)
   otpSecret    String?
-  isActive     Boolean     @default(true)
-  
+  isActive     Boolean    @default(true)
   roleId       String
-  role         Role        @relation(fields: [roleId], references: [id])
-  
   branchId     String
-  branch       Branch      @relation(fields: [branchId], references: [id])
-  
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   auditLogs    AuditLog[]
   employee     Employee?
-
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  branch       Branch     @relation(fields: [branchId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
 }
 
 model Employee {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
-  
-  firstName   String
-  lastName    String
-  department  String?
-  designation String?
-  
-  // HR Module Expansions
-  managerId       String?
-  manager         Employee?   @relation("ManagerToEmployee", fields: [managerId], references: [id])
-  directReports   Employee[]  @relation("ManagerToEmployee")
-  
-  mobile          String?
-  email           String?
-  joinDate        DateTime?
-  employmentType  String      @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT
+  id               String             @id @default(uuid())
+  userId           String             @unique
+  firstName        String
+  lastName         String
+  department       String?
+  designation      String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  customFields     Json?
+  email            String?
   emergencyContact String?
-  emergencyPhone  String?
-  customFields    Json?
-  
-  visits      Visit[]
-  admissions  Admission[]
-  attendances Attendance[]
-  payrolls    Payroll[]
-  shifts      ShiftSlot[]
-
-  hrDocuments     HrDocument[]
-  onboardingTasks OnboardingTask[]
-  ownedGoals      Goal[]      @relation("GoalOwner")
-  givenFeedbacks  Feedback[]  @relation("FeedbackGiver")
-  rcvdFeedbacks   Feedback[]  @relation("FeedbackReceiver")
-  surveys         SurveyResponse[]
-  interviews      InterviewSlot[] @relation("Interviewer")
-  createdJobs     JobDefinition[] @relation("HiringManager")
-  oneOnOnesAsMgr  OneOnOneAgenda[] @relation("MgrAgenda")
-  oneOnOnesAsEmp  OneOnOneAgenda[] @relation("EmpAgenda")
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  emergencyPhone   String?
+  employmentType   String             @default("FULL_TIME")
+  joinDate         DateTime?
+  managerId        String?
+  mobile           String?
+  admissions       Admission[]
+  attendances      Attendance[]
+  enrollments      CourseEnrollment[]
+  manager          Employee?          @relation("ManagerToEmployee", fields: [managerId], references: [id])
+  directReports    Employee[]         @relation("ManagerToEmployee")
+  user             User               @relation(fields: [userId], references: [id])
+  givenFeedbacks   Feedback[]         @relation("FeedbackGiver")
+  rcvdFeedbacks    Feedback[]         @relation("FeedbackReceiver")
+  ownedGoals       Goal[]             @relation("GoalOwner")
+  hrDocuments      HrDocument[]
+  interviews       InterviewSlot[]    @relation("Interviewer")
+  createdJobs      JobDefinition[]    @relation("HiringManager")
+  onboardingTasks  OnboardingTask[]
+  oneOnOnesAsEmp   OneOnOneAgenda[]   @relation("EmpAgenda")
+  oneOnOnesAsMgr   OneOnOneAgenda[]   @relation("MgrAgenda")
+  payrolls         Payroll[]
+  shifts           ShiftSlot[]
+  surveys          SurveyResponse[]
+  visits           Visit[]
 }
 
 model AuditLog {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   action    String
-  details   String?  // JSON string or extra details
+  details   String?
   ipAddress String?
   timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
-// ----------------------------------------------------
-// LAYER 1: PATIENT MANAGEMENT & BILLING
-// ----------------------------------------------------
-
 model Patient {
-  id              String   @id @default(uuid())
-  uhid            String   @unique // Unique Health ID
-  firstName       String
-  lastName        String
-  age             Int
-  dob             DateTime?
-  gender          String
-  bloodGroup      String?
-  maritalStatus   String?
-  
-  mobile          String
-  email           String?
-  address         String?
-  city            String?
-  state           String?
-  pincode         String?
-  
-  emgName         String?
-  emgRelation     String?
-  emgMobile       String?
-  
-  tpaName         String?
-  policyNo        String?
-  insuranceValid  DateTime?
-  coverageAmt     Float?
-  
-  referredBy      String?
-  
-  visits          Visit[]
-  labOrders       LabOrder[]
-  prescriptions   Prescription[]
-  admissions      Admission[]
-  referrals       Referral[]
-  receivables     AccountsReceivable[]
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String               @id @default(uuid())
+  uhid           String               @unique
+  firstName      String
+  lastName       String
+  age            Int
+  dob            DateTime?
+  gender         String
+  bloodGroup     String?
+  maritalStatus  String?
+  mobile         String
+  email          String?
+  address        String?
+  city           String?
+  state          String?
+  pincode        String?
+  emgName        String?
+  emgRelation    String?
+  emgMobile      String?
+  tpaName        String?
+  policyNo       String?
+  insuranceValid DateTime?
+  coverageAmt    Float?
+  referredBy     String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  receivables    AccountsReceivable[]
+  admissions     Admission[]
+  labOrders      LabOrder[]
+  prescriptions  Prescription[]
+  referrals      Referral[]
+  visits         Visit[]
 }
 
 model Visit {
-  id              String   @id @default(uuid())
-  patientId       String
-  patient         Patient  @relation(fields: [patientId], references: [id])
-  
-  doctorId        String
-  doctor          Employee @relation(fields: [doctorId], references: [id])
-  
-  department      String
-  tokenNo         String
-  status          String   @default("WAITING") // WAITING, IN_CONSULTATION, COMPLETED
-  
-  notes           String?
-  symptoms        String?
-  diagnosis       String?
-
-  bills           Bill[]
-  labOrders       LabOrder[]
-  prescriptions   Prescription[]
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String         @id @default(uuid())
+  patientId     String
+  doctorId      String
+  department    String
+  tokenNo       String
+  status        String         @default("WAITING")
+  notes         String?
+  symptoms      String?
+  diagnosis     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  bills         Bill[]
+  labOrders     LabOrder[]
+  prescriptions Prescription[]
+  doctor        Employee       @relation(fields: [doctorId], references: [id])
+  patient       Patient        @relation(fields: [patientId], references: [id])
 }
 
 model Bill {
-  id              String   @id @default(uuid())
-  billNo          String   @unique
-  patientId       String?
-  
-  visitId         String?
-  visit           Visit?   @relation(fields: [visitId], references: [id])
-
-  admissionId     String?
-  admission       Admission? @relation(fields: [admissionId], references: [id])
-  
-  type            String   // OPD_CONSULTATION, LAB_DIAGNOSTICS, PHARMACY, IPD_FINAL
-  subTotal        Float
-  gstAmount       Float
-  discount        Float    @default(0)
-  netPayable      Float
-  
-  paymentMode     String   // CASH, CARD, UPI, INSURANCE
-  status          String   @default("UNPAID") // UNPAID, PAID, REFUNDED
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String     @id @default(uuid())
+  billNo      String     @unique
+  patientId   String?
+  visitId     String?
+  admissionId String?
+  type        String
+  subTotal    Float
+  gstAmount   Float
+  discount    Float      @default(0)
+  netPayable  Float
+  paymentMode String
+  status      String     @default("UNPAID")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  admission   Admission? @relation(fields: [admissionId], references: [id])
+  visit       Visit?     @relation(fields: [visitId], references: [id])
 }
 
 model LabOrder {
-  id              String   @id @default(uuid())
-  patientId       String
-  patient         Patient  @relation(fields: [patientId], references: [id])
-  
-  visitId         String?
-  visit           Visit?   @relation(fields: [visitId], references: [id])
-  
-  testName        String
-  sacCode         String   @default("999316")
-  price           Float
-  priority        String   @default("ROUTINE") // ROUTINE, HIGH, STAT
-  status          String   @default("PENDING") // PENDING, SAMPLE_COLLECTED, RESULT_ENTERED
-  
-  // New Sample Tracking fields
-  sampleStatus    String   @default("PENDING") // PENDING, COLLECTED, IN_ANALYSIS
-  barcode         String?  // Scannable barcode mapping
-  collectedAt     DateTime?
-  
-  // Results
-  resultsPayload  Json?    // Multi-parameter Array: [{ parameter, value, isAbnormal, unit, range }]
-  resultText      String?
-  resultValue     Float?   // Retained for backward-compat
-  reportPdfUrl    String?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String    @id @default(uuid())
+  patientId      String
+  visitId        String?
+  testName       String
+  sacCode        String    @default("999316")
+  price          Float
+  status         String    @default("PENDING")
+  resultText     String?
+  reportPdfUrl   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  priority       String    @default("ROUTINE")
+  resultValue    Float?
+  barcode        String?
+  collectedAt    DateTime?
+  resultsPayload Json?
+  sampleStatus   String    @default("PENDING")
+  patient        Patient   @relation(fields: [patientId], references: [id])
+  visit          Visit?    @relation(fields: [visitId], references: [id])
 }
 
 model Prescription {
-  id              String   @id @default(uuid())
-  patientId       String
-  patient         Patient  @relation(fields: [patientId], references: [id])
-  
-  visitId         String
-  visit           Visit    @relation(fields: [visitId], references: [id])
-
-  medicines       Json     // Array of { drugName, dosage, frequency, days }
-  status          String   @default("PENDING") // PENDING, DISPENSED
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id        String   @id @default(uuid())
+  patientId String
+  visitId   String
+  medicines Json
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  visit     Visit    @relation(fields: [visitId], references: [id])
 }
 
-// ----------------------------------------------------
-// LAYER 2: IPD (IN-PATIENT) BILLING & WARD MANAGEMENT
-// ----------------------------------------------------
-
 model Ward {
-  id              String   @id @default(uuid())
-  name            String   // e.g., ICU, General Male, NICU
-  type            String   // GENERAL, SEMI_PRIVATE, PRIVATE, ICU
-  capacity        Int      // Number of beds
-  
-  beds            Bed[]    // Relation to beds
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  type      String
+  capacity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  beds      Bed[]
 }
 
 model Bed {
-  id              String   @id @default(uuid())
-  bedNumber       String
-  wardId          String
-  ward            Ward     @relation(fields: [wardId], references: [id])
-  dailyRent       Float    // Daily charge for this specific bed
-  status          String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, MAINTENANCE
-  
-  admissions      Admission[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id         String      @id @default(uuid())
+  bedNumber  String
+  wardId     String
+  dailyRent  Float
+  status     String      @default("AVAILABLE")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  admissions Admission[]
+  ward       Ward        @relation(fields: [wardId], references: [id])
 }
 
 model Admission {
-  id              String   @id @default(uuid())
-  patientId       String
-  patient         Patient  @relation(fields: [patientId], references: [id])
-  
-  doctorId        String
-  doctor          Employee @relation(fields: [doctorId], references: [id])
-  
-  bedId           String
-  bed             Bed      @relation(fields: [bedId], references: [id])
-  
-  status          String   @default("ADMITTED") // ADMITTED, DISCHARGED
-  
-  admissionDate   DateTime @default(now())
-  dischargeDate   DateTime?
-  
-  depositAmount   Float    @default(0)
-  
-  ipdCharges      IpdCharge[]
-  nursingVitals   NursingVitals[]
-  bills           Bill[]     // Final settlement bill
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String          @id @default(uuid())
+  patientId     String
+  doctorId      String
+  bedId         String
+  status        String          @default("ADMITTED")
+  admissionDate DateTime        @default(now())
+  dischargeDate DateTime?
+  depositAmount Float           @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  bed           Bed             @relation(fields: [bedId], references: [id])
+  doctor        Employee        @relation(fields: [doctorId], references: [id])
+  patient       Patient         @relation(fields: [patientId], references: [id])
+  bills         Bill[]
+  ipdCharges    IpdCharge[]
+  nursingVitals NursingVitals[]
 }
 
 model IpdCharge {
-  id              String   @id @default(uuid())
-  admissionId     String
-  admission       Admission @relation(fields: [admissionId], references: [id])
-  
-  chargeType      String   // ROOM_RENT, DOCTOR_VISIT, NURSING, SURGERY_OT, DIET, PHARMACY, CONSUMABLE
-  description     String
-  amount          Float
-  dateAdded       DateTime @default(now())
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String    @id @default(uuid())
+  admissionId String
+  chargeType  String
+  description String
+  amount      Float
+  dateAdded   DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  admission   Admission @relation(fields: [admissionId], references: [id])
 }
 
 model NursingVitals {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   admissionId     String
-  admission       Admission @relation(fields: [admissionId], references: [id])
-  
-  bp              String?  // e.g. "120/80"
-  heartRate       Int?     // bpm
-  temperature     Float?   // °F or °C
-  spo2            Int?     // percentage
-  respiratoryRate Int?     // breaths/min
+  bp              String?
+  heartRate       Int?
+  temperature     Float?
+  spo2            Int?
+  respiratoryRate Int?
   notes           String?
-  recordedBy      String   // userId of the nurse
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  recordedBy      String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  admission       Admission @relation(fields: [admissionId], references: [id])
 }
-
-// ----------------------------------------------------
-// LAYER 3: LAB DIAGNOSTICS & PHARMACY INVENTORY
-// ----------------------------------------------------
 
 model LabCatalog {
-  id              String   @id @default(uuid())
-  testName        String   @unique
-  department      String   // Hematology, Biochemistry, Microbiology
-  price           Float
-  unit            String?  // Legacy (single-param)
-  criticalMin     Float?   // Legacy (single-param)
-  criticalMax     Float?   // Legacy (single-param)
-  
-  parameters      Json?    // Array: [{ name, unit, range, criticalMin, criticalMax }]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(uuid())
+  testName    String   @unique
+  department  String
+  price       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  criticalMax Float?
+  criticalMin Float?
+  unit        String?
+  parameters  Json?
 }
 
-// ----------------------------------------------------
-// CROSS-MODULE: NOTIFICATIONS & REFERRALS
-// ----------------------------------------------------
-
 model Notification {
-  id              String   @id @default(uuid())
-  targetUserId    String   // The user who should see this
-  type            String   // LAB_RESULT, CRITICAL_ALERT, ADMISSION, REFERRAL, PRESCRIPTION
-  title           String
-  body            String
-  priority        String   @default("NORMAL") // NORMAL, HIGH, CRITICAL
-  isRead          Boolean  @default(false)
-  
-  visitId         String?
-  labOrderId      String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(uuid())
+  targetUserId String
+  type         String
+  title        String
+  body         String
+  priority     String   @default("NORMAL")
+  isRead       Boolean  @default(false)
+  visitId      String?
+  labOrderId   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Referral {
-  id              String   @id @default(uuid())
-  fromDoctorId    String
-  patientId       String
-  patient         Patient  @relation(fields: [patientId], references: [id])
-  referralToken   String   @unique @default(uuid())
-  toHospital      String   // Name/ID of destination hospital
-  reason          String
-  status          String   @default("PENDING") // PENDING, ACCEPTED, COMPLETED
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  fromDoctorId  String
+  patientId     String
+  referralToken String   @unique @default(uuid())
+  toHospital    String
+  reason        String
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  patient       Patient  @relation(fields: [patientId], references: [id])
 }
 
 model MedicineInventory {
-  id              String   @id @default(uuid())
-  drugName        String   @unique
-  manufacturer    String?
-  batchNo         String
-  expiryDate      DateTime
-  stockQuantity   Int      @default(0)
-  unitPrice       Float
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  drugName      String   @unique
+  manufacturer  String?
+  batchNo       String
+  expiryDate    DateTime
+  stockQuantity Int      @default(0)
+  unitPrice     Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-// ----------------------------------------------------
-// LAYER 4: HR MODULE
-// ----------------------------------------------------
-
 model Attendance {
-  id          String   @id @default(uuid())
-  employeeId  String
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  
-  date        DateTime @default(now())
-  status      String   // PRESENT, ABSENT, HALF_DAY, LEAVE
-  checkIn     DateTime?
-  checkOut    DateTime?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id         String    @id @default(uuid())
+  employeeId String
+  date       DateTime  @default(now())
+  status     String
+  checkIn    DateTime?
+  checkOut   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+
   @@unique([employeeId, date])
 }
 
 model Payroll {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   employeeId  String
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  
   month       Int
   year        Int
-  
   basicSalary Float
-  allowances  Float    @default(0)
-  deductions  Float    @default(0)
+  allowances  Float     @default(0)
+  deductions  Float     @default(0)
   netSalary   Float
-  
-  status      String   @default("PENDING") // PENDING, PAID
+  status      String    @default("PENDING")
   paymentDate DateTime?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+
   @@unique([employeeId, month, year])
 }
 
 model ShiftSlot {
   id            String   @id @default(uuid())
   employeeId    String
-  employee      Employee @relation(fields: [employeeId], references: [id])
-  
   startTime     DateTime
   endTime       DateTime
-  department    String?  // ER, ICU, OPD
-  roleType      String?  // Shift Lead, Nurse, Surgeon
-  status        String   @default("SCHEDULED") // SCHEDULED, COMPLETED, NO_SHOW, CANCELLED
-  
+  department    String?
+  roleType      String?
+  status        String   @default("SCHEDULED")
   isBurnoutRisk Boolean  @default(false)
-  burnoutReason String?  // e.g., "Back-to-back shift", "Over 48h week limit"
-  
+  burnoutReason String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  employee      Employee @relation(fields: [employeeId], references: [id])
 }
 
-// ----------------------------------------------------
-// LAYER 5: ACCOUNTS, EXPENSES & GST/TDS COMPLIANCE
-// ----------------------------------------------------
-
 model Ledger {
-  id          String    @id @default(uuid())
-  code        String?   @unique // Chart of Accounts code e.g. "1001", "2001"
-  name        String    @unique // e.g. "Bank A/c", "Cash A/c", "Sales A/c"
-  group       String    // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
-  accountType String    @default("DETAIL") // CONTROL (parent) or DETAIL (postable)
-  balance     Float     @default(0)
-  isActive    Boolean   @default(true)
-  
-  parentId    String?   // For hierarchical Chart of Accounts
-  parent      Ledger?   @relation("LedgerHierarchy", fields: [parentId], references: [id])
-  children    Ledger[]  @relation("LedgerHierarchy")
-  
-  transactions  Transaction[]
-  journalLines  JournalLine[]
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String        @id @default(uuid())
+  name         String        @unique
+  group        String
+  balance      Float         @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  accountType  String        @default("DETAIL")
+  code         String?       @unique
+  isActive     Boolean       @default(true)
+  parentId     String?
+  journalLines JournalLine[]
+  parent       Ledger?       @relation("LedgerHierarchy", fields: [parentId], references: [id])
+  children     Ledger[]      @relation("LedgerHierarchy")
+  transactions Transaction[]
 }
 
 model Transaction {
-  id              String   @id @default(uuid())
-  ledgerId        String
-  ledger          Ledger   @relation(fields: [ledgerId], references: [id])
-  
-  type            String   // CREDIT (Adds to ledger balance), DEBIT (Subtracts from ledger balance)
-  amount          Float
-  description     String   
-  
-  referenceId     String?  // Can link to Bill.id, Expense.id, etc.
-  referenceType   String?  // 'BILL', 'EXPENSE'
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  ledgerId      String
+  type          String
+  amount        Float
+  description   String
+  referenceId   String?
+  referenceType String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  ledger        Ledger   @relation(fields: [ledgerId], references: [id])
 }
 
 model Expense {
-  id          String    @id @default(uuid())
-  voucherNo   String    @unique
-  category    String    // RENT, MAINTENANCE, UTILITIES, VENDOR_PAYMENT, MISC
-  description String
-  
-  amount      Float
-  gstAmount   Float     @default(0) // Input Tax Credit (ITC)
-  tdsAmount   Float     @default(0) // TDS Deducted from vendor
-  netAmount   Float     // amount + gstAmount - tdsAmount
-  
-  paymentMode String    // BANK, CASH, UPI, CREDIT
-  status      String    @default("PENDING") // PENDING, PAID
-  date        DateTime  @default(now())
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-// ── DOUBLE-ENTRY JOURNAL SYSTEM ──
-
-model JournalEntry {
   id          String   @id @default(uuid())
-  entryNo     String   @unique // e.g. JE-000001
+  voucherNo   String   @unique
+  category    String
+  description String
+  amount      Float
+  gstAmount   Float    @default(0)
+  tdsAmount   Float    @default(0)
+  netAmount   Float
+  paymentMode String
+  status      String   @default("PENDING")
   date        DateTime @default(now())
-  narration   String   // Description of the transaction
-  status      String   @default("POSTED") // DRAFT, POSTED, VOID
-  
-  referenceId   String?  // Link to Bill.id, Expense.id, Payroll.id
-  referenceType String?  // BILL, EXPENSE, PAYROLL, MANUAL
-  
-  lines       JournalLine[]
-  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model JournalEntry {
+  id            String        @id @default(uuid())
+  entryNo       String        @unique
+  date          DateTime      @default(now())
+  narration     String
+  status        String        @default("POSTED")
+  referenceId   String?
+  referenceType String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lines         JournalLine[]
 }
 
 model JournalLine {
-  id              String   @id @default(uuid())
-  journalEntryId  String
-  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id])
-  
-  ledgerId        String
-  ledger          Ledger   @relation(fields: [ledgerId], references: [id])
-  
-  debit           Float    @default(0)
-  credit          Float    @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String       @id @default(uuid())
+  journalEntryId String
+  ledgerId       String
+  debit          Float        @default(0)
+  credit         Float        @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+  ledger         Ledger       @relation(fields: [ledgerId], references: [id])
 }
 
-// ── AR / AP TRACKING ──
-
 model AccountsReceivable {
-  id          String   @id @default(uuid())
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
-  
-  billId      String?  // Links to the unpaid Bill
-  amount      Float
-  dueDate     DateTime @default(now())
-  status      String   @default("OUTSTANDING") // OUTSTANDING, PARTIALLY_PAID, SETTLED
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  patientId String
+  billId    String?
+  amount    Float
+  dueDate   DateTime @default(now())
+  status    String   @default("OUTSTANDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  patient   Patient  @relation(fields: [patientId], references: [id])
 }
 
 model AccountsPayable {
-  id          String   @id @default(uuid())
-  vendorName  String
-  expenseId   String?  // Links to Expense
-  
-  amount      Float
-  dueDate     DateTime @default(now())
-  status      String   @default("OUTSTANDING") // OUTSTANDING, PARTIALLY_PAID, SETTLED
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  vendorName String
+  expenseId  String?
+  amount     Float
+  dueDate    DateTime @default(now())
+  status     String   @default("OUTSTANDING")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
-// ── FINANCIAL PERIOD MANAGEMENT ──
-
 model FinancialPeriod {
-  id          String   @id @default(uuid())
-  month       Int      // 1-12
-  year        Int
-  status      String   @default("OPEN") // OPEN, CLOSED, LOCKED
-  closedById  String?
-  closedAt    DateTime?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id         String    @id @default(uuid())
+  month      Int
+  year       Int
+  status     String    @default("OPEN")
+  closedById String?
+  closedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
   @@unique([month, year])
 }
 
-// ── DEPARTMENT BUDGET ──
-
 model Budget {
-  id          String   @id @default(uuid())
-  department  String
-  month       Int
-  year        Int
-  allocated   Float    // Budgeted amount
-  spent       Float    @default(0) // Actual spent
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id         String   @id @default(uuid())
+  department String
+  month      Int
+  year       Int
+  allocated  Float
+  spent      Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   @@unique([department, month, year])
 }
 
-// ----------------------------------------------------
-// LAYER 6: EXTENDED HR (GUDHR SYSTEM)
-// ----------------------------------------------------
-
 model HrDocument {
-  id          String   @id @default(uuid())
-  employeeId  String
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  title       String
-  url         String
-  type        String   // CONTRACT, POLICY, ID_PROOF
-  status      String   @default("PENDING") // PENDING, SIGNED, VERIFIED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  employeeId String
+  title      String
+  url        String
+  type       String
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id])
 }
 
 model OnboardingWorkflow {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   name        String
   description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   tasks       OnboardingTask[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
 
 model OnboardingTask {
-  id          String   @id @default(uuid())
-  workflowId  String
-  workflow    OnboardingWorkflow @relation(fields: [workflowId], references: [id])
-  
-  employeeId  String
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  
-  taskName    String
-  assignedTo  String   // IT, HR, MANAGER, SELF
-  status      String   @default("PENDING") // PENDING, COMPLETED
-  dueDate     DateTime?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String             @id @default(uuid())
+  workflowId String
+  employeeId String
+  taskName   String
+  assignedTo String
+  status     String             @default("PENDING")
+  dueDate    DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  employee   Employee           @relation(fields: [employeeId], references: [id])
+  workflow   OnboardingWorkflow @relation(fields: [workflowId], references: [id])
 }
 
-// Talent Acquisition
 model JobDefinition {
-  id              String   @id @default(uuid())
+  id              String      @id @default(uuid())
   title           String
   department      String
   description     String
-  keywords        String?  // AI suggested keywords
-  status          String   @default("DRAFT") // DRAFT, PUBLISHED, CLOSED
-  
+  keywords        String?
+  status          String      @default("DRAFT")
   hiringManagerId String
-  hiringManager   Employee @relation("HiringManager", fields: [hiringManagerId], references: [id])
-  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
   candidates      Candidate[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  hiringManager   Employee    @relation("HiringManager", fields: [hiringManagerId], references: [id])
 }
 
 model Candidate {
-  id          String   @id @default(uuid())
-  jobId       String
-  job         JobDefinition @relation(fields: [jobId], references: [id])
-  
-  firstName   String
-  lastName    String
-  email       String
-  resumeUrl   String?
-  status      String   @default("APPLIED") // APPLIED, SCREENING, INTERVIEW, OFFERED, HIRED, REJECTED
-  
-  scorecards  InterviewScorecard[]
-  interviews  InterviewSlot[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String               @id @default(uuid())
+  jobId      String
+  firstName  String
+  lastName   String
+  email      String
+  resumeUrl  String?
+  status     String               @default("APPLIED")
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  job        JobDefinition        @relation(fields: [jobId], references: [id])
+  scorecards InterviewScorecard[]
+  interviews InterviewSlot[]
 }
 
 model InterviewSlot {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   candidateId   String
-  candidate     Candidate @relation(fields: [candidateId], references: [id])
-  
   interviewerId String
-  interviewer   Employee @relation("Interviewer", fields: [interviewerId], references: [id])
-  
   scheduledAt   DateTime
-  durationMins  Int      @default(45)
+  durationMins  Int       @default(45)
   meetingLink   String?
-  status        String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELED
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status        String    @default("SCHEDULED")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  candidate     Candidate @relation(fields: [candidateId], references: [id])
+  interviewer   Employee  @relation("Interviewer", fields: [interviewerId], references: [id])
 }
 
 model InterviewScorecard {
-  id            String   @id @default(uuid())
-  candidateId   String
-  candidate     Candidate @relation(fields: [candidateId], references: [id])
-  
-  interviewerId String
-  
-  competencies  Json     // { "technical": 4, "culture": 5, ... }
-  notes         String?
-  recommendation String  // STRONG_HIRE, HIRE, NO_HIRE
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String    @id @default(uuid())
+  candidateId    String
+  interviewerId  String
+  competencies   Json
+  notes          String?
+  recommendation String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  candidate      Candidate @relation(fields: [candidateId], references: [id])
 }
 
-// Performance & Engagement
 model Goal {
-  id            String   @id @default(uuid())
-  title         String
-  level         String   // COMPANY, DEPARTMENT, TEAM, INDIVIDUAL
-  
-  ownerId       String?
-  owner         Employee? @relation("GoalOwner", fields: [ownerId], references: [id])
-  
-  parentGoalId  String?
-  parentGoal    Goal?    @relation("GoalHierarchy", fields: [parentGoalId], references: [id])
-  subGoals      Goal[]   @relation("GoalHierarchy")
-  
-  progress      Int      @default(0) // 0-100%
-  keyResults    Json?    // Array of key results
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(uuid())
+  title        String
+  level        String
+  ownerId      String?
+  parentGoalId String?
+  progress     Int       @default(0)
+  keyResults   Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  owner        Employee? @relation("GoalOwner", fields: [ownerId], references: [id])
+  parentGoal   Goal?     @relation("GoalHierarchy", fields: [parentGoalId], references: [id])
+  subGoals     Goal[]    @relation("GoalHierarchy")
 }
 
 model Feedback {
-  id            String   @id @default(uuid())
-  fromUserId    String
-  fromUser      Employee @relation("FeedbackGiver", fields: [fromUserId], references: [id])
-  
-  toUserId      String
-  toUser        Employee @relation("FeedbackReceiver", fields: [toUserId], references: [id])
-  
-  content       String
-  type          String   @default("PUBLIC") // PUBLIC, PRIVATE
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  content    String
+  type       String   @default("PUBLIC")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  fromUser   Employee @relation("FeedbackGiver", fields: [fromUserId], references: [id])
+  toUser     Employee @relation("FeedbackReceiver", fields: [toUserId], references: [id])
 }
 
 model OneOnOneAgenda {
   id          String   @id @default(uuid())
   managerId   String
-  manager     Employee @relation("MgrAgenda", fields: [managerId], references: [id])
-  
   employeeId  String
-  employee    Employee @relation("EmpAgenda", fields: [employeeId], references: [id])
-  
   date        DateTime
-  topics      Json?    // Added by manager/employee
+  topics      Json?
   actionItems Json?
-  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  employee    Employee @relation("EmpAgenda", fields: [employeeId], references: [id])
+  manager     Employee @relation("MgrAgenda", fields: [managerId], references: [id])
 }
 
 model Survey {
-  id          String   @id @default(uuid())
-  title       String
-  questions   Json     // List of questions
-  status      String   @default("ACTIVE") // ACTIVE, CLOSED
-  
-  responses   SurveyResponse[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String           @id @default(uuid())
+  title     String
+  questions Json
+  status    String           @default("ACTIVE")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  responses SurveyResponse[]
 }
 
 model SurveyResponse {
-  id          String   @id @default(uuid())
-  surveyId    String
-  survey      Survey   @relation(fields: [surveyId], references: [id])
-  
-  employeeId  String?  // Optional for anonymity tracking if needed (usually null)
-  employee    Employee? @relation(fields: [employeeId], references: [id])
-  
-  answers     Json     // Answer payload corresponding to questions
-  sentiment   String?  // AI Analyzed sentiment (e.g. POSITIVE, NEUTRAL, NEGATIVE)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(uuid())
+  surveyId   String
+  employeeId String?
+  answers    Json
+  sentiment  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  survey     Survey    @relation(fields: [surveyId], references: [id])
+}
+
+model Course {
+  id          String             @id @default(uuid())
+  title       String
+  description String
+  department  String?
+  tags        String[]
+  modules     Json
+  requiredFor String[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  enrollments CourseEnrollment[]
+}
+
+model CourseEnrollment {
+  id             String    @id @default(uuid())
+  courseId       String
+  employeeId     String
+  status         String    @default("ENROLLED")
+  progress       Int       @default(0)
+  completionDate DateTime?
+  aiSuggested    Boolean   @default(false)
+  matchScore     Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  course         Course    @relation(fields: [courseId], references: [id])
+  employee       Employee  @relation(fields: [employeeId], references: [id])
+
+  @@unique([courseId, employeeId])
 }

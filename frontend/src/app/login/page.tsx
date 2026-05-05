@@ -1,4 +1,5 @@
 'use client';
+import { API_BASE } from '@/lib/api';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +20,7 @@ export default function LoginPage() {
         try {
             if (!otpMode) {
                 // Step 1: Login with Employee ID and Password
-                const res = await fetch('http://localhost:5000/api/auth/login', {
+                const res = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ employeeId, password }),
@@ -38,7 +39,7 @@ export default function LoginPage() {
                 }
             } else {
                 // Step 2: Verify OTP
-                const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+                const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tempToken, token: otp }),
@@ -91,7 +92,7 @@ export default function LoginPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full px-4 py-2 bg-white/50 border border-slate-200/50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm outline-none backdrop-blur-sm"
-                                    placeholder="••••••••"
+                                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                     required
                                 />
                             </div>

@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { Users, Target, CalendarDays, CheckCircle, AlertCircle, BarChart2, CalendarClock, Bot } from 'lucide-react';
 
@@ -24,7 +24,7 @@ export default function ManagerCenter() {
 
     const fetchShifts = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/hr/shifts', {
+            const res = await fetch(`${API_BASE}/api/hr/shifts`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setShifts(await res.json());
@@ -33,7 +33,7 @@ export default function ManagerCenter() {
 
     const fetchGoals = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/hr/goals', {
+            const res = await fetch(`${API_BASE}/api/hr/goals`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setGoals(await res.json());
@@ -44,7 +44,7 @@ export default function ManagerCenter() {
         setIsGenerating(true);
         try {
             const payload = { targetDate: new Date().toISOString(), department: null };
-            const res = await fetch('http://localhost:5000/api/hr/shifts/auto-generate', {
+            const res = await fetch(`${API_BASE}/api/hr/shifts/auto-generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
                 body: JSON.stringify(payload)

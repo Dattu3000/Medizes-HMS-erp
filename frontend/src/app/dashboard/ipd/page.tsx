@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { BedDouble, Users, IndianRupee, FileText, CheckCircle2, Stethoscope, Heart, Thermometer, Activity } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -45,7 +45,7 @@ export default function IPDPage() {
 
     const fetchWards = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/ipd/wards', {
+            const res = await fetch(`${API_BASE}/api/ipd/wards`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setWards(await res.json());
@@ -55,7 +55,7 @@ export default function IPDPage() {
 
     const fetchAdmissions = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/ipd/admissions', {
+            const res = await fetch(`${API_BASE}/api/ipd/admissions`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setAdmissions(await res.json());
@@ -65,7 +65,7 @@ export default function IPDPage() {
 
     const fetchDoctors = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/patient/doctors', {
+            const res = await fetch(`${API_BASE}/api/patient/doctors`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setDoctors(await res.json());
@@ -76,7 +76,7 @@ export default function IPDPage() {
     const executePatientSearch = async () => {
         if (!searchQuery) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/patient/search?query=${searchQuery}`, {
+            const res = await fetch(`${API_BASE}/api/patient/search?query=${searchQuery}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setPatientResults(await res.json());
@@ -88,7 +88,7 @@ export default function IPDPage() {
         if (!selectedPatientForAdmission || !selectedDoctorId || !selectedBed) return;
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/ipd/admit', {
+            const res = await fetch(`${API_BASE}/api/ipd/admit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ export default function IPDPage() {
         if (!selectedAdmission) return;
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/ipd/charge', {
+            const res = await fetch(`${API_BASE}/api/ipd/charge`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ export default function IPDPage() {
 
     const loadFullAdmissionDetails = async (id: string) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/ipd/admissions/${id}`, {
+            const res = await fetch(`${API_BASE}/api/ipd/admissions/${id}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setSelectedAdmission(await res.json());
@@ -153,7 +153,7 @@ export default function IPDPage() {
         if (!selectedAdmission) return;
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/ipd/discharge', {
+            const res = await fetch(`${API_BASE}/api/ipd/discharge`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export default function IPDPage() {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/ipd/wards', {
+            const res = await fetch(`${API_BASE}/api/ipd/wards`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
                 body: JSON.stringify(wardForm)
@@ -196,7 +196,7 @@ export default function IPDPage() {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/ipd/beds', {
+            const res = await fetch(`${API_BASE}/api/ipd/beds`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
                 body: JSON.stringify(bedForm)
@@ -219,7 +219,7 @@ export default function IPDPage() {
 
     const fetchVitals = async (admissionId: string) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/nursing/vitals/${admissionId}`, {
+            const res = await fetch(`${API_BASE}/api/nursing/vitals/${admissionId}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setVitalsHistory(await res.json());
@@ -232,7 +232,7 @@ export default function IPDPage() {
         if (!nursingAdmission) return;
         setVitalsLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/nursing/vitals', {
+            const res = await fetch(`${API_BASE}/api/nursing/vitals`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
                 body: JSON.stringify({ admissionId: nursingAdmission.id, ...vitalForm })
@@ -321,7 +321,7 @@ export default function IPDPage() {
                         {/* ADMISSION PROMPT IF BED SELECTED */}
                         {selectedBed && (
                             <Card padding="lg" className="mt-8 relative animate-in fade-in slide-in-from-bottom-4 shadow-xl border-blue-500/30 ring-1 ring-blue-500/10">
-                                <button onClick={() => setSelectedBed(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
+                                <button onClick={() => setSelectedBed(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">âœ•</button>
                                 <h3 className="text-xl font-bold text-gray-50 mb-1">Initiate Admission</h3>
                                 <p className="text-sm text-gray-400 mb-6">Assigning Bed <strong className="text-blue-400">{selectedBed.bedNumber}</strong> in <strong>{selectedBed.wardName}</strong></p>
 
@@ -340,7 +340,7 @@ export default function IPDPage() {
                                         <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
                                             {patientResults.map((p) => (
                                                 <div key={p.id} onClick={() => setSelectedPatientForAdmission(p)} className={`p-3 border rounded-[8px] text-[13px] cursor-pointer transition-colors ${selectedPatientForAdmission?.id === p.id ? 'bg-slate-800 border-blue-500 ring-1 ring-blue-500/50 text-white' : 'bg-slate-950 border-slate-800 hover:bg-slate-900 text-gray-300'}`}>
-                                                    <strong className="text-gray-50">{p.firstName} {p.lastName}</strong> • {p.uhid}
+                                                    <strong className="text-gray-50">{p.firstName} {p.lastName}</strong> â€¢ {p.uhid}
                                                 </div>
                                             ))}
                                         </div>
@@ -391,7 +391,7 @@ export default function IPDPage() {
                                             className={`p-4 cursor-pointer hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-b-0 border-l-[3px] ${selectedAdmission?.id === adm.id ? 'border-l-blue-600 bg-slate-800 text-white' : 'border-l-transparent text-gray-300'}`}
                                         >
                                             <div className="font-semibold text-gray-50 text-sm">{adm.patient.firstName} {adm.patient.lastName}</div>
-                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} • Bed: {adm.bed.bedNumber}</div>
+                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} â€¢ Bed: {adm.bed.bedNumber}</div>
                                             <div className="text-[12px] text-gray-400 mt-0.5">Primary: Dr. {adm.doctor.lastName}</div>
                                         </div>
                                     ))}
@@ -407,7 +407,7 @@ export default function IPDPage() {
                                     <div className="bg-slate-950 border-b border-slate-800 p-6 flex justify-between items-start shrink-0">
                                         <div>
                                             <h2 className="text-[20px] font-bold text-white">{selectedAdmission.patient.firstName} {selectedAdmission.patient.lastName}</h2>
-                                            <div className="text-gray-400 text-sm mt-1">{selectedAdmission.patient.uhid} • Age: {selectedAdmission.patient.age}</div>
+                                            <div className="text-gray-400 text-sm mt-1">{selectedAdmission.patient.uhid} â€¢ Age: {selectedAdmission.patient.age}</div>
                                         </div>
                                         <div className="text-right">
                                             <Badge variant="default" className="text-sm px-3 py-1 mb-2">BED: {selectedAdmission.bed.bedNumber}</Badge>
@@ -506,7 +506,7 @@ export default function IPDPage() {
                                             className={`p-4 cursor-pointer hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-b-0 border-l-[3px] ${nursingAdmission?.id === adm.id ? 'border-l-blue-600 bg-slate-800 text-white' : 'border-l-transparent text-gray-300'}`}
                                         >
                                             <div className="font-semibold text-gray-50 text-sm">{adm.patient.firstName} {adm.patient.lastName}</div>
-                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} • Bed: {adm.bed.bedNumber}</div>
+                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} â€¢ Bed: {adm.bed.bedNumber}</div>
                                         </div>
                                     ))}
                                     {admissions.length === 0 && <div className="p-6 text-center text-sm text-gray-500">No active admissions</div>}
@@ -521,13 +521,13 @@ export default function IPDPage() {
                                     {/* Vitals Entry Form */}
                                     <Card padding="lg">
                                         <h3 className="font-semibold text-gray-50 text-md mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
-                                            <Heart size={16} className="text-red-400" /> Record Vitals — {nursingAdmission.patient.firstName} {nursingAdmission.patient.lastName}
+                                            <Heart size={16} className="text-red-400" /> Record Vitals â€” {nursingAdmission.patient.firstName} {nursingAdmission.patient.lastName}
                                         </h3>
                                         <form onSubmit={handleRecordVitals} className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             <Input label="Blood Pressure" placeholder="e.g. 120/80" value={vitalForm.bp} onChange={e => setVitalForm({ ...vitalForm, bp: e.target.value })} />
                                             <Input label="Heart Rate (bpm)" type="number" placeholder="72" value={vitalForm.heartRate} onChange={e => setVitalForm({ ...vitalForm, heartRate: e.target.value })} />
-                                            <Input label="Temperature (°F)" type="number" step="0.1" placeholder="98.6" value={vitalForm.temperature} onChange={e => setVitalForm({ ...vitalForm, temperature: e.target.value })} />
-                                            <Input label="SpO₂ (%)" type="number" placeholder="98" value={vitalForm.spo2} onChange={e => setVitalForm({ ...vitalForm, spo2: e.target.value })} />
+                                            <Input label="Temperature (Â°F)" type="number" step="0.1" placeholder="98.6" value={vitalForm.temperature} onChange={e => setVitalForm({ ...vitalForm, temperature: e.target.value })} />
+                                            <Input label="SpOâ‚‚ (%)" type="number" placeholder="98" value={vitalForm.spo2} onChange={e => setVitalForm({ ...vitalForm, spo2: e.target.value })} />
                                             <Input label="Respiratory Rate" type="number" placeholder="16" value={vitalForm.respiratoryRate} onChange={e => setVitalForm({ ...vitalForm, respiratoryRate: e.target.value })} />
                                             <Input label="Notes" placeholder="Any observations..." value={vitalForm.notes} onChange={e => setVitalForm({ ...vitalForm, notes: e.target.value })} />
                                             <div className="col-span-full pt-2">
@@ -554,7 +554,7 @@ export default function IPDPage() {
                                                         <th className="px-4 py-3">BP</th>
                                                         <th className="px-4 py-3">HR</th>
                                                         <th className="px-4 py-3">Temp</th>
-                                                        <th className="px-4 py-3">SpO₂</th>
+                                                        <th className="px-4 py-3">SpOâ‚‚</th>
                                                         <th className="px-4 py-3">RR</th>
                                                         <th className="px-4 py-3">Notes</th>
                                                     </tr>
@@ -563,24 +563,24 @@ export default function IPDPage() {
                                                     {vitalsHistory.map((v: any) => (
                                                         <tr key={v.id} className="hover:bg-slate-900/50 transition">
                                                             <td className="px-4 py-2.5 text-gray-400 whitespace-nowrap">{new Date(v.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                                                            <td className="px-4 py-2.5 font-semibold text-gray-200">{v.bp || '—'}</td>
+                                                            <td className="px-4 py-2.5 font-semibold text-gray-200">{v.bp || 'â€”'}</td>
                                                             <td className="px-4 py-2.5">
                                                                 <span className={`font-semibold ${v.heartRate && (v.heartRate > 100 || v.heartRate < 60) ? 'text-red-400' : 'text-gray-200'}`}>
-                                                                    {v.heartRate ?? '—'}
+                                                                    {v.heartRate ?? 'â€”'}
                                                                 </span>
                                                             </td>
                                                             <td className="px-4 py-2.5">
                                                                 <span className={`font-semibold ${v.temperature && v.temperature > 100.4 ? 'text-red-400' : 'text-gray-200'}`}>
-                                                                    {v.temperature ? `${v.temperature}°F` : '—'}
+                                                                    {v.temperature ? `${v.temperature}Â°F` : 'â€”'}
                                                                 </span>
                                                             </td>
                                                             <td className="px-4 py-2.5">
                                                                 <span className={`font-semibold ${v.spo2 && v.spo2 < 95 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                                    {v.spo2 ? `${v.spo2}%` : '—'}
+                                                                    {v.spo2 ? `${v.spo2}%` : 'â€”'}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-4 py-2.5 text-gray-200">{v.respiratoryRate ?? '—'}</td>
-                                                            <td className="px-4 py-2.5 text-gray-500 max-w-[200px] truncate">{v.notes || '—'}</td>
+                                                            <td className="px-4 py-2.5 text-gray-200">{v.respiratoryRate ?? 'â€”'}</td>
+                                                            <td className="px-4 py-2.5 text-gray-500 max-w-[200px] truncate">{v.notes || 'â€”'}</td>
                                                         </tr>
                                                     ))}
                                                     {vitalsHistory.length === 0 && (

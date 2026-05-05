@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect, useCallback } from 'react';
 import {
     Stethoscope, RefreshCcw, Bell, ChevronRight, UserCircle, Activity, Save,
@@ -7,14 +7,14 @@ import {
     ArrowRightLeft, Send
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api';
+const API = `${API_BASE}/api`;
 
 function getToken() {
     return localStorage.getItem('token') || '';
 }
 
 function apiFetch(path: string, opts: RequestInit = {}) {
-    return fetch(`${API_BASE}${path}`, {
+    return fetch(`${API}${path}`, {
         ...opts,
         headers: {
             'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ function apiFetch(path: string, opts: RequestInit = {}) {
     });
 }
 
-// ─── Types ─────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Patient {
     id: string; uhid: string; firstName: string; lastName: string;
     age: number; gender: string; bloodGroup?: string; mobile: string;
@@ -52,7 +52,7 @@ interface InventoryItem {
     id: string; drugName: string; stockQuantity: number; unitPrice: number;
 }
 
-// ─── Sub-Components ────────────────────────────────────
+// â”€â”€â”€ Sub-Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function StatusBadge({ status }: { status: string }) {
     const colors: Record<string, string> = {
@@ -74,7 +74,7 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-// ─── Main Component ────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function DoctorEHRPage() {
     const [visits, setVisits] = useState<Visit[]>([]);
@@ -109,7 +109,7 @@ export default function DoctorEHRPage() {
     const [referralForm, setReferralForm] = useState({ toHospital: '', reason: '' });
     const [creatingReferral, setCreatingReferral] = useState(false);
 
-    // ─── Data Fetching ──────────────────────────────────
+    // â”€â”€â”€ Data Fetching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const loadVisits = useCallback(async () => {
         try {
             setLoading(true);
@@ -165,7 +165,7 @@ export default function DoctorEHRPage() {
         return () => clearInterval(interval);
     }, []);
 
-    // ─── Visit Actions ──────────────────────────────────
+    // â”€â”€â”€ Visit Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const selectVisit = (v: Visit) => {
         setSelectedVisit(v);
         setNoteContent(v.notes || '');
@@ -198,7 +198,7 @@ export default function DoctorEHRPage() {
         } catch (err) { console.error(err); }
     };
 
-    // ─── Notes ──────────────────────────────────────────
+    // â”€â”€â”€ Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const handleSaveNote = async () => {
         if (!selectedVisit) return;
         setSavingNote(true);
@@ -212,7 +212,7 @@ export default function DoctorEHRPage() {
         finally { setSavingNote(false); }
     };
 
-    // ─── Lab Ordering ───────────────────────────────────
+    // â”€â”€â”€ Lab Ordering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const handleOrderLab = async (testId: string, priority: string = 'ROUTINE') => {
         if (!selectedVisit) return;
         setOrderingLab(true);
@@ -226,7 +226,7 @@ export default function DoctorEHRPage() {
         finally { setOrderingLab(false); }
     };
 
-    // ─── Prescription ───────────────────────────────────
+    // â”€â”€â”€ Prescription â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const addRxItem = (drugName: string) => {
         if (rxItems.find(r => r.drugName === drugName)) return;
         setRxItems([...rxItems, { drugName, dosage: '', frequency: '', days: '' }]);
@@ -258,13 +258,13 @@ export default function DoctorEHRPage() {
         finally { setSubmittingRx(false); }
     };
 
-    // ─── Notification Actions ───────────────────────────
+    // â”€â”€â”€ Notification Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const markNotifRead = async (id: string) => {
         await apiFetch(`/notifications/${id}/read`, { method: 'PUT' });
         loadNotifications();
     };
 
-    // ─── Referrals ──────────────────────────────────────
+    // â”€â”€â”€ Referrals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const handleCreateReferral = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedVisit) return;
@@ -290,7 +290,7 @@ export default function DoctorEHRPage() {
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
-    // ─── Filtered data ──────────────────────────────────
+    // â”€â”€â”€ Filtered data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const filteredCatalog = labCatalog.filter(t =>
         t.testName.toLowerCase().includes(labSearch.toLowerCase()) ||
         t.department.toLowerCase().includes(labSearch.toLowerCase())
@@ -299,9 +299,9 @@ export default function DoctorEHRPage() {
         m.drugName.toLowerCase().includes(rxSearch.toLowerCase())
     );
 
-    // ────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // RENDER
-    // ────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     return (
         <div className="h-full flex flex-col">
@@ -313,7 +313,7 @@ export default function DoctorEHRPage() {
                     </div>
                     <div>
                         <h1 className="text-[20px] font-bold text-gray-50 tracking-tight">Doctor's EHR</h1>
-                        <p className="text-[12px] text-gray-500">Clinical Workstation · {visits.length} in queue</p>
+                        <p className="text-[12px] text-gray-500">Clinical Workstation Â· {visits.length} in queue</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -357,7 +357,7 @@ export default function DoctorEHRPage() {
             {/* Main Grid Layout */}
             <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
 
-                {/* ───── LEFT: Patient Queue ───── */}
+                {/* â”€â”€â”€â”€â”€ LEFT: Patient Queue â”€â”€â”€â”€â”€ */}
                 <div className="col-span-3 bg-[#111827] rounded-xl border border-slate-800 flex flex-col overflow-hidden">
                     <div className="p-3 border-b border-slate-800">
                         <h3 className="text-[12px] font-bold text-gray-400 tracking-widest uppercase">Patient Queue</h3>
@@ -380,7 +380,7 @@ export default function DoctorEHRPage() {
                                     <StatusBadge status={v.status} />
                                 </div>
                                 <div className="flex items-center justify-between text-[11px] text-gray-500 ml-5">
-                                    <span>Token #{v.tokenNo} · {v.patient.age}{v.patient.gender?.[0]}</span>
+                                    <span>Token #{v.tokenNo} Â· {v.patient.age}{v.patient.gender?.[0]}</span>
                                     <span>{new Date(v.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                                 {v.status === 'WAITING' && (
@@ -394,7 +394,7 @@ export default function DoctorEHRPage() {
                     </div>
                 </div>
 
-                {/* ───── CENTER: Clinical Workspace ───── */}
+                {/* â”€â”€â”€â”€â”€ CENTER: Clinical Workspace â”€â”€â”€â”€â”€ */}
                 <div className="col-span-6 bg-[#111827] rounded-xl border border-slate-800 flex flex-col overflow-hidden">
                     {/* Workspace Tabs */}
                     <div className="flex items-center gap-0 border-b border-slate-800 px-1 shrink-0">
@@ -418,7 +418,7 @@ export default function DoctorEHRPage() {
                             <div className="h-full flex items-center justify-center text-gray-500 text-[13px]">Select a patient from the queue</div>
                         ) : (
                             <>
-                                {/* ── NOTES TAB ── */}
+                                {/* â”€â”€ NOTES TAB â”€â”€ */}
                                 {activeTab === 'notes' && (
                                     <div className="space-y-4">
                                         <div>
@@ -449,7 +449,7 @@ export default function DoctorEHRPage() {
                                     </div>
                                 )}
 
-                                {/* ── LAB TAB ── */}
+                                {/* â”€â”€ LAB TAB â”€â”€ */}
                                 {activeTab === 'lab' && (
                                     <div className="space-y-4">
                                         {/* Search & Order */}
@@ -489,7 +489,7 @@ export default function DoctorEHRPage() {
                                                             <div>
                                                                 <div className="text-[13px] font-medium text-gray-200">{lo.testName}</div>
                                                                 <div className="text-[11px] text-gray-500 mt-0.5">
-                                                                    {new Date(lo.createdAt).toLocaleString()} · <StatusBadge status={lo.priority} />
+                                                                    {new Date(lo.createdAt).toLocaleString()} Â· <StatusBadge status={lo.priority} />
                                                                 </div>
                                                             </div>
                                                             <div className="text-right">
@@ -512,7 +512,7 @@ export default function DoctorEHRPage() {
                                     </div>
                                 )}
 
-                                {/* ── PRESCRIPTION TAB ── */}
+                                {/* â”€â”€ PRESCRIPTION TAB â”€â”€ */}
                                 {activeTab === 'rx' && (
                                     <div className="space-y-4">
                                         {/* Search inventory */}
@@ -580,7 +580,7 @@ export default function DoctorEHRPage() {
                                                             <div key={j} className="text-[12px] text-gray-300 flex items-center gap-2">
                                                                 <Pill size={12} className="text-gray-500" />
                                                                 <span className="font-medium">{med.drugName}</span>
-                                                                <span className="text-gray-500">· {med.dosage} · {med.frequency} · {med.days} days</span>
+                                                                <span className="text-gray-500">Â· {med.dosage} Â· {med.frequency} Â· {med.days} days</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -590,7 +590,7 @@ export default function DoctorEHRPage() {
                                     </div>
                                 )}
 
-                                {/* ── HISTORY TAB ── */}
+                                {/* â”€â”€ HISTORY TAB â”€â”€ */}
                                 {activeTab === 'history' && (
                                     <div className="space-y-3">
                                         <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Visit Timeline</div>
@@ -601,16 +601,16 @@ export default function DoctorEHRPage() {
                                                 <StatusBadge status={selectedVisit.status} />
                                             </div>
                                             <div className="text-[12px] text-gray-400 space-y-1 ml-5">
-                                                <div>Token: #{selectedVisit.tokenNo} · Dept: {selectedVisit.department}</div>
+                                                <div>Token: #{selectedVisit.tokenNo} Â· Dept: {selectedVisit.department}</div>
                                                 <div>Created: {new Date(selectedVisit.createdAt).toLocaleString()}</div>
-                                                <div>Lab Orders: {selectedVisit.labOrders.length} · Prescriptions: {selectedVisit.prescriptions.length}</div>
+                                                <div>Lab Orders: {selectedVisit.labOrders.length} Â· Prescriptions: {selectedVisit.prescriptions.length}</div>
                                                 {selectedVisit.diagnosis && <div>Diagnosis: <span className="text-gray-200">{selectedVisit.diagnosis}</span></div>}
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* ── REFERRALS TAB ── */}
+                                {/* â”€â”€ REFERRALS TAB â”€â”€ */}
                                 {activeTab === 'referrals' && (
                                     <div className="space-y-4">
                                         <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
@@ -675,7 +675,7 @@ export default function DoctorEHRPage() {
                     </div>
                 </div>
 
-                {/* ───── RIGHT: Patient Summary ───── */}
+                {/* â”€â”€â”€â”€â”€ RIGHT: Patient Summary â”€â”€â”€â”€â”€ */}
                 <div className="col-span-3 flex flex-col gap-4 overflow-y-auto">
                     {selectedVisit ? (
                         <>
@@ -701,7 +701,7 @@ export default function DoctorEHRPage() {
                                     </div>
                                     <div className="bg-slate-900 rounded-lg p-2">
                                         <div className="text-gray-500 text-[10px] uppercase">Blood Group</div>
-                                        <div className="text-gray-200 font-semibold">{selectedVisit.patient.bloodGroup || '—'}</div>
+                                        <div className="text-gray-200 font-semibold">{selectedVisit.patient.bloodGroup || 'â€”'}</div>
                                     </div>
                                     <div className="bg-slate-900 rounded-lg p-2">
                                         <div className="text-gray-500 text-[10px] uppercase">Contact</div>

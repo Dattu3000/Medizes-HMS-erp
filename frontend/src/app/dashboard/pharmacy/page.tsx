@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect, useCallback } from 'react';
 import { Pill, Search, ShoppingCart, UploadCloud, Download, CheckCircle2, ClipboardList, UserCircle, Clock, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -40,7 +40,7 @@ export default function PharmacyPage() {
     const fetchPrescriptions = useCallback(async () => {
         setRxLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/pharmacy/prescriptions', {
+            const res = await fetch(`${API_BASE}/api/pharmacy/prescriptions`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setPrescriptions(await res.json());
@@ -52,7 +52,7 @@ export default function PharmacyPage() {
     const handleDispenseRx = async (prescriptionId: string) => {
         setDispensingId(prescriptionId);
         try {
-            const res = await fetch('http://localhost:5000/api/pharmacy/dispense-rx', {
+            const res = await fetch(`${API_BASE}/api/pharmacy/dispense-rx`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ export default function PharmacyPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                alert(`Dispensed! Bill: ${data.bill.billNo} — ₹${data.bill.netPayable.toFixed(2)}`);
+                alert(`Dispensed! Bill: ${data.bill.billNo} â€” ₹${data.bill.netPayable.toFixed(2)}`);
                 fetchPrescriptions();
                 fetchInventory();
             } else {
@@ -75,7 +75,7 @@ export default function PharmacyPage() {
     const handleRunAISafetyCheck = async (prescriptionId: string, medicines: any[]) => {
         setAiLoadingFor(prescriptionId);
         try {
-            const res = await fetch('http://localhost:5000/api/pharmacy/ai/analyze', {
+            const res = await fetch(`${API_BASE}/api/pharmacy/ai/analyze`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ export default function PharmacyPage() {
 
     const fetchInventory = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/pharmacy/inventory', {
+            const res = await fetch(`${API_BASE}/api/pharmacy/inventory`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setInventory(await res.json());
@@ -109,7 +109,7 @@ export default function PharmacyPage() {
     const executeSearch = async () => {
         if (!searchQuery) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/patient/search?query=${searchQuery}`, {
+            const res = await fetch(`${API_BASE}/api/patient/search?query=${searchQuery}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setPatients(await res.json());
@@ -155,7 +155,7 @@ export default function PharmacyPage() {
         };
 
         try {
-            const res = await fetch('http://localhost:5000/api/pharmacy/dispense', {
+            const res = await fetch(`${API_BASE}/api/pharmacy/dispense`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -180,7 +180,7 @@ export default function PharmacyPage() {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/pharmacy/inventory', {
+            const res = await fetch(`${API_BASE}/api/pharmacy/inventory`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
                 body: JSON.stringify(medForm)
@@ -223,7 +223,7 @@ export default function PharmacyPage() {
 
             setLoading(true);
             try {
-                const res = await fetch('http://localhost:5000/api/pharmacy/inventory/bulk', {
+                const res = await fetch(`${API_BASE}/api/pharmacy/inventory/bulk`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
                     body: JSON.stringify({ medicines })
@@ -493,7 +493,7 @@ export default function PharmacyPage() {
                                                         {rx.patient?.firstName} {rx.patient?.lastName}
                                                     </div>
                                                     <div className="text-[11px] text-gray-500">
-                                                        {rx.patient?.uhid} · Dr. {rx.visit?.doctor?.lastName || '—'}
+                                                        {rx.patient?.uhid} Â· Dr. {rx.visit?.doctor?.lastName || 'â€”'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -511,7 +511,7 @@ export default function PharmacyPage() {
                                                         <Pill size={12} className="text-emerald-400" />
                                                         <span className="font-medium text-gray-200">{med.drugName}</span>
                                                     </div>
-                                                    <span className="text-gray-500">{med.dosage} · {med.frequency} · {med.days}d</span>
+                                                    <span className="text-gray-500">{med.dosage} Â· {med.frequency} Â· {med.days}d</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -543,7 +543,7 @@ export default function PharmacyPage() {
                                                         <div className="text-emerald-400 font-bold mb-1 uppercase tracking-wider text-[10px]">Cost Savings Found</div>
                                                         {aiAnalysis[rx.id].costSavings.map((s: any, idx: number) => (
                                                             <div key={idx} className="bg-emerald-500/5 border-l-2 border-emerald-500 pl-2">
-                                                                <span className="font-semibold text-gray-200">Switch {s.original} ➔ {s.alternative}</span>
+                                                                <span className="font-semibold text-gray-200">Switch {s.original} âž” {s.alternative}</span>
                                                                 <div className="text-emerald-500/70 mt-0.5">Estimated Savings: {s.savingsEst}</div>
                                                             </div>
                                                         ))}

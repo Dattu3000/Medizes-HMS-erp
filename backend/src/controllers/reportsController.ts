@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
+import { callGemma } from '../utils/aiService';
 
 // ─────────────────────────────────────────
 // BALANCE SHEET (Simplified Trial Balance)
@@ -657,5 +658,65 @@ export const getPatientDemographics = async (req: Request, res: Response) => {
         });
     } catch (error) {
         res.status(500).json({ message: 'Error generating demographics', error });
+    }
+};
+
+// Phase 26D: AI Billing Anomaly Detection
+export const detectBillingAnomaliesAI = async (req: Request, res: Response) => {
+    try {
+        const recentBills = await prisma.bill.findMany({
+            take: 50,
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (recentBills.length === 0) {
+            return res.status(200).json({ status: 'SUCCESS', analysis: { anomalies: [], overallRisk: 'LOW', summary: 'No bills to analyze.' } });
+        }
+
+        // Resolve patient names for bills that have patientId
+        const patientIds = [...new Set(recentBills.map((b: any) => b.patientId).filter(Boolean))];
+        const patients = await prisma.patient.findMany({ where: { id: { in: patientIds } }, select: { id: true, firstName: true, lastName: true } });
+        const patientMap = new Map(patients.map(p => [p.id, `${p.firstName} ${p.lastName}`]));
+
+        const billData = recentBills.map((b: any) => ({
+            billNo: b.billNo,
+            type: b.type,
+            subTotal: b.subTotal,
+            gstAmount: b.gstAmount,
+            discount: b.discount,
+            netPayable: b.netPayable,
+            paymentMode: b.paymentMode,
+            status: b.status,
+            patientName: patientMap.get(b.patientId) || 'Unknown',
+            date: b.createdAt
+        }));
+
+        const prompt = `You are a hospital financial auditor AI. Analyze the following recent billing records for anomalies such as:
+        - Duplicate charges for same patient on same day
+        - Unusually high or low amounts compared to the type of bill
+        - Bills with zero or negative net payable
+        - Suspicious discount patterns
+        - Missing GST on taxable services
+
+        Return ONLY a valid JSON object matching this exact shape:
+        {
+          "overallRisk": "LOW" | "MODERATE" | "HIGH",
+          "summary": "Brief summary of findings",
+          "anomalies": [{"billNo": "string", "issue": "description of anomaly", "severity": "HIGH" | "MODERATE" | "LOW", "recommendation": "what to do"}]
+        }
+        Do NOT wrap the JSON in Markdown formatting. Return pure JSON object only.
+
+        Billing Records:
+        ${JSON.stringify(billData)}`;
+
+        const analysis = await callGemma(prompt);
+
+        res.status(200).json({
+            status: 'SUCCESS',
+            analysis
+        });
+    } catch (error) {
+        console.error('AI Billing Anomaly error', error);
+        res.status(500).json({ message: 'AI Billing Anomaly detection failed', error });
     }
 };

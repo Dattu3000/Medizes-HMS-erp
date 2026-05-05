@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
+import { callGemma } from '../utils/aiService';
 import { logAudit } from '../utils/audit';
 
 export const getInventory = async (req: Request, res: Response) => {
@@ -225,54 +226,24 @@ export const analyzePrescriptionAI = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'No medicines provided for analysis' });
         }
 
-        // Simulating LLM Processing Delay
-        await new Promise(r => setTimeout(r, 1200));
-
-        // Mock AI Logic based on inputs
-        const names = medicines.map((m: any) => m.drugName.toLowerCase());
-        const hasAntibiotic = names.some((n: string) => n.includes('amoxicillin') || n.includes('azithromycin') || n.includes('ciprofloxacin'));
-        const hasNsaid = names.some((n: string) => n.includes('ibuprofen') || n.includes('naproxen') || n.includes('diclofenac'));
-        const hasWarfarin = names.some((n: string) => n.includes('warfarin'));
-
-        const interactions = [];
-        if (hasAntibiotic && hasNsaid) {
-            interactions.push({
-                severity: 'MODERATE',
-                description: 'Potential for increased gastrointestinal irritation when antibiotics are used with NSAIDs.',
-                recommendation: 'Monitor patient for GI discomfort. Advise taking NSAIDs with food.'
-            });
+        const prompt = `You are an AI Clinical Pharmacist. Analyze the following prescribed medications for potential drug interactions and cost-saving generic alternatives.
+        Return ONLY a valid JSON object matching this exact shape: 
+        {
+          "overallRisk": "LOW" | "MODERATE" | "HIGH",
+          "summary": "String summarizing findings",
+          "interactions": [{"severity": "HIGH" | "MODERATE" | "LOW", "description": "string", "recommendation": "string"}],
+          "costSavings": [{"original": "Brand name", "alternative": "Generic name", "savingsEst": "string percentage"}]
         }
-        if (hasWarfarin && hasAntibiotic) {
-            interactions.push({
-                severity: 'HIGH',
-                description: 'Antibiotics can alter intestinal flora, potentially increasing the effects of Warfarin and bleeding risk.',
-                recommendation: 'Closely monitor INR values. Adjust Warfarin dosage if necessary.'
-            });
-        }
+        Do NOT wrap the JSON in Markdown formatting like \`\`\`json. Return pure JSON object only.
+        
+        Prescribed Medicines Payload:
+        ${JSON.stringify(medicines)}`;
 
-        const costSavings = [];
-        const brandedParacetamol = medicines.find((m: any) => m.drugName.toLowerCase().includes('tylenol') || m.drugName.toLowerCase() === 'crocin' || m.drugName.toLowerCase() === 'dolo');
-        if (brandedParacetamol) {
-            costSavings.push({
-                original: brandedParacetamol.drugName,
-                alternative: 'Generic Paracetamol 500mg',
-                savingsEst: '60%'
-            });
-        }
-
-        let overallRisk = 'LOW';
-        if (interactions.length > 0) overallRisk = 'MODERATE';
-        if (interactions.some(i => i.severity === 'HIGH')) overallRisk = 'HIGH';
-        if (medicines.length > 4 && overallRisk === 'LOW') overallRisk = 'MODERATE'; // Polypharmacy warning
+        const analysis = await callGemma(prompt);
 
         res.status(200).json({
             status: 'SUCCESS',
-            analysis: {
-                overallRisk,
-                interactions,
-                costSavings,
-                summary: `AI analyzed ${medicines.length} prescribed medications. Found ${interactions.length} potential interaction(s) and ${costSavings.length} cost-saving alternative(s).`
-            }
+            analysis
         });
     } catch (error) {
         console.error("AI Analysis error", error);

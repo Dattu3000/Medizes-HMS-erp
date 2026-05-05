@@ -3,7 +3,7 @@ import {
     getBalanceSheet, getGSTReport, getPayrollCompliance, getAnalytics,
     getRevenueByDoctor, getRevenueByDepartment, getCollectionEfficiency,
     getRevenueTrend, getExpenseTrend, getBedOccupancy, getLabVolume,
-    getPatientDemographics
+    getPatientDemographics, detectBillingAnomaliesAI
 } from '../controllers/reportsController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
@@ -26,5 +26,8 @@ router.get('/expense-trend', authenticate, requireRole(reportRoles), getExpenseT
 router.get('/bed-occupancy', authenticate, requireRole(reportRoles), getBedOccupancy);
 router.get('/lab-volume', authenticate, requireRole(reportRoles), getLabVolume);
 router.get('/patient-demographics', authenticate, requireRole(reportRoles), getPatientDemographics);
+
+// AI
+router.post('/ai/billing-anomalies', authenticate, requireRole(reportRoles), detectBillingAnomaliesAI);
 
 export default router;

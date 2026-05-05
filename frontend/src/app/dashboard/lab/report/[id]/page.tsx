@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Download, AlertTriangle, Printer } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
 
 export default function StandaloneLabReport() {
     const params = useParams();
@@ -18,7 +19,7 @@ export default function StandaloneLabReport() {
         const fetchReport = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch(`http://localhost:5000/api/lab/report/${params.id}`, {
+                const res = await fetch(`${API_BASE}/api/lab/report/${params.id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -41,7 +42,7 @@ export default function StandaloneLabReport() {
         setAiLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/lab/ai/interpret`, {
+            const res = await fetch(`${API_BASE}/api/lab/ai/interpret`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ resultsPayload: report.order.resultsPayload })

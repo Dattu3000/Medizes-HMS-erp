@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect, useCallback } from 'react';
 import {
     BarChart3, FileText, IndianRupee, Users,
@@ -8,7 +8,7 @@ import {
     Stethoscope, Building2, Percent, TestTube2, UserCheck
 } from 'lucide-react';
 
-const API = 'http://localhost:5000/api';
+const API = `${API_BASE}/api`;
 const getAuth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 const fmt = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 const pct = (n: number, total: number) => total ? ((n / total) * 100).toFixed(1) : '0.0';
@@ -125,8 +125,8 @@ export default function ReportsPage() {
 
                 <div className="p-6 flex-1 overflow-auto">
 
-                    {/* ═══ ANALYTICS ═══ */}
-                    {tab === 'analytics' && analytics && (
+                    {/* â•â•â• ANALYTICS â•â•â• */}
+                    {tab === 'analytics' && analytics && analytics.patients && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[
@@ -160,13 +160,13 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* ═══ BALANCE SHEET ═══ */}
-                    {tab === 'balance' && balance && (
+                    {/* â•â•â• BALANCE SHEET â•â•â• */}
+                    {tab === 'balance' && balance && balance.income && (
                         <div className="max-w-4xl mx-auto space-y-4">
                             <div className="flex justify-end"><button onClick={() => window.print()} className="bg-slate-700 text-white font-bold px-3 py-1.5 flex items-center gap-2 rounded-lg text-xs"><Printer size={13} /> Print</button></div>
                             <div className={`p-5 rounded-xl border-2 flex justify-between items-center ${balance.surplus === 'PROFIT' ? 'bg-emerald-600/10 border-emerald-400/50' : 'bg-rose-600/10 border-rose-400/50'}`}>
                                 <div>
-                                    <div className="text-xs font-bold uppercase mb-1 text-glass-muted">{balance.surplus === 'PROFIT' ? '📈 Net Profit' : '📉 Net Loss'}</div>
+                                    <div className="text-xs font-bold uppercase mb-1 text-glass-muted">{balance.surplus === 'PROFIT' ? 'ðŸ“ˆ Net Profit' : 'ðŸ“‰ Net Loss'}</div>
                                     <div className={`text-3xl font-black ${balance.surplus === 'PROFIT' ? 'text-emerald-400' : 'text-rose-400'}`}>{fmt(Math.abs(balance.netProfitOrLoss))}</div>
                                 </div>
                                 <div className="text-right text-xs space-y-1 text-glass-muted">
@@ -190,7 +190,7 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* ═══ GST ═══ */}
+                    {/* â•â•â• GST â•â•â• */}
                     {tab === 'gst' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 flex-wrap">
@@ -200,7 +200,7 @@ export default function ReportsPage() {
                                 <input type="number" className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm w-20 text-white" value={gstYear} onChange={e => setGstYear(Number(e.target.value))} />
                                 <button onClick={() => load('gst')} className="bg-violet-600 text-white font-bold px-4 py-2 rounded-lg text-xs">Apply</button>
                             </div>
-                            {gst && (
+                            {gst && gst.gstr3b && (
                                 <>
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4"><div className="text-[10px] uppercase text-glass-muted mb-1">Outward GST</div><div className="text-2xl font-black text-white">{fmt(gst.gstr3b.outwardGST)}</div></div>
@@ -218,7 +218,7 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* ═══ PAYROLL ═══ */}
+                    {/* â•â•â• PAYROLL â•â•â• */}
                     {tab === 'payroll' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 flex-wrap">
@@ -228,14 +228,14 @@ export default function ReportsPage() {
                                 <input type="number" className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm w-20 text-white" value={prYear} onChange={e => setPrYear(Number(e.target.value))} />
                                 <button onClick={() => load('payroll')} className="bg-violet-600 text-white font-bold px-4 py-2 rounded-lg text-xs">Apply</button>
                             </div>
-                            {payroll && (
+                            {payroll && payroll.compliance && (
                                 <>
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="bg-blue-600/10 border border-blue-500/30 rounded-xl p-4"><div className="text-[10px] uppercase text-glass-muted mb-1">EPF Total</div><div className="text-xl font-black text-blue-400">{fmt(payroll.compliance.epf.total)}</div></div>
                                         <div className="bg-indigo-600/10 border border-indigo-500/30 rounded-xl p-4"><div className="text-[10px] uppercase text-glass-muted mb-1">ESI Total</div><div className="text-xl font-black text-indigo-400">{fmt(payroll.compliance.esi.total)}</div></div>
                                         <div className="bg-violet-600/10 border border-violet-500/30 rounded-xl p-4"><div className="text-[10px] uppercase text-glass-muted mb-1">Prof. Tax</div><div className="text-xl font-black text-violet-400">{fmt(payroll.compliance.pt.total)}</div></div>
                                     </div>
-                                    <div className="flex justify-between items-center"><h3 className="font-bold text-glass-title text-sm">Payslips — {payroll.period}</h3>
+                                    <div className="flex justify-between items-center"><h3 className="font-bold text-glass-title text-sm">Payslips â€” {payroll.period}</h3>
                                         <button onClick={() => { exportToCSV(`Payroll_${payroll.period.replace('/', '-')}.csv`, [['EmpID', 'Name', 'Gross', 'EPF', 'ESI', 'PT', 'Net'], ...payroll.payslips.map((p: any) => [p.employeeId, p.name, p.grossSalary, p.epfEmployee, p.esiEmployee, p.pt, p.netTakeHome])]); }} className="text-xs bg-slate-700 text-white px-3 py-1 rounded-lg flex items-center gap-1"><Download size={12} /> CSV</button>
                                     </div>
                                     <div className="space-y-2">
@@ -256,10 +256,10 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* ═══ REVENUE INTELLIGENCE ═══ */}
+                    {/* â•â•â• REVENUE INTELLIGENCE â•â•â• */}
                     {tab === 'revenue' && (
                         <div className="space-y-6">
-                            {doctorRev && (
+                            {doctorRev && doctorRev.doctors && (
                                 <div>
                                     <div className="flex justify-between items-center mb-3"><h3 className="font-bold text-glass-title flex items-center gap-2"><Stethoscope size={15} /> Doctor-wise Revenue</h3>
                                         <button onClick={() => { exportToCSV('DoctorRevenue.csv', [['Rank', 'Doctor', 'Department', 'Revenue', 'Bills', 'Avg/Bill', '%'], ...doctorRev.doctors.map((d: any) => [d.rank, d.name, d.department, d.revenue, d.billCount, d.avgPerBill, d.percentage])]); }} className="text-xs bg-slate-700 text-white px-3 py-1 rounded-lg flex items-center gap-1"><Download size={12} /> CSV</button>
@@ -270,7 +270,7 @@ export default function ReportsPage() {
                                                 <div className="w-8 h-8 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 font-black text-sm">#{d.rank}</div>
                                                 <div className="flex-1">
                                                     <div className="font-bold text-white text-sm">{d.name}</div>
-                                                    <div className="text-[10px] text-glass-muted">{d.department} • {d.billCount} bills • Avg {fmt(Number(d.avgPerBill))}</div>
+                                                    <div className="text-[10px] text-glass-muted">{d.department} â€¢ {d.billCount} bills â€¢ Avg {fmt(Number(d.avgPerBill))}</div>
                                                 </div>
                                                 <div className="text-right">
                                                     <div className="font-black text-emerald-400">{fmt(d.revenue)}</div>
@@ -283,7 +283,7 @@ export default function ReportsPage() {
                                     </div>
                                 </div>
                             )}
-                            {deptRev && (
+                            {deptRev && deptRev.departments && (
                                 <div>
                                     <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><Building2 size={15} /> Department-wise Revenue</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -300,10 +300,10 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* ═══ OPERATIONAL ═══ */}
+                    {/* â•â•â• OPERATIONAL â•â•â• */}
                     {tab === 'operational' && (
                         <div className="space-y-6">
-                            {bedOcc && (
+                            {bedOcc && bedOcc.overall && (
                                 <div>
                                     <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><Bed size={15} /> Bed Occupancy</h3>
                                     <div className="bg-black/20 border border-white/10 rounded-xl p-4 mb-3 text-center">
@@ -322,7 +322,7 @@ export default function ReportsPage() {
                                     </div>
                                 </div>
                             )}
-                            {labVol && (
+                            {labVol && labVol.byTest && (
                                 <div>
                                     <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><TestTube2 size={15} /> Lab Volume ({labVol.totalOrders} orders)</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -336,7 +336,7 @@ export default function ReportsPage() {
                                     </div>
                                 </div>
                             )}
-                            {demographics && (
+                            {demographics && demographics.ageBuckets && (
                                 <div>
                                     <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><UserCheck size={15} /> Patient Demographics ({demographics.totalPatients})</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -364,10 +364,10 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* ═══ FINANCIAL TRENDS ═══ */}
+                    {/* â•â•â• FINANCIAL TRENDS â•â•â• */}
                     {tab === 'trends' && (
                         <div className="space-y-6">
-                            {revTrend && (
+                            {revTrend && revTrend.months && (
                                 <div>
                                     <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><TrendingUp size={15} /> Revenue Trend (6 Months)</h3>
                                     <div className="grid grid-cols-6 gap-2">
@@ -378,7 +378,7 @@ export default function ReportsPage() {
                                                 <div className="text-[10px] text-glass-muted">{m.billCount} bills</div>
                                                 {m.growth && Number(m.growth) !== 0 && (
                                                     <div className={`text-[10px] font-bold mt-1 ${Number(m.growth) > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {Number(m.growth) > 0 ? '↑' : '↓'}{m.growth}%
+                                                        {Number(m.growth) > 0 ? 'â†‘' : 'â†“'}{m.growth}%
                                                     </div>
                                                 )}
                                             </div>
@@ -386,7 +386,7 @@ export default function ReportsPage() {
                                     </div>
                                 </div>
                             )}
-                            {expTrend && (
+                            {expTrend && expTrend.months && (
                                 <div>
                                     <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><TrendingDown size={15} /> Expense Trend (6 Months)</h3>
                                     <div className="grid grid-cols-6 gap-2">
@@ -404,13 +404,13 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* ═══ COLLECTION EFFICIENCY ═══ */}
-                    {tab === 'collection' && collection && (
+                    {/* â•â•â• COLLECTION EFFICIENCY â•â•â• */}
+                    {tab === 'collection' && collection && collection.overall && (
                         <div className="space-y-4 max-w-4xl mx-auto">
                             <div className={`p-5 rounded-xl border-2 text-center ${Number(collection.overall.efficiency) >= 85 ? 'border-emerald-400/50 bg-emerald-600/10' : 'border-yellow-400/50 bg-yellow-600/10'}`}>
                                 <div className="text-xs font-bold text-glass-muted uppercase mb-1">Overall Collection Efficiency</div>
                                 <div className="text-4xl font-black text-white">{collection.overall.efficiency}%</div>
-                                <div className="text-xs text-glass-muted mt-1">Billed: {fmt(collection.overall.billed)} • Collected: {fmt(collection.overall.collected)}</div>
+                                <div className="text-xs text-glass-muted mt-1">Billed: {fmt(collection.overall.billed)} â€¢ Collected: {fmt(collection.overall.collected)}</div>
                             </div>
                             <div className="grid grid-cols-6 gap-2">
                                 {collection.months.map((m: any) => (

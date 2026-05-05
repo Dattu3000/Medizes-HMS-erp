@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { Briefcase, UserPlus, FileText, CheckCircle, Search, Clock, X } from 'lucide-react';
 
@@ -26,7 +26,7 @@ export default function TalentAcquisition() {
 
     const fetchJobs = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/hr/jobs', {
+            const res = await fetch(`${API_BASE}/api/hr/jobs`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setJobs(await res.json());
@@ -35,7 +35,7 @@ export default function TalentAcquisition() {
 
     const fetchCandidates = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/hr/candidates', {
+            const res = await fetch(`${API_BASE}/api/hr/candidates`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setPipeline(await res.json());
@@ -46,7 +46,7 @@ export default function TalentAcquisition() {
         if (!jdText) return;
         setIsAnalyzing(true);
         try {
-            const res = await fetch('http://localhost:5000/api/hr/jobs/analyze', {
+            const res = await fetch(`${API_BASE}/api/hr/jobs/analyze`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ export default function TalentAcquisition() {
         if (!candidateSkills || !jobReqs) return;
         setIsScreening(true);
         try {
-            const res = await fetch('http://localhost:5000/api/hr/talent/resume-screen', {
+            const res = await fetch(`${API_BASE}/api/hr/talent/resume-screen`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ export default function TalentAcquisition() {
 
     const updateStatus = async (id: string, newStatus: string) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/hr/candidates/${id}/status`, {
+            const res = await fetch(`${API_BASE}/api/hr/candidates/${id}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ export default function TalentAcquisition() {
 
     const handleCreateJob = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/hr/jobs', {
+            const res = await fetch(`${API_BASE}/api/hr/jobs`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

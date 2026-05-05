@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { User, Users, Briefcase, BarChart3, Fingerprint } from 'lucide-react';
 import EssPortal from '@/components/hr/EssPortal';
@@ -7,10 +6,11 @@ import ManagerCenter from '@/components/hr/ManagerCenter';
 import StrategicDashboard from '@/components/hr/StrategicDashboard';
 import TalentAcquisition from '@/components/hr/TalentAcquisition';
 import OnboardingEngine from '@/components/hr/OnboardingEngine';
-import { Rocket } from 'lucide-react';
+import TrainingCenter from '@/components/hr/TrainingCenter';
+import { Rocket, MonitorPlay } from 'lucide-react';
 
 export default function HRPage() {
-    const [activeTab, setActiveTab] = useState<'ess' | 'manager' | 'talent' | 'executive' | 'onboarding'>('ess');
+    const [activeTab, setActiveTab] = useState<'ess' | 'manager' | 'talent' | 'executive' | 'onboarding' | 'training'>('ess');
 
     return (
         <div className="space-y-6 liquid-bg p-6 rounded-3xl min-h-screen">
@@ -62,6 +62,14 @@ export default function HRPage() {
                 >
                     <Rocket className="w-4 h-4" /> Onboarding Engine
                 </button>
+
+                <button
+                    onClick={() => setActiveTab('training')}
+                    className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${activeTab === 'training' ? 'liquid-glass-button shadow-lg' : 'text-glass-muted hover:bg-white/10 hover:text-white'
+                        }`}
+                >
+                    <MonitorPlay className="w-4 h-4 text-indigo-400" /> AI Learning Path
+                </button>
             </div>
 
             {/* Active Content Area */}
@@ -71,6 +79,7 @@ export default function HRPage() {
                 {activeTab === 'talent' && <TalentAcquisition />}
                 {activeTab === 'executive' && <StrategicDashboard />}
                 {activeTab === 'onboarding' && <OnboardingEngine />}
+                {activeTab === 'training' && <TrainingCenter />}
             </div>
         </div>
     );

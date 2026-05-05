@@ -1,5 +1,5 @@
 'use client';
-
+import { API_BASE } from '@/lib/api';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X } from 'lucide-react';
@@ -18,7 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
-            const res = await fetch('http://localhost:5000/api/notifications', {
+            const res = await fetch(`${API_BASE}/api/notifications`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) setNotifications(await res.json());
@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const markNotifRead = async (id: string) => {
         try {
-            await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+            await fetch(`${API_BASE}/api/notifications/${id}/read`, {
                 method: 'PUT',
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
