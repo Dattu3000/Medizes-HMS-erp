@@ -1,7 +1,7 @@
 'use client';
 import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react';
-import { BedDouble, Users, IndianRupee, FileText, CheckCircle2, Stethoscope, Heart, Thermometer, Activity } from 'lucide-react';
+import { BedDouble, Users, IndianRupee, FileText, CheckCircle2, Stethoscope, Heart, Thermometer, Activity, Scissors } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -9,12 +9,14 @@ import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 
 export default function IPDPage() {
-    const [activeTab, setActiveTab] = useState<'wards' | 'billing' | 'nursing' | 'assets'>('wards');
+    const [activeTab, setActiveTab] = useState<'wards' | 'billing' | 'nursing' | 'surgeries' | 'assets'>('wards');
     const [loading, setLoading] = useState(false);
 
     const [wards, setWards] = useState<any[]>([]);
     const [admissions, setAdmissions] = useState<any[]>([]);
     const [doctors, setDoctors] = useState<any[]>([]);
+    const [surgeries, setSurgeries] = useState<any[]>([]);
+    const [ots, setOts] = useState<any[]>([]);
 
     // Modals / Specific UI state
     const [selectedBed, setSelectedBed] = useState<any>(null);
@@ -30,6 +32,7 @@ export default function IPDPage() {
     // Asset Management State
     const [wardForm, setWardForm] = useState({ name: '', type: 'GENERAL', capacity: '' });
     const [bedForm, setBedForm] = useState({ bedNumber: '', wardId: '', dailyRent: '' });
+    const [otForm, setOtForm] = useState({ name: '' });
 
     // Nursing Vitals State
     const [nursingAdmission, setNursingAdmission] = useState<any>(null);
@@ -37,20 +40,42 @@ export default function IPDPage() {
     const [vitalForm, setVitalForm] = useState({ bp: '', heartRate: '', temperature: '', spo2: '', respiratoryRate: '', notes: '' });
     const [vitalsLoading, setVitalsLoading] = useState(false);
 
+    // OT Schedule State
+    const [surgeryForm, setSurgeryForm] = useState({ patientId: '', surgeonId: '', otId: '', surgeryName: '', startTime: '', endTime: '', notes: '' });
+
     useEffect(() => {
         fetchWards();
         fetchAdmissions();
         fetchDoctors();
+        fetchOts();
     }, []);
 
     const fetchWards = async () => {
         try {
-            const res = await fetch(`${API_BASE}/api/ipd/wards`, {
+            const res = await fetch(`${API_BASE}/api/infrastructure/beds`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) setWards(await res.json());
             else setWards([]);
         } catch (err) { console.error(err); setWards([]); }
+    };
+
+    const fetchOts = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/infrastructure/ots`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setOts(await res.json());
+        } catch (err) {}
+    };
+
+    const fetchSurgeries = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/infrastructure/surgeries`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setSurgeries(await res.json());
+        } catch (err) {}
     };
 
     const fetchAdmissions = async () => {
@@ -247,6 +272,52 @@ export default function IPDPage() {
         setVitalsLoading(false);
     };
 
+    const handleCreateOT = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/api/infrastructure/ots`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify(otForm)
+            });
+            if (res.ok) {
+                alert("OT created successfully");
+                setOtForm({ name: '' });
+                fetchOts();
+            } else {
+                alert("Failed to create OT");
+            }
+        } catch (err) { console.error(err) }
+        setLoading(false);
+    };
+
+    const handleScheduleSurgery = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/api/infrastructure/surgeries`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify({
+                    ...surgeryForm,
+                    patientId: selectedPatientForAdmission?.id
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert("Surgery Scheduled Successfully");
+                setSurgeryForm({ patientId: '', surgeonId: '', otId: '', surgeryName: '', startTime: '', endTime: '', notes: '' });
+                setSelectedPatientForAdmission(null);
+                setSearchQuery('');
+                fetchSurgeries();
+            } else {
+                alert(data.message || 'Booking conflict');
+            }
+        } catch(err) { console.error(err); }
+        setLoading(false);
+    };
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -273,6 +344,12 @@ export default function IPDPage() {
                     <Stethoscope size={16} /> Nursing Vitals
                 </button>
                 <button
+                    onClick={() => { setActiveTab('surgeries'); fetchSurgeries(); fetchOts(); }}
+                    className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'surgeries' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
+                >
+                    <Scissors size={16} /> OT & Surgeries
+                </button>
+                <button
                     onClick={() => setActiveTab('assets')}
                     className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'assets' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
                 >
@@ -294,26 +371,34 @@ export default function IPDPage() {
                                     <Badge variant="neutral">{ward.beds.length} Beds Documented</Badge>
                                 </div>
                                 <div className="p-6 flex flex-wrap gap-4">
-                                    {ward.beds.map((bed: any) => (
-                                        <div
-                                            key={bed.id}
-                                            className={`w-[120px] h-[100px] p-2 rounded-[10px] border flex flex-col justify-center items-center cursor-pointer transition-all hover:-translate-y-1 ${bed.status === 'AVAILABLE' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                                                bed.status === 'MAINTENANCE' ? 'bg-amber-500/10 border-amber-500/30' :
-                                                    'bg-red-500/10 border-red-500/30 opacity-80 cursor-not-allowed'
-                                                } ${selectedBed?.id === bed.id ? 'ring-2 ring-blue-500 shadow-md scale-105' : ''}`}
-                                            onClick={() => bed.status === 'AVAILABLE' && setSelectedBed({ ...bed, wardName: ward.name })}
-                                        >
-                                            <BedDouble size={28} className={`mb-1 ${bed.status === 'AVAILABLE' ? 'text-emerald-500' :
-                                                bed.status === 'MAINTENANCE' ? 'text-amber-500' : 'text-red-500'
-                                                }`} />
-                                            <div className="font-bold text-gray-50 text-[14px]">{bed.bedNumber}</div>
-                                            <div className={`text-[10px] uppercase font-bold mt-0.5 ${bed.status === 'AVAILABLE' ? 'text-emerald-400' :
-                                                bed.status === 'MAINTENANCE' ? 'text-amber-400' : 'text-red-400'
-                                                }`}>
-                                                {bed.status}
+                                    {ward.beds.map((bed: any) => {
+                                        const activeAdm = bed.admissions?.find((a: any) => a.status === 'ADMITTED');
+                                        return (
+                                            <div
+                                                key={bed.id}
+                                                className={`w-[120px] h-[100px] p-2 rounded-[10px] border flex flex-col justify-center items-center cursor-pointer transition-all hover:-translate-y-1 ${!activeAdm ? 'bg-emerald-500/10 border-emerald-500/30' :
+                                                    bed.status === 'MAINTENANCE' ? 'bg-amber-500/10 border-amber-500/30' :
+                                                        'bg-red-500/10 border-red-500/30 opacity-80 cursor-not-allowed'
+                                                    } ${selectedBed?.id === bed.id ? 'ring-2 ring-blue-500 shadow-md scale-105' : ''}`}
+                                                onClick={() => !activeAdm && setSelectedBed({ ...bed, wardName: ward.name })}
+                                            >
+                                                <BedDouble size={28} className={`mb-1 ${!activeAdm ? 'text-emerald-500' :
+                                                    bed.status === 'MAINTENANCE' ? 'text-amber-500' : 'text-red-500'
+                                                    }`} />
+                                                <div className="font-bold text-gray-50 text-[14px]">{bed.bedNumber}</div>
+                                                <div className={`text-[10px] uppercase font-bold mt-0.5 ${!activeAdm ? 'text-emerald-400' :
+                                                    bed.status === 'MAINTENANCE' ? 'text-amber-400' : 'text-red-400'
+                                                    }`}>
+                                                    {!activeAdm ? 'AVAILABLE' : 'OCCUPIED'}
+                                                </div>
+                                                {activeAdm && (
+                                                    <div className="text-[9px] text-red-200 mt-1 truncate w-full text-center">
+                                                        {activeAdm.patient?.firstName} {activeAdm.patient?.lastName}
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </Card>
                         ))}
@@ -340,7 +425,7 @@ export default function IPDPage() {
                                         <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
                                             {patientResults.map((p) => (
                                                 <div key={p.id} onClick={() => setSelectedPatientForAdmission(p)} className={`p-3 border rounded-[8px] text-[13px] cursor-pointer transition-colors ${selectedPatientForAdmission?.id === p.id ? 'bg-slate-800 border-blue-500 ring-1 ring-blue-500/50 text-white' : 'bg-slate-950 border-slate-800 hover:bg-slate-900 text-gray-300'}`}>
-                                                    <strong className="text-gray-50">{p.firstName} {p.lastName}</strong> â€¢ {p.uhid}
+                                                    <strong className="text-gray-50">{p.firstName} {p.lastName}</strong> • {p.uhid}
                                                 </div>
                                             ))}
                                         </div>
@@ -391,7 +476,7 @@ export default function IPDPage() {
                                             className={`p-4 cursor-pointer hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-b-0 border-l-[3px] ${selectedAdmission?.id === adm.id ? 'border-l-blue-600 bg-slate-800 text-white' : 'border-l-transparent text-gray-300'}`}
                                         >
                                             <div className="font-semibold text-gray-50 text-sm">{adm.patient.firstName} {adm.patient.lastName}</div>
-                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} â€¢ Bed: {adm.bed.bedNumber}</div>
+                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} • Bed: {adm.bed.bedNumber}</div>
                                             <div className="text-[12px] text-gray-400 mt-0.5">Primary: Dr. {adm.doctor.lastName}</div>
                                         </div>
                                     ))}
@@ -407,7 +492,7 @@ export default function IPDPage() {
                                     <div className="bg-slate-950 border-b border-slate-800 p-6 flex justify-between items-start shrink-0">
                                         <div>
                                             <h2 className="text-[20px] font-bold text-white">{selectedAdmission.patient.firstName} {selectedAdmission.patient.lastName}</h2>
-                                            <div className="text-gray-400 text-sm mt-1">{selectedAdmission.patient.uhid} â€¢ Age: {selectedAdmission.patient.age}</div>
+                                            <div className="text-gray-400 text-sm mt-1">{selectedAdmission.patient.uhid} • Age: {selectedAdmission.patient.age}</div>
                                         </div>
                                         <div className="text-right">
                                             <Badge variant="default" className="text-sm px-3 py-1 mb-2">BED: {selectedAdmission.bed.bedNumber}</Badge>
@@ -506,7 +591,7 @@ export default function IPDPage() {
                                             className={`p-4 cursor-pointer hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-b-0 border-l-[3px] ${nursingAdmission?.id === adm.id ? 'border-l-blue-600 bg-slate-800 text-white' : 'border-l-transparent text-gray-300'}`}
                                         >
                                             <div className="font-semibold text-gray-50 text-sm">{adm.patient.firstName} {adm.patient.lastName}</div>
-                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} â€¢ Bed: {adm.bed.bedNumber}</div>
+                                            <div className="text-[12px] text-gray-400 mt-1">{adm.patient.uhid} • Bed: {adm.bed.bedNumber}</div>
                                         </div>
                                     ))}
                                     {admissions.length === 0 && <div className="p-6 text-center text-sm text-gray-500">No active admissions</div>}
@@ -521,7 +606,7 @@ export default function IPDPage() {
                                     {/* Vitals Entry Form */}
                                     <Card padding="lg">
                                         <h3 className="font-semibold text-gray-50 text-md mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
-                                            <Heart size={16} className="text-red-400" /> Record Vitals â€” {nursingAdmission.patient.firstName} {nursingAdmission.patient.lastName}
+                                            <Heart size={16} className="text-red-400" /> Record Vitals — {nursingAdmission.patient.firstName} {nursingAdmission.patient.lastName}
                                         </h3>
                                         <form onSubmit={handleRecordVitals} className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             <Input label="Blood Pressure" placeholder="e.g. 120/80" value={vitalForm.bp} onChange={e => setVitalForm({ ...vitalForm, bp: e.target.value })} />
@@ -563,24 +648,24 @@ export default function IPDPage() {
                                                     {vitalsHistory.map((v: any) => (
                                                         <tr key={v.id} className="hover:bg-slate-900/50 transition">
                                                             <td className="px-4 py-2.5 text-gray-400 whitespace-nowrap">{new Date(v.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                                                            <td className="px-4 py-2.5 font-semibold text-gray-200">{v.bp || 'â€”'}</td>
+                                                            <td className="px-4 py-2.5 font-semibold text-gray-200">{v.bp || '—'}</td>
                                                             <td className="px-4 py-2.5">
                                                                 <span className={`font-semibold ${v.heartRate && (v.heartRate > 100 || v.heartRate < 60) ? 'text-red-400' : 'text-gray-200'}`}>
-                                                                    {v.heartRate ?? 'â€”'}
+                                                                    {v.heartRate ?? '—'}
                                                                 </span>
                                                             </td>
                                                             <td className="px-4 py-2.5">
                                                                 <span className={`font-semibold ${v.temperature && v.temperature > 100.4 ? 'text-red-400' : 'text-gray-200'}`}>
-                                                                    {v.temperature ? `${v.temperature}Â°F` : 'â€”'}
+                                                                    {v.temperature ? `${v.temperature}Â°F` : '—'}
                                                                 </span>
                                                             </td>
                                                             <td className="px-4 py-2.5">
                                                                 <span className={`font-semibold ${v.spo2 && v.spo2 < 95 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                                    {v.spo2 ? `${v.spo2}%` : 'â€”'}
+                                                                    {v.spo2 ? `${v.spo2}%` : '—'}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-4 py-2.5 text-gray-200">{v.respiratoryRate ?? 'â€”'}</td>
-                                                            <td className="px-4 py-2.5 text-gray-500 max-w-[200px] truncate">{v.notes || 'â€”'}</td>
+                                                            <td className="px-4 py-2.5 text-gray-200">{v.respiratoryRate ?? '—'}</td>
+                                                            <td className="px-4 py-2.5 text-gray-500 max-w-[200px] truncate">{v.notes || '—'}</td>
                                                         </tr>
                                                     ))}
                                                     {vitalsHistory.length === 0 && (
@@ -597,6 +682,109 @@ export default function IPDPage() {
                                     <p className="text-gray-500 font-medium text-sm">Select an admitted patient to record vitals.</p>
                                 </Card>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB: OT & SURGERIES */}
+                {activeTab === 'surgeries' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Schedule Form */}
+                        <div className="lg:col-span-4 space-y-6">
+                            <Card padding="lg">
+                                <h3 className="font-semibold text-gray-50 text-md mb-6 border-b border-slate-800 pb-2 flex items-center gap-2">
+                                    <Scissors size={18} className="text-blue-500" /> Book Operating Theater
+                                </h3>
+                                <form onSubmit={handleScheduleSurgery} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">Search Patient</label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Search UHID..."
+                                                value={searchQuery}
+                                                onChange={e => setSearchQuery(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && executePatientSearch()}
+                                            />
+                                            <Button variant="secondary" onClick={executePatientSearch} className="px-4 text-xs shrink-0" type="button">Search</Button>
+                                        </div>
+                                        {patientResults.length > 0 && !selectedPatientForAdmission && (
+                                            <div className="mt-2 space-y-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {patientResults.map((p) => (
+                                                    <div key={p.id} onClick={() => setSelectedPatientForAdmission(p)} className="p-2 border rounded-[8px] text-[12px] bg-slate-950 border-slate-800 hover:bg-slate-900 cursor-pointer text-gray-300">
+                                                        <strong className="text-gray-50">{p.firstName} {p.lastName}</strong> • {p.uhid}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {selectedPatientForAdmission && (
+                                            <div className="mt-2 p-2 border rounded-[8px] text-[12px] bg-slate-800 border-blue-500 text-white flex justify-between items-center">
+                                                <span><strong className="text-gray-50">{selectedPatientForAdmission.firstName}</strong> • {selectedPatientForAdmission.uhid}</span>
+                                                <button type="button" onClick={() => setSelectedPatientForAdmission(null)} className="text-red-400 font-bold px-1">X</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Input required label="Surgery Procedure Name" placeholder="e.g. Appendectomy" value={surgeryForm.surgeryName} onChange={e => setSurgeryForm({ ...surgeryForm, surgeryName: e.target.value })} />
+                                    <Select
+                                        label="Select Surgeon"
+                                        value={surgeryForm.surgeonId}
+                                        onChange={e => setSurgeryForm({ ...surgeryForm, surgeonId: e.target.value })}
+                                        options={[
+                                            { label: '-- Select Surgeon --', value: '' },
+                                            ...doctors.map(d => ({ label: `Dr. ${d.firstName} ${d.lastName}`, value: d.id }))
+                                        ]}
+                                    />
+                                    <Select
+                                        label="Select OT"
+                                        value={surgeryForm.otId}
+                                        onChange={e => setSurgeryForm({ ...surgeryForm, otId: e.target.value })}
+                                        options={[
+                                            { label: '-- Select OT --', value: '' },
+                                            ...ots.map(o => ({ label: o.name, value: o.id }))
+                                        ]}
+                                    />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Input required type="datetime-local" label="Start Time" value={surgeryForm.startTime} onChange={e => setSurgeryForm({ ...surgeryForm, startTime: e.target.value })} />
+                                        <Input required type="datetime-local" label="End Time" value={surgeryForm.endTime} onChange={e => setSurgeryForm({ ...surgeryForm, endTime: e.target.value })} />
+                                    </div>
+                                    <Input label="Pre-Op Notes" placeholder="Special requirements..." value={surgeryForm.notes} onChange={e => setSurgeryForm({ ...surgeryForm, notes: e.target.value })} />
+
+                                    <div className="pt-2">
+                                        <Button type="submit" disabled={loading || !selectedPatientForAdmission} fullWidth className="bg-blue-600 hover:bg-blue-700">Schedule Surgery</Button>
+                                    </div>
+                                </form>
+                            </Card>
+                        </div>
+
+                        {/* Calendar / Timetable */}
+                        <div className="lg:col-span-8">
+                            <Card padding="none" className="min-h-[600px] flex flex-col">
+                                <div className="p-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                                    <h3 className="font-semibold text-gray-50">Surgical Schedule</h3>
+                                    <Badge variant="neutral">{surgeries.length} Scheduled</Badge>
+                                </div>
+                                <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+                                    {surgeries.map(s => (
+                                        <div key={s.id} className="bg-slate-950 border border-slate-800 p-4 rounded-[12px] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-gray-50">{s.surgeryName}</span>
+                                                    <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">{s.ot.name}</span>
+                                                </div>
+                                                <div className="text-sm text-gray-400 mb-2">Patient: {s.patient.firstName} {s.patient.lastName} ({s.patient.uhid})</div>
+                                                <div className="text-xs text-gray-500">Surgeon: Dr. {s.surgeon.lastName}</div>
+                                            </div>
+                                            <div className="bg-slate-900 border border-slate-700/50 rounded-lg p-3 shrink-0 min-w-[200px]">
+                                                <div className="text-[11px] text-gray-500 font-medium mb-1 uppercase tracking-wider">Scheduled Time</div>
+                                                <div className="text-sm font-semibold text-gray-200">
+                                                    {new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(s.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                                <div className="text-[12px] text-gray-400 mt-1">{new Date(s.startTime).toLocaleDateString()}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {surgeries.length === 0 && <p className="text-gray-500 text-sm text-center py-10">No surgeries scheduled.</p>}
+                                </div>
+                            </Card>
                         </div>
                     </div>
                 )}
@@ -648,6 +836,19 @@ export default function IPDPage() {
 
                                 <div className="pt-4">
                                     <Button type="submit" variant="secondary" disabled={loading} fullWidth>Add Bed</Button>
+                                </div>
+                            </form>
+                        </Card>
+
+                        {/* Create OT Form */}
+                        <Card padding="lg">
+                            <h3 className="font-semibold text-gray-50 text-md mb-6 border-b border-slate-800 pb-2 flex items-center gap-2">
+                                <Scissors size={18} className="text-blue-500" /> Add Operating Theater
+                            </h3>
+                            <form onSubmit={handleCreateOT} className="space-y-4">
+                                <Input required label="OT Name / Identifier" placeholder="e.g. Main OT 1, Cath Lab" value={otForm.name} onChange={e => setOtForm({ ...otForm, name: e.target.value })} />
+                                <div className="pt-4">
+                                    <Button type="submit" disabled={loading} fullWidth>Register OT</Button>
                                 </div>
                             </form>
                         </Card>

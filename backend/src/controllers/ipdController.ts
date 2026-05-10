@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
 import { logAudit } from '../utils/audit';
 import { callGemma } from '../utils/aiService';
+import { calculateEWS } from '../utils/clinicalUtils';
 
 export const getWardsAndBeds = async (req: Request, res: Response) => {
     try {
@@ -111,6 +112,64 @@ export const addIpdCharge = async (req: Request, res: Response) => {
     }
 };
 
+export const recordVitals = async (req: Request, res: Response) => {
+    try {
+        const { admissionId, bp, heartRate, temperature, spo2, respiratoryRate, notes } = req.body;
+        const userId = (req as any).user.id;
+        const employeeId = (req as any).user.employee?.id || 'Admin';
+
+        // Calculate Early Warning Score (EWS)
+        const vitalsData = { 
+            heartRate: heartRate ? Number(heartRate) : null, 
+            respiratoryRate: respiratoryRate ? Number(respiratoryRate) : null, 
+            temperature: temperature ? Number(temperature) : null, 
+            spo2: spo2 ? Number(spo2) : null, 
+            bp 
+        };
+        const { score: ewsScore, riskLevel: ewsRiskLevel } = calculateEWS(vitalsData);
+
+        const vitals = await prisma.nursingVitals.create({
+            data: {
+                admissionId,
+                bp,
+                heartRate: vitalsData.heartRate,
+                temperature: vitalsData.temperature,
+                spo2: vitalsData.spo2,
+                respiratoryRate: vitalsData.respiratoryRate,
+                notes,
+                ewsScore,
+                ewsRiskLevel,
+                recordedBy: employeeId
+            },
+            include: {
+                admission: {
+                    include: { patient: true, doctor: { include: { user: true } } }
+                }
+            }
+        });
+
+        // Trigger Notification if High Risk
+        if ((ewsRiskLevel === 'HIGH' || ewsRiskLevel === 'CRITICAL') && vitals.admission.doctor?.user?.id) {
+            await prisma.notification.create({
+                data: {
+                    targetUserId: vitals.admission.doctor.user.id, // Notify assigned doctor
+                    type: 'CLINICAL_ALERT',
+                    title: `EWS ALERT: ${ewsRiskLevel} for ${vitals.admission.patient.firstName}`,
+                    body: `Patient ${vitals.admission.patient.firstName} ${vitals.admission.patient.lastName} recorded an EWS score of ${ewsScore}. Immediate review required.`,
+                    priority: 'HIGH'
+                }
+            });
+        }
+
+        await logAudit(userId, 'VITALS_RECORDED', { admissionId, vitalsId: vitals.id, ewsScore }, req.ip || null);
+
+        res.status(201).json({ message: 'Vitals recorded successfully', vitals });
+    } catch (error) {
+        console.error("Vitals error", error);
+        res.status(500).json({ message: 'Failed to record vitals', error });
+    }
+};
+
 export const dischargePatient = async (req: Request, res: Response) => {
     try {
         const { admissionId, paymentMode } = req.body;
@@ -119,7 +178,7 @@ export const dischargePatient = async (req: Request, res: Response) => {
         const result = await prisma.$transaction(async (tx) => {
             const admission = await tx.admission.findUnique({
                 where: { id: admissionId },
-                include: { ipdCharges: true, bed: true }
+                include: { ipdCharges: true, bed: true, patient: true }
             });
 
             if (!admission || admission.status === 'DISCHARGED') {
@@ -134,6 +193,33 @@ export const dischargePatient = async (req: Request, res: Response) => {
             const grossPayable = subTotal + gstAmount;
             const netPayable = grossPayable - admission.depositAmount;
 
+            let insuranceClaimAmount = 0;
+            let patientPayable = netPayable;
+
+            // Auto-Adjudication Engine
+            if (admission.patient.tpaName && admission.patient.coverageAmt && admission.patient.coverageAmt > 0) {
+                const isValid = admission.patient.insuranceValid ? new Date(admission.patient.insuranceValid) >= new Date() : true;
+                if (isValid) {
+                    if (admission.patient.coverageAmt >= netPayable) {
+                        insuranceClaimAmount = netPayable;
+                        patientPayable = 0;
+                        
+                        await tx.patient.update({
+                            where: { id: admission.patientId },
+                            data: { coverageAmt: admission.patient.coverageAmt - netPayable }
+                        });
+                    } else {
+                        insuranceClaimAmount = admission.patient.coverageAmt;
+                        patientPayable = netPayable - admission.patient.coverageAmt;
+
+                        await tx.patient.update({
+                            where: { id: admission.patientId },
+                            data: { coverageAmt: 0 }
+                        });
+                    }
+                }
+            }
+
             const billNo = `BL-IPD-${Date.now()}`;
 
             // Create Final Bill
@@ -147,6 +233,8 @@ export const dischargePatient = async (req: Request, res: Response) => {
                     gstAmount,
                     discount: 0,
                     netPayable: netPayable > 0 ? netPayable : 0,
+                    insuranceClaimAmount,
+                    patientPayable: patientPayable > 0 ? patientPayable : 0,
                     paymentMode: paymentMode || 'CASH',
                     status: 'UNPAID'
                 }

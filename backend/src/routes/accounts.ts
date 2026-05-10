@@ -7,7 +7,8 @@ import {
     getReceivableAging, getPayableAging,
     getDayBook,
     getFinancialPeriods, closePeriod,
-    analyzeFinancesAI
+    analyzeFinancesAI,
+    createPurchaseOrder
 } from '../controllers/accountsController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
@@ -37,6 +38,7 @@ router.get('/cash-flow', authenticate, requireRole(accRoles), getCashFlow);
 // Expert — AR/AP
 router.get('/receivable-aging', authenticate, requireRole(accRoles), getReceivableAging);
 router.get('/payable-aging', authenticate, requireRole(accRoles), getPayableAging);
+router.post('/payable/po', authenticate, requireRole(accRoles), createPurchaseOrder);
 
 // Expert — Day Book
 router.get('/day-book', authenticate, requireRole(accRoles), getDayBook);

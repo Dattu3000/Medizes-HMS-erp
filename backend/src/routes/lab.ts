@@ -13,6 +13,6 @@ router.put('/order/:id', authenticate, requireRole(labRoles), updateOrderStatus)
 router.put('/order/:id/sample', authenticate, requireRole(labRoles), updateSampleStatus);
 router.get('/report/:orderId', authenticate, requireRole(labRoles), getLabReport);
 router.post('/catalog', authenticate, requireRole(['Super Admin', 'Admin', 'Lab Tech']), addLabTest);
-router.post('/ai/interpret', authenticate, requireRole(labRoles), generateLabInterpretationAI);
+router.post('/interpret/:orderId', authenticate, requireRole(labRoles), generateLabInterpretationAI);
 
 export default router;

@@ -158,7 +158,7 @@ export default function BillingPage() {
                                         </button>
                                         <div className="font-bold text-sky-900 text-lg mb-1">{selectedPatient.firstName} {selectedPatient.lastName}</div>
                                         <div className="text-sm text-sky-700 font-mono mb-2">UHID: {selectedPatient.uhid}</div>
-                                        <div className="text-xs text-sky-600 flex items-center gap-1"><User size={12} /> {selectedPatient.age} Yrs â€¢ {selectedPatient.gender}</div>
+                                        <div className="text-xs text-sky-600 flex items-center gap-1"><User size={12} /> {selectedPatient.age} Yrs • {selectedPatient.gender}</div>
                                     </div>
                                 ) : (
                                     <div>
@@ -370,7 +370,7 @@ export default function BillingPage() {
                                             </td>
                                             <td className="py-4 px-2 text-right">₹{bill.subTotal.toFixed(2)}</td>
                                             <td className="py-4 px-2 text-right">₹{bill.gstAmount.toFixed(2)}</td>
-                                            <td className="py-4 px-2 text-right text-rose-500">{bill.discount > 0 ? `-₹${bill.discount.toFixed(2)}` : 'â€”'}</td>
+                                            <td className="py-4 px-2 text-right text-rose-500">{bill.discount > 0 ? `-₹${bill.discount.toFixed(2)}` : '—'}</td>
                                             <td className="py-4 px-2 text-right font-bold text-slate-800">₹{bill.netPayable.toFixed(2)}</td>
                                             <td className="py-4 px-2 text-center">
                                                 <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${bill.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>

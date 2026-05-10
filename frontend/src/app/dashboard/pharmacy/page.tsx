@@ -3,17 +3,20 @@ import { API_BASE } from '@/lib/api';
 import { useState, useEffect, useCallback } from 'react';
 import { Pill, Search, ShoppingCart, UploadCloud, Download, CheckCircle2, ClipboardList, UserCircle, Clock, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table';
 
 export default function PharmacyPage() {
-    const [activeTab, setActiveTab] = useState<'inventory' | 'rxQueue' | 'assets'>('inventory');
+    const [activeTab, setActiveTab] = useState<'inventory' | 'rxQueue' | 'assets' | 'alerts'>('inventory');
 
     const [inventory, setInventory] = useState<any[]>([]);
     const [patients, setPatients] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [expiryData, setExpiryData] = useState<any>({ expiringSoon: [], expired: [] });
+    const [lowStockItems, setLowStockItems] = useState<any[]>([]);
 
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
@@ -35,6 +38,7 @@ export default function PharmacyPage() {
     useEffect(() => {
         fetchInventory();
         fetchPrescriptions();
+        fetchAlerts();
     }, []);
 
     const fetchPrescriptions = useCallback(async () => {
@@ -62,11 +66,35 @@ export default function PharmacyPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                alert(`Dispensed! Bill: ${data.bill.billNo} â€” ₹${data.bill.netPayable.toFixed(2)}`);
+                alert(`Dispensed! Bill: ${data.bill.billNo} — ₹${data.bill.netPayable.toFixed(2)}`);
                 fetchPrescriptions();
                 fetchInventory();
             } else {
                 alert(data.message || 'Failed to dispense');
+            }
+        } catch (err) { console.error(err); }
+        finally { setDispensingId(null); }
+    };
+
+        const handleUndoDispenseRx = async (prescriptionId: string) => {
+        if (!confirm('Are you sure you want to undo this dispense?')) return;
+        setDispensingId(prescriptionId);
+        try {
+            const res = await fetch(`${API_BASE}/api/pharmacy/prescriptions/undo`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ prescriptionId })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert('Dispense undone successfully.');
+                fetchPrescriptions();
+                fetchInventory();
+            } else {
+                alert(data.message || 'Failed to undo');
             }
         } catch (err) { console.error(err); }
         finally { setDispensingId(null); }
@@ -96,12 +124,25 @@ export default function PharmacyPage() {
         }
     };
 
+    const fetchAlerts = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/pharmacy/expiry-alerts`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) setExpiryData(await res.json());
+        } catch (err) { console.error(err); }
+    };
+
     const fetchInventory = async () => {
         try {
             const res = await fetch(`${API_BASE}/api/pharmacy/inventory`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
-            if (res.ok) setInventory(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                setInventory(data);
+                setLowStockItems(data.filter((d: any) => d.stockQuantity <= (d.lowStockThreshold || 50)));
+            }
             else setInventory([]);
         } catch (err) { console.error(err); setInventory([]); }
     };
@@ -278,6 +319,15 @@ export default function PharmacyPage() {
                     className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'assets' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
                 >
                     <Pill size={16} /> Asset Management
+                </button>
+                <button
+                    onClick={() => { setActiveTab('alerts'); fetchAlerts(); }}
+                    className={`flex items-center gap-2 px-6 py-4 font-medium text-sm transition-all border-b-[3px] ${activeTab === 'alerts' ? 'border-blue-600 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-slate-800/50'}`}
+                >
+                    <AlertTriangle size={16} /> Alerts & Supply Chain
+                    {(lowStockItems.length > 0 || expiryData.expiringSoon?.length > 0) && (
+                        <span className="ml-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    )}
                 </button>
             </div>
 
@@ -493,7 +543,7 @@ export default function PharmacyPage() {
                                                         {rx.patient?.firstName} {rx.patient?.lastName}
                                                     </div>
                                                     <div className="text-[11px] text-gray-500">
-                                                        {rx.patient?.uhid} Â· Dr. {rx.visit?.doctor?.lastName || 'â€”'}
+                                                        {rx.patient?.uhid} · Dr. {rx.visit?.doctor?.lastName || '—'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -511,7 +561,7 @@ export default function PharmacyPage() {
                                                         <Pill size={12} className="text-emerald-400" />
                                                         <span className="font-medium text-gray-200">{med.drugName}</span>
                                                     </div>
-                                                    <span className="text-gray-500">{med.dosage} Â· {med.frequency} Â· {med.days}d</span>
+                                                    <span className="text-gray-500">{med.dosage} · {med.frequency} · {med.days}d</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -567,14 +617,25 @@ export default function PharmacyPage() {
                                                 {aiLoadingFor === rx.id ? 'Analyzing...' : 'AI Safety Check'}
                                             </button>
 
-                                            <button
-                                                onClick={() => handleDispenseRx(rx.id)}
-                                                disabled={dispensingId === rx.id}
-                                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition text-[11px] uppercase tracking-wider flex items-center justify-center gap-2"
-                                            >
-                                                <CheckCircle2 size={14} />
-                                                {dispensingId === rx.id ? 'Dispensing...' : 'Dispense & Bill'}
-                                            </button>
+                                            {rx.status === 'PENDING' ? (
+                                                <button
+                                                    onClick={() => handleDispenseRx(rx.id)}
+                                                    disabled={dispensingId === rx.id}
+                                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition text-[11px] uppercase tracking-wider flex items-center justify-center gap-2"
+                                                >
+                                                    <CheckCircle2 size={14} />
+                                                    {dispensingId === rx.id ? 'Dispensing...' : 'Dispense & Bill'}
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleUndoDispenseRx(rx.id)}
+                                                    disabled={dispensingId === rx.id}
+                                                    className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition text-[11px] uppercase tracking-wider flex items-center justify-center gap-2"
+                                                >
+                                                    <AlertTriangle size={14} />
+                                                    {dispensingId === rx.id ? 'Undoing...' : 'Undo Dispense'}
+                                                </button>
+                                            )}
                                         </div>
                                     </Card>
                                 ))}
@@ -628,6 +689,64 @@ export default function PharmacyPage() {
                                     </Button>
                                 </div>
                             </form>
+                        </Card>
+                    </div>
+                )}
+
+                {activeTab === 'alerts' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                        {/* Low Stock Alerts */}
+                        <Card padding="lg" className="border-red-500/30">
+                            <h3 className="font-semibold text-gray-50 text-md mb-6 border-b border-slate-800 pb-2 flex items-center gap-2">
+                                <AlertTriangle className="text-red-400" size={18} /> Low Stock Warnings
+                            </h3>
+                            <div className="space-y-3">
+                                {lowStockItems.map(item => (
+                                    <div key={item.id} className="bg-slate-950 border border-red-500/20 p-4 rounded-[8px] flex justify-between items-center">
+                                        <div>
+                                            <div className="font-semibold text-gray-200 text-sm">{item.drugName}</div>
+                                            <div className="text-[12px] text-gray-500 mt-0.5">Threshold: {item.lowStockThreshold || 50}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xl font-bold text-red-500">{item.stockQuantity}</div>
+                                            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Units Left</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {lowStockItems.length === 0 && <p className="text-sm text-gray-500">Inventory levels are healthy.</p>}
+                            </div>
+                        </Card>
+
+                        {/* Expiry Alerts */}
+                        <Card padding="lg" className="border-amber-500/30">
+                            <h3 className="font-semibold text-gray-50 text-md mb-6 border-b border-slate-800 pb-2 flex items-center gap-2">
+                                <Clock className="text-amber-400" size={18} /> Expiring Soon (30 Days)
+                            </h3>
+                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                {expiryData.expired?.length > 0 && expiryData.expired.map((item: any) => (
+                                    <div key={item.id} className="bg-red-500/10 border border-red-500/30 p-3 rounded-[8px] flex justify-between items-center">
+                                        <div>
+                                            <div className="font-semibold text-red-400 text-sm">{item.drugName} <span className="text-[10px] bg-red-500/20 px-2 py-0.5 rounded uppercase">Expired</span></div>
+                                            <div className="text-[12px] text-gray-500 mt-0.5">Batch: {item.batchNo}</div>
+                                        </div>
+                                        <div className="text-sm font-medium text-red-500">
+                                            {new Date(item.expiryDate).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                ))}
+                                {expiryData.expiringSoon?.map((item: any) => (
+                                    <div key={item.id} className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-[8px] flex justify-between items-center">
+                                        <div>
+                                            <div className="font-semibold text-amber-500 text-sm">{item.drugName}</div>
+                                            <div className="text-[12px] text-gray-500 mt-0.5">Batch: {item.batchNo}</div>
+                                        </div>
+                                        <div className="text-sm font-medium text-amber-500">
+                                            {new Date(item.expiryDate).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                ))}
+                                {(expiryData.expiringSoon?.length === 0 && expiryData.expired?.length === 0) && <p className="text-sm text-gray-500">No batches expiring soon.</p>}
+                            </div>
                         </Card>
                     </div>
                 )}

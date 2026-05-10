@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
 import { logAudit } from '../utils/audit';
+import { callGemma } from '../utils/aiService';
 
 export const registerPatient = async (req: Request, res: Response) => {
     try {
@@ -285,6 +286,45 @@ export const createPrescription = async (req: Request, res: Response) => {
     }
 };
 
+// Advanced Objective 2: AI Drug-Drug Interaction Checker
+export const checkDrugInteractionsAI = async (req: Request, res: Response) => {
+    try {
+        const { patientId, newMedicines } = req.body;
+        // newMedicines: Array<{ drugName, dosage, frequency, days }>
+
+        // Find patient's existing active prescriptions (for simplicity, getting the most recent one)
+        const recentPrescriptions = await prisma.prescription.findMany({
+            where: { patientId },
+            orderBy: { createdAt: 'desc' },
+            take: 2
+        });
+
+        const existingDrugs = recentPrescriptions.flatMap((p: any) => 
+            p.medicines.map((m: any) => m.drugName)
+        );
+
+        const newDrugs = newMedicines.map((m: any) => m.drugName);
+
+        const prompt = `You are a clinical pharmacist AI. Analyze the following combination of drugs for severe or moderate drug-drug interactions.
+        Existing Active Medications: ${existingDrugs.join(', ') || 'None'}
+        Newly Prescribed Medications: ${newDrugs.join(', ') || 'None'}
+
+        Return ONLY a valid JSON object matching this exact shape, without any markdown formatting or extra text:
+        {
+          "hasInteractions": boolean,
+          "severity": "NONE" | "MODERATE" | "SEVERE",
+          "warnings": ["string explaining specific interactions"]
+        }`;
+
+        const aiResponse = await callGemma(prompt);
+
+        res.status(200).json(aiResponse);
+    } catch (error) {
+        console.error("AI Drug Interaction error", error);
+        res.status(500).json({ message: 'Failed to check drug interactions', error });
+    }
+};
+
 // Scenario 1: Update visit status transitions
 export const updateVisitStatus = async (req: Request, res: Response) => {
     try {
@@ -314,5 +354,46 @@ export const updateVisitStatus = async (req: Request, res: Response) => {
         res.status(200).json({ message: 'Visit status updated', visit: updated });
     } catch (error) {
         res.status(500).json({ message: 'Failed to update visit status', error });
+    }
+};
+
+// Undo Lab Order
+export const deleteLabOrderFromEHR = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const labOrder = await prisma.labOrder.findUnique({ where: { id: String(id) } });
+        if (!labOrder) return res.status(404).json({ message: 'Lab order not found' });
+        if (labOrder.status !== 'PENDING') {
+            return res.status(400).json({ message: 'Cannot undo a lab order that is already being processed.' });
+        }
+        
+        // Remove the associated unpaid bill if possible
+        await prisma.bill.deleteMany({
+            where: { visitId: labOrder.visitId, type: 'LAB_DIAGNOSTICS', status: 'UNPAID', subTotal: labOrder.price }
+        });
+
+        await prisma.labOrder.delete({ where: { id: String(id) } });
+
+        res.status(200).json({ message: 'Lab order undone successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to undo lab order', error });
+    }
+};
+
+// Undo Prescription
+export const deletePrescriptionFromEHR = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const prescription = await prisma.prescription.findUnique({ where: { id: String(id) } });
+        if (!prescription) return res.status(404).json({ message: 'Prescription not found' });
+        if (prescription.status !== 'PENDING') {
+            return res.status(400).json({ message: 'Cannot undo a prescription that is already dispensed.' });
+        }
+        
+        await prisma.prescription.delete({ where: { id: String(id) } });
+
+        res.status(200).json({ message: 'Prescription undone successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to undo prescription', error });
     }
 };

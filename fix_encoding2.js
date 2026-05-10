@@ -59,7 +59,7 @@ files.forEach(f => {
     // Heuristic: if the file contains mojibake patterns like "ðŸ" or "â€" or "â‚¹"
     // these indicate double-encoding
     const hasMojibake = str.includes('ðŸ') || str.includes('ðŸ—') || 
-                        str.includes('ðŸ'') || str.includes('ðŸ¥') ||
+                        str.includes("ðŸ'") || str.includes('ðŸ¥') ||
                         str.includes('âœ') || str.includes('â€"') ||
                         str.includes('â‚¹') || str.includes('Â·') ||
                         str.includes('ðŸ"') || str.includes('â‰');

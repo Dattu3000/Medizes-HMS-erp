@@ -215,7 +215,7 @@ export default function LabOrderManagement() {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-50">{selectedOrder.patient?.firstName} {selectedOrder.patient?.lastName}</h3>
-                                        <p className="text-sm text-gray-400 mt-1">UHID: {selectedOrder.patient?.uhid} â€¢ Dr. {selectedOrder.visit?.doctor?.lastName}</p>
+                                        <p className="text-sm text-gray-400 mt-1">UHID: {selectedOrder.patient?.uhid} • Dr. {selectedOrder.visit?.doctor?.lastName}</p>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-lg font-bold text-emerald-400">{selectedOrder.testName}</div>

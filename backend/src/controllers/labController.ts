@@ -161,6 +161,15 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
                     }
                 });
             }
+            // Statutory Alert for Notifiable Diseases
+            const catalogEntry = await prisma.labCatalog.findUnique({
+                where: { testName: order.testName }
+            });
+            
+            if (catalogEntry?.isNotifiable && hasCritical) {
+                console.log(`[FHIR PUSH] Reporting Notifiable Disease ${order.testName} for UHID ${order.patient.uhid}`);
+                // In production, an actual FHIR push would happen here.
+            }
         }
 
         await logAudit(userId, 'LAB_ORDER_UPDATED', { orderId: id, status }, req.ip || null);
@@ -226,7 +235,18 @@ export const getLabReport = async (req: Request, res: Response) => {
             where: { testName: order.testName }
         });
 
-        res.status(200).json({ order, catalog });
+        const history = await prisma.labOrder.findMany({
+            where: {
+                patientId: order.patientId,
+                testName: order.testName,
+                status: 'RESULT_ENTERED',
+                id: { not: order.id }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        });
+
+        res.status(200).json({ order, catalog, history });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch report', error });
     }
@@ -235,20 +255,52 @@ export const getLabReport = async (req: Request, res: Response) => {
 // Phase 17: AI Virtual Pathologist
 export const generateLabInterpretationAI = async (req: Request, res: Response) => {
     try {
-        const { resultsPayload } = req.body;
+        const { orderId } = req.params;
+        const order = await prisma.labOrder.findUnique({
+            where: { id: String(orderId) }
+        });
+
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        const resultsPayload = order.resultsPayload as any;
         if (!resultsPayload || !Array.isArray(resultsPayload) || resultsPayload.length === 0) {
             return res.status(400).json({ message: 'No results provided for analysis' });
         }
 
-        const prompt = `You are an AI Clinical Pathologist. Analyze the following laboratory test parameter results. Focus particularly on properties marked "isAbnormal": true.
+        const history = await prisma.labOrder.findMany({
+            where: {
+                patientId: order.patientId,
+                testName: order.testName,
+                status: 'RESULT_ENTERED',
+                id: { not: order.id }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        });
+
+        const prompt = `You are an AI Clinical Pathologist. Analyze the following laboratory test parameter results. Focus particularly on properties marked "isAbnormal": true. Compare it with the historical data if available to provide a trend summary (e.g. "Glucose is 15% higher than last month").
         Return ONLY a valid JSON object matching this exact shape: 
-        {"clinicalSummary": "Overall analysis sentence", "differentials": ["List of potential diagnoses"], "recommendations": ["List of actionable doctor suggestions"]}.
+        {"clinicalSummary": "Overall analysis sentence including historical context if applicable", "differentials": ["List of potential diagnoses"], "recommendations": ["List of actionable doctor suggestions"]}.
         Do NOT wrap the JSON in Markdown formatting like \`\`\`json. Return pure JSON object only.
         
-        Test Results Payload:
-        ${JSON.stringify(resultsPayload)}`;
+        Current Test Results Payload:
+        ${JSON.stringify(resultsPayload)}
 
-        const interpretation = await callGemma(prompt);
+        Historical Results Payload (Last 5):
+        ${JSON.stringify(history.map(h => ({ date: h.createdAt, results: h.resultsPayload })))}`;
+
+        const interpretationStr = await callGemma(prompt);
+        let interpretation;
+        try {
+            interpretation = JSON.parse(interpretationStr);
+        } catch (e) {
+            interpretation = interpretationStr;
+        }
+
+        await prisma.labOrder.update({
+            where: { id: order.id },
+            data: { aiSummary: interpretation }
+        });
 
         res.status(200).json({
             status: 'SUCCESS',

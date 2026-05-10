@@ -107,10 +107,64 @@ export const generatePayroll = async (req: Request, res: Response) => {
 export const processPayroll = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const payroll = await prisma.payroll.update({
-            where: { id: String(id) },
-            data: { status: 'PAID', paymentDate: new Date() }
+        
+        const result = await prisma.$transaction(async (tx) => {
+            const payroll = await tx.payroll.update({
+                where: { id: String(id) },
+                data: { status: 'PAID', paymentDate: new Date() },
+                include: { employee: true }
+            });
+
+            // 1. Ensure Required Ledgers Exist
+            const salaryExpense = await tx.ledger.upsert({
+                where: { name: 'Salary Expense' },
+                update: {},
+                create: { name: 'Salary Expense', group: 'Indirect Expenses', accountType: 'DETAIL' }
+            });
+            const tdsPayable = await tx.ledger.upsert({
+                where: { name: 'TDS Payable' },
+                update: {},
+                create: { name: 'TDS Payable', group: 'Current Liabilities', accountType: 'DETAIL' }
+            });
+            const bankAccount = await tx.ledger.upsert({
+                where: { name: 'Main Bank Account' },
+                update: {},
+                create: { name: 'Main Bank Account', group: 'Bank Accounts', accountType: 'DETAIL' }
+            });
+
+            // 2. Create Journal Entry
+            const grossSalary = payroll.basicSalary + payroll.allowances;
+            const entryNo = `JE-PAY-${Date.now()}`;
+            
+            const je = await tx.journalEntry.create({
+                data: {
+                    entryNo,
+                    narration: `Payroll for ${payroll.employee.firstName} ${payroll.employee.lastName} (${payroll.month}/${payroll.year})`,
+                    referenceId: payroll.id,
+                    referenceType: 'PAYROLL',
+                    lines: {
+                        create: [
+                            { ledgerId: salaryExpense.id, debit: grossSalary, credit: 0 },
+                            ...(payroll.deductions > 0 ? [{ ledgerId: tdsPayable.id, debit: 0, credit: payroll.deductions }] : []),
+                            { ledgerId: bankAccount.id, debit: 0, credit: payroll.netSalary }
+                        ]
+                    }
+                }
+            });
+
+            // 3. Update Ledger Balances (Simplified for Demo)
+            await tx.ledger.update({ where: { id: salaryExpense.id }, data: { balance: { increment: grossSalary } } });
+            if (payroll.deductions > 0) {
+                await tx.ledger.update({ where: { id: tdsPayable.id }, data: { balance: { increment: payroll.deductions } } });
+            }
+            await tx.ledger.update({ where: { id: bankAccount.id }, data: { balance: { decrement: payroll.netSalary } } });
+
+            return payroll;
         });
-        res.status(200).json({ message: 'Payroll Processed', payroll });
-    } catch (err) { res.status(500).json({ message: 'Error processing payroll', err }); }
+
+        res.status(200).json({ message: 'Payroll Processed & Posted to Ledger', payroll: result });
+    } catch (err) { 
+        console.error("Payroll Error:", err);
+        res.status(500).json({ message: 'Error processing payroll', err }); 
+    }
 };

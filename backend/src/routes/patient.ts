@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerPatient, searchPatients, createVisit, getDoctors, getDoctorEHR, submitClinicalNote, orderLabFromEHR, createPrescription, updateVisitStatus } from '../controllers/patientController';
+import { registerPatient, searchPatients, createVisit, getDoctors, getDoctorEHR, submitClinicalNote, orderLabFromEHR, createPrescription, updateVisitStatus, checkDrugInteractionsAI , deleteLabOrderFromEHR, deletePrescriptionFromEHR } from '../controllers/patientController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -18,6 +18,10 @@ router.get('/ehr/visits', authenticate, requireRole(patientRoles), getDoctorEHR)
 router.put('/ehr/note/:visitId', authenticate, requireRole(doctorRoles), submitClinicalNote);
 router.post('/ehr/lab-order', authenticate, requireRole(doctorRoles), orderLabFromEHR);
 router.post('/ehr/prescription', authenticate, requireRole(doctorRoles), createPrescription);
+router.post('/ehr/prescriptions/check-interactions', authenticate, requireRole(doctorRoles), checkDrugInteractionsAI);
 router.put('/ehr/visit-status/:visitId', authenticate, requireRole(doctorRoles), updateVisitStatus);
+
+router.delete('/ehr/lab-order/:id', authenticate, requireRole(doctorRoles), deleteLabOrderFromEHR);
+router.delete('/ehr/prescription/:id', authenticate, requireRole(doctorRoles), deletePrescriptionFromEHR);
 
 export default router;

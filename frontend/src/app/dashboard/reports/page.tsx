@@ -235,7 +235,7 @@ export default function ReportsPage() {
                                         <div className="bg-indigo-600/10 border border-indigo-500/30 rounded-xl p-4"><div className="text-[10px] uppercase text-glass-muted mb-1">ESI Total</div><div className="text-xl font-black text-indigo-400">{fmt(payroll.compliance.esi.total)}</div></div>
                                         <div className="bg-violet-600/10 border border-violet-500/30 rounded-xl p-4"><div className="text-[10px] uppercase text-glass-muted mb-1">Prof. Tax</div><div className="text-xl font-black text-violet-400">{fmt(payroll.compliance.pt.total)}</div></div>
                                     </div>
-                                    <div className="flex justify-between items-center"><h3 className="font-bold text-glass-title text-sm">Payslips â€” {payroll.period}</h3>
+                                    <div className="flex justify-between items-center"><h3 className="font-bold text-glass-title text-sm">Payslips — {payroll.period}</h3>
                                         <button onClick={() => { exportToCSV(`Payroll_${payroll.period.replace('/', '-')}.csv`, [['EmpID', 'Name', 'Gross', 'EPF', 'ESI', 'PT', 'Net'], ...payroll.payslips.map((p: any) => [p.employeeId, p.name, p.grossSalary, p.epfEmployee, p.esiEmployee, p.pt, p.netTakeHome])]); }} className="text-xs bg-slate-700 text-white px-3 py-1 rounded-lg flex items-center gap-1"><Download size={12} /> CSV</button>
                                     </div>
                                     <div className="space-y-2">
@@ -270,7 +270,7 @@ export default function ReportsPage() {
                                                 <div className="w-8 h-8 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 font-black text-sm">#{d.rank}</div>
                                                 <div className="flex-1">
                                                     <div className="font-bold text-white text-sm">{d.name}</div>
-                                                    <div className="text-[10px] text-glass-muted">{d.department} â€¢ {d.billCount} bills â€¢ Avg {fmt(Number(d.avgPerBill))}</div>
+                                                    <div className="text-[10px] text-glass-muted">{d.department} • {d.billCount} bills • Avg {fmt(Number(d.avgPerBill))}</div>
                                                 </div>
                                                 <div className="text-right">
                                                     <div className="font-black text-emerald-400">{fmt(d.revenue)}</div>
@@ -410,7 +410,7 @@ export default function ReportsPage() {
                             <div className={`p-5 rounded-xl border-2 text-center ${Number(collection.overall.efficiency) >= 85 ? 'border-emerald-400/50 bg-emerald-600/10' : 'border-yellow-400/50 bg-yellow-600/10'}`}>
                                 <div className="text-xs font-bold text-glass-muted uppercase mb-1">Overall Collection Efficiency</div>
                                 <div className="text-4xl font-black text-white">{collection.overall.efficiency}%</div>
-                                <div className="text-xs text-glass-muted mt-1">Billed: {fmt(collection.overall.billed)} â€¢ Collected: {fmt(collection.overall.collected)}</div>
+                                <div className="text-xs text-glass-muted mt-1">Billed: {fmt(collection.overall.billed)} • Collected: {fmt(collection.overall.collected)}</div>
                             </div>
                             <div className="grid grid-cols-6 gap-2">
                                 {collection.months.map((m: any) => (

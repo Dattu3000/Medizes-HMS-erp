@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getWardsAndBeds, admitPatient, getActiveAdmissions, getAdmissionDetails, addIpdCharge, dischargePatient, createWard, createBed, generateDischargeSummaryAI } from '../controllers/ipdController';
+import { getWardsAndBeds, admitPatient, getActiveAdmissions, getAdmissionDetails, addIpdCharge, recordVitals, dischargePatient, createWard, createBed, generateDischargeSummaryAI } from '../controllers/ipdController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -11,6 +11,7 @@ router.get('/admissions', authenticate, requireRole(ipdRoles), getActiveAdmissio
 router.get('/admissions/:id', authenticate, requireRole(ipdRoles), getAdmissionDetails);
 router.post('/admit', authenticate, requireRole(ipdRoles), admitPatient);
 router.post('/charge', authenticate, requireRole(ipdRoles), addIpdCharge);
+router.post('/vitals', authenticate, requireRole(['Super Admin', 'Admin', 'Doctor', 'Nurse']), recordVitals);
 router.post('/discharge', authenticate, requireRole(['Super Admin', 'Admin', 'Doctor']), dischargePatient);
 router.post('/wards', authenticate, requireRole(['Super Admin', 'Admin']), createWard);
 router.post('/beds', authenticate, requireRole(['Super Admin', 'Admin']), createBed);

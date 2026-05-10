@@ -80,6 +80,7 @@ model Employee {
   shifts           ShiftSlot[]
   surveys          SurveyResponse[]
   visits           Visit[]
+  surgeries        SurgerySchedule[]
 }
 
 model AuditLog {
@@ -118,12 +119,15 @@ model Patient {
   referredBy     String?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
+  safetyRiskLevel String?
+  safetyFindings  Json?
   receivables    AccountsReceivable[]
   admissions     Admission[]
   labOrders      LabOrder[]
   prescriptions  Prescription[]
   referrals      Referral[]
   visits         Visit[]
+  surgeries      SurgerySchedule[]
 }
 
 model Visit {
@@ -138,30 +142,38 @@ model Visit {
   diagnosis     String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  scribeStatus  String         @default("INACTIVE")
+  audioStreamUrl String?
+  soapNote      Json?
+  consentToRecord Boolean      @default(false)
   bills         Bill[]
   labOrders     LabOrder[]
   prescriptions Prescription[]
   doctor        Employee       @relation(fields: [doctorId], references: [id])
   patient       Patient        @relation(fields: [patientId], references: [id])
+  telemedicineSession TelemedicineSession?
 }
 
 model Bill {
-  id          String     @id @default(uuid())
-  billNo      String     @unique
-  patientId   String?
-  visitId     String?
-  admissionId String?
-  type        String
-  subTotal    Float
-  gstAmount   Float
-  discount    Float      @default(0)
-  netPayable  Float
-  paymentMode String
-  status      String     @default("UNPAID")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  admission   Admission? @relation(fields: [admissionId], references: [id])
-  visit       Visit?     @relation(fields: [visitId], references: [id])
+  id                   String     @id @default(uuid())
+  billNo               String     @unique
+  patientId            String?
+  visitId              String?
+  admissionId          String?
+  type                 String
+  subTotal             Float
+  gstAmount            Float
+  discount             Float      @default(0)
+  netPayable           Float
+  insuranceClaimAmount Float      @default(0)
+  patientPayable       Float      @default(0)
+  paymentMode          String
+  status               String     @default("UNPAID")
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  admission            Admission? @relation(fields: [admissionId], references: [id])
+  visit                Visit?     @relation(fields: [visitId], references: [id])
+  insuranceScrubLogs   InsuranceScrubLog[]
 }
 
 model LabOrder {
@@ -182,6 +194,7 @@ model LabOrder {
   collectedAt    DateTime?
   resultsPayload Json?
   sampleStatus   String    @default("PENDING")
+  aiSummary      Json?
   patient        Patient   @relation(fields: [patientId], references: [id])
   visit          Visit?    @relation(fields: [visitId], references: [id])
 }
@@ -206,6 +219,7 @@ model Ward {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   beds      Bed[]
+  devices   Device[]
 }
 
 model Bed {
@@ -239,6 +253,33 @@ model Admission {
   nursingVitals NursingVitals[]
 }
 
+model OperatingTheater {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  status    String   @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  surgeries SurgerySchedule[]
+}
+
+model SurgerySchedule {
+  id            String   @id @default(uuid())
+  patientId     String
+  surgeonId     String
+  otId          String
+  surgeryName   String
+  startTime     DateTime
+  endTime       DateTime
+  status        String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patient       Patient           @relation(fields: [patientId], references: [id])
+  surgeon       Employee          @relation(fields: [surgeonId], references: [id])
+  ot            OperatingTheater  @relation(fields: [otId], references: [id])
+}
+
 model IpdCharge {
   id          String    @id @default(uuid())
   admissionId String
@@ -260,6 +301,8 @@ model NursingVitals {
   spo2            Int?
   respiratoryRate Int?
   notes           String?
+  ewsScore        Int?
+  ewsRiskLevel    String?
   recordedBy      String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -277,6 +320,8 @@ model LabCatalog {
   criticalMin Float?
   unit        String?
   parameters  Json?
+  loincCode   String?
+  isNotifiable Boolean @default(false)
 }
 
 model Notification {
@@ -307,15 +352,16 @@ model Referral {
 }
 
 model MedicineInventory {
-  id            String   @id @default(uuid())
-  drugName      String   @unique
-  manufacturer  String?
-  batchNo       String
-  expiryDate    DateTime
-  stockQuantity Int      @default(0)
-  unitPrice     Float
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(uuid())
+  drugName          String   @unique
+  manufacturer      String?
+  batchNo           String
+  expiryDate        DateTime
+  stockQuantity     Int      @default(0)
+  lowStockThreshold Int      @default(50)
+  unitPrice         Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Attendance {
@@ -665,4 +711,32 @@ model CourseEnrollment {
   employee       Employee  @relation(fields: [employeeId], references: [id])
 
   @@unique([courseId, employeeId])
+}
+
+model Device {
+  id           String   @id @default(uuid())
+  deviceName   String
+  macAddress   String   @unique
+  wardId       String
+  status       String   // ONLINE, OFFLINE, ALERT
+  lastSync     DateTime @default(now())
+  ward         Ward     @relation(fields: [wardId], references: [id])
+}
+
+model TelemedicineSession {
+  id           String   @id @default(uuid())
+  visitId      String   @unique
+  meetingLink  String
+  recordingUrl String?
+  startTime    DateTime
+  endTime      DateTime?
+  visit        Visit    @relation(fields: [visitId], references: [id])
+}
+
+model InsuranceScrubLog {
+  id           String   @id @default(uuid())
+  billId       String
+  findings     Json     // Array of detected errors or compliance flags
+  scrubbedBy   String   @default("AI_ENGINE")
+  bill         Bill     @relation(fields: [billId], references: [id])
 }

@@ -17,6 +17,11 @@ import notificationRoutes from './routes/notification';
 import referralRoutes from './routes/referral';
 import nursingRoutes from './routes/nursing';
 import trainingRoutes from './routes/training';
+import infrastructureRoutes from './routes/infrastructure';
+import telemedRoutes from './routes/telemed';
+import iotRoutes from './routes/iot';
+import ehrRoutes from './routes/ehr';
+import aiRoutes from './routes/ai';
 
 dotenv.config();
 
@@ -42,6 +47,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/nursing', nursingRoutes);
 app.use('/api/training', trainingRoutes);
+app.use('/api/infrastructure', infrastructureRoutes);
+app.use('/api/telemed', telemedRoutes);
+app.use('/api/iot', iotRoutes);
+app.use('/api/ehr', ehrRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'UP', timestamp: new Date() });

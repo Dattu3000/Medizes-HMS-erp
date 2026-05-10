@@ -40,7 +40,7 @@ export default function EssPortal() {
             {/* Header */}
             <div className="liquid-glass-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold text-glass-title">Welcome back, Emily! ðŸ‘‹</h2>
+                    <h2 className="text-3xl font-bold text-glass-title">Welcome back, Emily! 👋</h2>
                     <p className="text-glass-body mt-1">Here's what's happening today in your workspace.</p>
                 </div>
                 <button className="liquid-glass-button px-6 py-2.5 rounded-xl font-medium shadow-sm">

@@ -2,13 +2,36 @@
 import { API_BASE } from '@/lib/api';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X, Server, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const [loading, setLoading] = useState(true);
+
+    const [isDayMode, setIsDayMode] = useState(false);
+
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            setIsDayMode(true);
+            document.documentElement.classList.add('theme-light');
+        }
+        document.documentElement.classList.add('transition-theme');
+    }, []);
+
+    const toggleTheme = () => {
+        setIsDayMode(!isDayMode);
+        if (!isDayMode) {
+            document.documentElement.classList.add('theme-light');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.documentElement.classList.remove('theme-light');
+            localStorage.setItem('theme', 'dark');
+        }
+    };
+
 
     // Notifications
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -60,6 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { name: 'Patient & OPD', href: '/dashboard/patients', icon: Users },
         { name: 'Doctor\'s EHR', href: '/dashboard/ehr', icon: Stethoscope },
         { name: 'IPD / Wards', href: '/dashboard/ipd', icon: Activity },
+        { name: 'IoMT Gateway', href: '/dashboard/iot', icon: Server },
         { name: 'Pharmacy', href: '/dashboard/pharmacy', icon: Pill },
         { name: 'Lab Reports', href: '/dashboard/lab', icon: FilePlus2 },
         { name: 'HR Module', href: '/dashboard/hr', icon: UsersRound },
@@ -117,6 +141,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <span className="text-blue-500 font-semibold">MEDISYS</span> <span className="text-gray-600">/</span> <span className="text-gray-100">DASHBOARD</span>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Theme Toggle */}
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg bg-[#0F172A] hover:bg-slate-700 text-gray-400 hover:text-white transition relative preserve-color"
+                            title="Toggle Day/Night Shift Mode"
+                        >
+                            {isDayMode ? <Moon size={18} className="text-indigo-400" /> : <Sun size={18} className="text-amber-400" />}
+                        </button>
+                        
                         {/* Notification Bell */}
                         <div className="relative">
                             <button

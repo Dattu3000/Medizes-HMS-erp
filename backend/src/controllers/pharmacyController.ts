@@ -34,10 +34,48 @@ export const dispenseMedicine = async (req: Request, res: Response) => {
                     throw new Error(`Insufficient stock for ${drug?.drugName || item.drugId}`);
                 }
 
-                await tx.medicineInventory.update({
+                const updatedDrug = await tx.medicineInventory.update({
                     where: { id: drug.id },
                     data: { stockQuantity: drug.stockQuantity - item.quantity }
                 });
+
+                if (updatedDrug.stockQuantity <= updatedDrug.lowStockThreshold) {
+                    const admins = await tx.user.findMany({ where: { role: { name: 'Admin' } } });
+                    for (const admin of admins) {
+                        await tx.notification.create({
+                            data: {
+                                targetUserId: admin.id,
+                                type: 'INVENTORY_ALERT',
+                                title: `LOW STOCK: ${updatedDrug.drugName}`,
+                                body: `Stock is at ${updatedDrug.stockQuantity} (Threshold: ${updatedDrug.lowStockThreshold}). Restock required. Auto-PO generated.`,
+                            }
+                        });
+                    }
+
+                    const reorderQty = updatedDrug.lowStockThreshold * 2;
+                    const reorderAmount = updatedDrug.unitPrice * reorderQty;
+                    
+                    await tx.accountsPayable.create({
+                        data: {
+                            vendorName: updatedDrug.manufacturer || 'Auto-Vendor',
+                            amount: reorderAmount,
+                            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                            status: 'OUTSTANDING'
+                        }
+                    });
+                    
+                    await tx.expense.create({
+                        data: {
+                            voucherNo: `PO-${Date.now()}-${updatedDrug.id.substring(0, 4)}`,
+                            category: 'Inventory Restock',
+                            description: `Auto-PO for ${updatedDrug.drugName} (Qty: ${reorderQty})`,
+                            amount: reorderAmount,
+                            netAmount: reorderAmount,
+                            paymentMode: 'CREDIT',
+                            status: 'PENDING'
+                        }
+                    });
+                }
 
                 subTotal += (drug.unitPrice * item.quantity);
             }
@@ -135,12 +173,12 @@ export const bulkAddMedicines = async (req: Request, res: Response) => {
 export const getPrescriptionQueue = async (req: Request, res: Response) => {
     try {
         const prescriptions = await prisma.prescription.findMany({
-            where: { status: 'PENDING' },
+            
             include: {
                 patient: true,
                 visit: { include: { doctor: true } }
             },
-            orderBy: { createdAt: 'asc' }
+            orderBy: { createdAt: 'desc' }, take: 50
         });
         res.status(200).json(prescriptions);
     } catch (error) {
@@ -176,10 +214,48 @@ export const dispensePrescription = async (req: Request, res: Response) => {
                     throw new Error(`Insufficient stock for ${med.drugName}`);
                 }
 
-                await tx.medicineInventory.update({
+                const updatedDrug = await tx.medicineInventory.update({
                     where: { id: drug.id },
                     data: { stockQuantity: drug.stockQuantity - 1 }
                 });
+
+                if (updatedDrug.stockQuantity <= updatedDrug.lowStockThreshold) {
+                    const admins = await tx.user.findMany({ where: { role: { name: 'Admin' } } });
+                    for (const admin of admins) {
+                        await tx.notification.create({
+                            data: {
+                                targetUserId: admin.id,
+                                type: 'INVENTORY_ALERT',
+                                title: `LOW STOCK: ${updatedDrug.drugName}`,
+                                body: `Stock is at ${updatedDrug.stockQuantity} (Threshold: ${updatedDrug.lowStockThreshold}). Restock required. Auto-PO generated.`,
+                            }
+                        });
+                    }
+
+                    const reorderQty = updatedDrug.lowStockThreshold * 2;
+                    const reorderAmount = updatedDrug.unitPrice * reorderQty;
+                    
+                    await tx.accountsPayable.create({
+                        data: {
+                            vendorName: updatedDrug.manufacturer || 'Auto-Vendor',
+                            amount: reorderAmount,
+                            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                            status: 'OUTSTANDING'
+                        }
+                    });
+                    
+                    await tx.expense.create({
+                        data: {
+                            voucherNo: `PO-${Date.now()}-${updatedDrug.id.substring(0, 4)}`,
+                            category: 'Inventory Restock',
+                            description: `Auto-PO for ${updatedDrug.drugName} (Qty: ${reorderQty})`,
+                            amount: reorderAmount,
+                            netAmount: reorderAmount,
+                            paymentMode: 'CREDIT',
+                            status: 'PENDING'
+                        }
+                    });
+                }
 
                 subTotal += drug.unitPrice;
             }
@@ -251,3 +327,78 @@ export const analyzePrescriptionAI = async (req: Request, res: Response) => {
     }
 };
 
+// Automated Expiry Tracking
+export const getExpiryAlerts = async (req: Request, res: Response) => {
+    try {
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+        const alerts = await prisma.medicineInventory.findMany({
+            where: {
+                expiryDate: {
+                    lte: thirtyDaysFromNow,
+                    gte: new Date() // within next 30 days
+                }
+            },
+            orderBy: { expiryDate: 'asc' }
+        });
+
+        // Also fetch already expired
+        const expired = await prisma.medicineInventory.findMany({
+            where: { expiryDate: { lt: new Date() } },
+            orderBy: { expiryDate: 'desc' }
+        });
+
+        res.status(200).json({ expiringSoon: alerts, expired });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch expiry alerts', error });
+    }
+};
+
+// Undo Dispense
+export const undoDispensePrescription = async (req: Request, res: Response) => {
+    try {
+        const { prescriptionId } = req.body;
+        const userId = (req as any).user.id;
+
+        const prescription = await prisma.prescription.findUnique({
+            where: { id: prescriptionId }
+        });
+
+        if (!prescription || prescription.status !== 'DISPENSED') {
+            return res.status(400).json({ message: 'Prescription not found or not dispensed' });
+        }
+
+        const medicines = prescription.medicines as any[];
+
+        await prisma.$transaction(async (tx) => {
+            // Restore stock
+            for (const med of medicines) {
+                const drug = await tx.medicineInventory.findUnique({
+                    where: { drugName: med.drugName }
+                });
+                if (drug) {
+                    await tx.medicineInventory.update({
+                        where: { id: drug.id },
+                        data: { stockQuantity: drug.stockQuantity + 1 }
+                    });
+                }
+            }
+
+            // Set to pending
+            await tx.prescription.update({
+                where: { id: prescriptionId },
+                data: { status: 'PENDING' }
+            });
+
+            // Delete unpaid bill if it exists
+            await tx.bill.deleteMany({
+                where: { visitId: prescription.visitId, type: 'PHARMACY', status: 'UNPAID' }
+            });
+        });
+
+        res.status(200).json({ message: 'Dispense undone successfully' });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'Failed to undo dispense', error });
+    }
+};

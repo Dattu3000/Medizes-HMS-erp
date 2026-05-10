@@ -444,6 +444,38 @@ export const getPayableAging = async (req: Request, res: Response) => {
     }
 };
 
+export const createPurchaseOrder = async (req: Request, res: Response) => {
+    try {
+        const { vendorName, amount, description } = req.body;
+        
+        const po = await prisma.accountsPayable.create({
+            data: {
+                vendorName: vendorName || 'Auto-Vendor',
+                amount: Number(amount) || 0,
+                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days terms
+                status: 'OUTSTANDING',
+            }
+        });
+        
+        const expense = await prisma.expense.create({
+            data: {
+                voucherNo: `PO-${Date.now()}`,
+                category: 'Inventory Restock',
+                description: description || 'Auto-generated Purchase Order',
+                amount: Number(amount) || 0,
+                netAmount: Number(amount) || 0,
+                paymentMode: 'CREDIT',
+                status: 'PENDING'
+            }
+        });
+
+        res.status(201).json({ message: 'Purchase Order created successfully', po, expense });
+    } catch (error) {
+        console.error('Auto-PO error:', error);
+        res.status(500).json({ message: 'Error creating Purchase Order', error });
+    }
+};
+
 // ═══════════════════════════════════════════════
 // 8. DAY BOOK (Chronological Register)
 // ═══════════════════════════════════════════════

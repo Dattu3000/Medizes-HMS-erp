@@ -269,7 +269,7 @@ export default function PatientsPage() {
                                                 className={`flex flex-col text-left p-3 border-b border-slate-800 last:border-b-0 transition-colors ${selectedPatient?.id === p.id ? 'bg-slate-800 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent hover:bg-slate-900'}`}
                                             >
                                                 <span className="font-semibold text-gray-50 text-sm">{p.firstName} {p.lastName}</span>
-                                                <span className="text-[12px] text-gray-400">{p.uhid} â€¢ {p.mobile}</span>
+                                                <span className="text-[12px] text-gray-400">{p.uhid} • {p.mobile}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -279,7 +279,7 @@ export default function PatientsPage() {
                                     <div className="bg-blue-500/10 rounded-[8px] p-4 border border-blue-500/20 mt-4 rounded-md">
                                         <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider mb-1">Selected Patient</p>
                                         <p className="font-semibold text-gray-50">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                                        <p className="text-sm text-gray-400">{selectedPatient.uhid} â€¢ Age: {selectedPatient.age}</p>
+                                        <p className="text-sm text-gray-400">{selectedPatient.uhid} • Age: {selectedPatient.age}</p>
                                     </div>
                                 )}
                             </Card>
