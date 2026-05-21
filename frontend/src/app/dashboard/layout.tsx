@@ -2,7 +2,7 @@
 import { API_BASE } from '@/lib/api';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X, Server, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X, Server, Sun, Moon, FileText } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -88,6 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { name: 'Lab Reports', href: '/dashboard/lab', icon: FilePlus2 },
         { name: 'HR Module', href: '/dashboard/hr', icon: UsersRound },
         { name: 'Billing Desk', href: '/dashboard/billing', icon: Wallet },
+        { name: 'Claims & TPA', href: '/dashboard/claims', icon: FileText },
         { name: 'Accounts', href: '/dashboard/accounts', icon: IndianRupee },
         { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
         { name: 'System Admin', href: '/dashboard/admin', icon: ShieldCheck },

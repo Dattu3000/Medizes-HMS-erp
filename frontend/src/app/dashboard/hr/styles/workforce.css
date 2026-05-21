@@ -1,0 +1,65 @@
+.workforce-container {
+  display: grid;
+  grid-template-columns: 25% 50% 25%;
+  height: calc(100vh - 64px);
+  background-color: #0F172A;
+  color: #f8fafc;
+  overflow: hidden;
+}
+
+.workforce-col {
+  padding: 1.5rem;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workforce-col:last-child {
+  border-right: none;
+}
+
+.row-fade-out {
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 300ms ease;
+  pointer-events: none;
+}
+
+/* Custom badges */
+.badge-safe {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-risk {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-block {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Scrollbar tweaks */
+.workforce-col::-webkit-scrollbar {
+  width: 4px;
+}
+.workforce-col::-webkit-scrollbar-track {
+  background: transparent;
+}
+.workforce-col::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}

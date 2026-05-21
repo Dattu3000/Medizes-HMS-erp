@@ -274,3 +274,46 @@ export const getHrStrategicAnalytics = async (req: Request, res: Response) => {
         });
     } catch (error) { res.status(500).json({ message: 'Error fetching strategic analytics', error }); }
 };
+
+export const approveOverride = async (req: Request, res: Response) => {
+    try {
+        const { bidId, action, justification } = req.body;
+        const userContext = (req as any).user;
+
+        // Atomically update shift assignment and log to security trail
+        const approveWithOverride = await prisma.$transaction([
+            prisma.openShiftBid.update({
+                where: { id: String(bidId) },
+                data: {
+                    bidStatus: action || "OVERRULED",
+                    justification: justification,
+                    processedBy: userContext.id
+                }
+            }),
+            prisma.auditLog.create({
+                data: {
+                    userId: userContext.id,
+                    action: "WORKFORCE_COMPLIANCE_OVERRIDE",
+                    details: `Forced allocation for bid ${bidId}. Reason: ${justification}`
+                }
+            })
+        ]);
+
+        res.status(200).json(approveWithOverride[0]);
+    } catch (error) {
+        res.status(500).json({ message: 'Error overriding compliance', error });
+    }
+};
+
+export const getDemandForecast = async (req: Request, res: Response) => {
+    try {
+        // Return predictive analytics payload
+        res.status(200).json([
+            { id: 1, department: "ICU", predictedCensus: 42, requiredStaffRatio: 1.5, confidenceInterval: 0.94 },
+            { id: 2, department: "ER", predictedCensus: 120, requiredStaffRatio: 3.0, confidenceInterval: 0.88 },
+            { id: 3, department: "NICU", predictedCensus: 15, requiredStaffRatio: 1.0, confidenceInterval: 0.91 }
+        ]);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching demand forecast', error });
+    }
+};

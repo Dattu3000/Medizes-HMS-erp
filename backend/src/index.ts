@@ -22,6 +22,8 @@ import telemedRoutes from './routes/telemed';
 import iotRoutes from './routes/iot';
 import ehrRoutes from './routes/ehr';
 import aiRoutes from './routes/ai';
+import claimsRoutes from './routes/claims';
+import { initCronJobs } from './services/cron';
 
 dotenv.config();
 
@@ -31,6 +33,9 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
+
+// Initialize background services
+initCronJobs();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -52,6 +57,7 @@ app.use('/api/telemed', telemedRoutes);
 app.use('/api/iot', iotRoutes);
 app.use('/api/ehr', ehrRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/claims', claimsRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'UP', timestamp: new Date() });

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { markAttendance, getAttendance, getPayroll, generatePayroll, processPayroll } from '../controllers/hrController';
-import { getEmployees, getEmployeeProfile, updateEmployeeProfile, uploadHrDocument, signHrDocument, getOrgChart, deployOnboardingWorkflow, autoGenerateShifts, getShifts, getMyOnboardingTasks, updateOnboardingTaskStatus, getHrStrategicAnalytics } from '../controllers/hrCoreController';
-import { getJobs, createJob, getCandidates, addCandidate, updateCandidateStatus, scheduleInterview, submitScorecard, analyzeJob, screenResumeAI } from '../controllers/hrTalentController';
+import { getEmployees, getEmployeeProfile, updateEmployeeProfile, uploadHrDocument, signHrDocument, getOrgChart, deployOnboardingWorkflow, autoGenerateShifts, getShifts, getMyOnboardingTasks, updateOnboardingTaskStatus, getHrStrategicAnalytics, approveOverride, getDemandForecast } from '../controllers/hrCoreController';
+import { getJobs, createJob, getCandidates, addCandidate, updateCandidateStatus, scheduleInterview, submitScorecard, analyzeJob, screenResumeAI, swapRequest } from '../controllers/hrTalentController';
 import { getGoals, createGoal, getFeedback, submitFeedback, getOneOnOneAgendas, createOneOnOneAgenda, getActiveSurveys, submitSurveyResponse } from '../controllers/hrPerformanceController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
@@ -22,10 +22,13 @@ router.post('/onboarding/deploy', authenticate, requireRole(mgtRoles), deployOnb
 router.get('/onboarding/my-tasks', authenticate, getMyOnboardingTasks);
 router.put('/onboarding/tasks/:id', authenticate, updateOnboardingTaskStatus);
 router.get('/analytics/strategic', authenticate, getHrStrategicAnalytics);
+router.get('/analytics/demand-forecast', authenticate, getDemandForecast);
 
 // ADVANCED SHIFTS
 router.get('/shifts', authenticate, getShifts);
 router.post('/shifts/auto-generate', authenticate, requireRole(mgtRoles), autoGenerateShifts);
+router.post('/shifts/swap-request', authenticate, requireRole(mgtRoles), swapRequest);
+router.post('/shifts/approve-override', authenticate, requireRole(adminRoles), approveOverride);
 
 // LEGACY (ATTENDANCE & PAYROLL)
 router.post('/attendance', authenticate, markAttendance);

@@ -106,3 +106,30 @@ export const submitScorecard = async (req: Request, res: Response) => {
         res.status(201).json(scorecard);
     } catch (error) { res.status(500).json({ message: 'Error submitting scorecard', error }); }
 };
+
+export const swapRequest = async (req: Request, res: Response) => {
+    try {
+        const { shiftSlotId, biddingStaffId } = req.body;
+        
+        // 1. Credential Check (Mocked for Demo)
+        const credentials = await prisma.staffCredential.findMany({
+            where: { employeeId: biddingStaffId, status: "ACTIVE" }
+        });
+        
+        // Simulating the sequential chain validation
+        // In a full production build, we would sum the hours here
+        // and check against the 11-hour rest rule.
+        
+        res.status(200).json({
+            complianceCode: "WARNING_OVERTIME",
+            isHardBlocked: false,
+            allowDirectApproval: true,
+            metrics: {
+                projectedWeeklyHours: 52.5,
+                financialMultiplier: 1.5
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error processing swap request', error });
+    }
+};

@@ -81,6 +81,7 @@ model Employee {
   surveys          SurveyResponse[]
   visits           Visit[]
   surgeries        SurgerySchedule[]
+  StaffCredential  StaffCredential[]
 }
 
 model AuditLog {
@@ -94,86 +95,88 @@ model AuditLog {
 }
 
 model Patient {
-  id             String               @id @default(uuid())
-  uhid           String               @unique
-  firstName      String
-  lastName       String
-  age            Int
-  dob            DateTime?
-  gender         String
-  bloodGroup     String?
-  maritalStatus  String?
-  mobile         String
-  email          String?
-  address        String?
-  city           String?
-  state          String?
-  pincode        String?
-  emgName        String?
-  emgRelation    String?
-  emgMobile      String?
-  tpaName        String?
-  policyNo       String?
-  insuranceValid DateTime?
-  coverageAmt    Float?
-  referredBy     String?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id              String               @id @default(uuid())
+  uhid            String               @unique
+  firstName       String
+  lastName        String
+  age             Int
+  dob             DateTime?
+  gender          String
+  bloodGroup      String?
+  maritalStatus   String?
+  mobile          String
+  email           String?
+  address         String?
+  city            String?
+  state           String?
+  pincode         String?
+  emgName         String?
+  emgRelation     String?
+  emgMobile       String?
+  tpaName         String?
+  policyNo        String?
+  insuranceValid  DateTime?
+  coverageAmt     Float?
+  referredBy      String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   safetyRiskLevel String?
   safetyFindings  Json?
-  receivables    AccountsReceivable[]
-  admissions     Admission[]
-  labOrders      LabOrder[]
-  prescriptions  Prescription[]
-  referrals      Referral[]
-  visits         Visit[]
-  surgeries      SurgerySchedule[]
+  receivables     AccountsReceivable[]
+  admissions      Admission[]
+  labOrders       LabOrder[]
+  prescriptions   Prescription[]
+  referrals       Referral[]
+  visits          Visit[]
+  surgeries       SurgerySchedule[]
+  claims          Claim[]
 }
 
 model Visit {
-  id            String         @id @default(uuid())
-  patientId     String
-  doctorId      String
-  department    String
-  tokenNo       String
-  status        String         @default("WAITING")
-  notes         String?
-  symptoms      String?
-  diagnosis     String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  scribeStatus  String         @default("INACTIVE")
-  audioStreamUrl String?
-  soapNote      Json?
-  consentToRecord Boolean      @default(false)
-  bills         Bill[]
-  labOrders     LabOrder[]
-  prescriptions Prescription[]
-  doctor        Employee       @relation(fields: [doctorId], references: [id])
-  patient       Patient        @relation(fields: [patientId], references: [id])
+  id                  String               @id @default(uuid())
+  patientId           String
+  doctorId            String
+  department          String
+  tokenNo             String
+  status              String               @default("WAITING")
+  notes               String?
+  symptoms            String?
+  diagnosis           String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  scribeStatus        String               @default("INACTIVE")
+  audioStreamUrl      String?
+  soapNote            Json?
+  consentToRecord     Boolean              @default(false)
+  bills               Bill[]
+  labOrders           LabOrder[]
+  prescriptions       Prescription[]
+  doctor              Employee             @relation(fields: [doctorId], references: [id])
+  patient             Patient              @relation(fields: [patientId], references: [id])
   telemedicineSession TelemedicineSession?
 }
 
 model Bill {
-  id                   String     @id @default(uuid())
-  billNo               String     @unique
+  id                   String              @id @default(uuid())
+  billNo               String              @unique
   patientId            String?
   visitId              String?
   admissionId          String?
   type                 String
   subTotal             Float
   gstAmount            Float
-  discount             Float      @default(0)
+  discount             Float               @default(0)
   netPayable           Float
-  insuranceClaimAmount Float      @default(0)
-  patientPayable       Float      @default(0)
+  insuranceClaimAmount Float               @default(0)
+  patientPayable       Float               @default(0)
   paymentMode          String
-  status               String     @default("UNPAID")
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
-  admission            Admission? @relation(fields: [admissionId], references: [id])
-  visit                Visit?     @relation(fields: [visitId], references: [id])
+  status               String              @default("UNPAID")
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  admission            Admission?          @relation(fields: [admissionId], references: [id])
+  visit                Visit?              @relation(fields: [visitId], references: [id])
   insuranceScrubLogs   InsuranceScrubLog[]
+  claims               Claim[]
 }
 
 model LabOrder {
@@ -254,30 +257,30 @@ model Admission {
 }
 
 model OperatingTheater {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  status    String   @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String            @id @default(uuid())
+  name      String            @unique
+  status    String            @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
   surgeries SurgerySchedule[]
 }
 
 model SurgerySchedule {
-  id            String   @id @default(uuid())
-  patientId     String
-  surgeonId     String
-  otId          String
-  surgeryName   String
-  startTime     DateTime
-  endTime       DateTime
-  status        String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(uuid())
+  patientId   String
+  surgeonId   String
+  otId        String
+  surgeryName String
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  patient       Patient           @relation(fields: [patientId], references: [id])
-  surgeon       Employee          @relation(fields: [surgeonId], references: [id])
-  ot            OperatingTheater  @relation(fields: [otId], references: [id])
+  patient Patient          @relation(fields: [patientId], references: [id])
+  surgeon Employee         @relation(fields: [surgeonId], references: [id])
+  ot      OperatingTheater @relation(fields: [otId], references: [id])
 }
 
 model IpdCharge {
@@ -310,18 +313,18 @@ model NursingVitals {
 }
 
 model LabCatalog {
-  id          String   @id @default(uuid())
-  testName    String   @unique
-  department  String
-  price       Float
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  criticalMax Float?
-  criticalMin Float?
-  unit        String?
-  parameters  Json?
-  loincCode   String?
-  isNotifiable Boolean @default(false)
+  id           String   @id @default(uuid())
+  testName     String   @unique
+  department   String
+  price        Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  criticalMax  Float?
+  criticalMin  Float?
+  unit         String?
+  parameters   Json?
+  loincCode    String?
+  isNotifiable Boolean  @default(false)
 }
 
 model Notification {
@@ -714,29 +717,131 @@ model CourseEnrollment {
 }
 
 model Device {
-  id           String   @id @default(uuid())
-  deviceName   String
-  macAddress   String   @unique
-  wardId       String
-  status       String   // ONLINE, OFFLINE, ALERT
-  lastSync     DateTime @default(now())
-  ward         Ward     @relation(fields: [wardId], references: [id])
+  id         String   @id @default(uuid())
+  deviceName String
+  macAddress String   @unique
+  wardId     String
+  status     String // ONLINE, OFFLINE, ALERT
+  lastSync   DateTime @default(now())
+  ward       Ward     @relation(fields: [wardId], references: [id])
 }
 
 model TelemedicineSession {
-  id           String   @id @default(uuid())
-  visitId      String   @unique
+  id           String    @id @default(uuid())
+  visitId      String    @unique
   meetingLink  String
   recordingUrl String?
   startTime    DateTime
   endTime      DateTime?
-  visit        Visit    @relation(fields: [visitId], references: [id])
+  visit        Visit     @relation(fields: [visitId], references: [id])
 }
 
 model InsuranceScrubLog {
+  id         String @id @default(uuid())
+  billId     String
+  findings   Json // Array of detected errors or compliance flags
+  scrubbedBy String @default("AI_ENGINE")
+  bill       Bill   @relation(fields: [billId], references: [id])
+}
+
+// Medisys HMS v5.1 - GUDHR Schema Extensions
+
+model StaffCredential {
+  id               String   @id @default(uuid())
+  employeeId       String
+  credentialName   String // e.g., "State Medical Council License", "ACLS", "BLS"
+  licenseNumber    String   @unique
+  issuingAuthority String
+  expiryDate       DateTime
+  status           String   @default("ACTIVE") // ACTIVE, EXPIRING, EXPIRED
+  verifiedDocUrl   String // Secure Supabase Storage Bucket pointer
+  employee         Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+model OpenShiftBid {
+  id               String   @id @default(uuid())
+  shiftSlotId      String
+  biddingStaffId   String
+  bidTimestamp     DateTime @default(now())
+  incentivePayRate Float    @default(1.0) // Multiplier for premium/crisis shifts (e.g., 1.5x)
+  bidStatus        String   @default("PENDING") // PENDING, APPROVED, REJECTED, OVERRULED
+  justification    String? // Mandatory text if overrule logic is applied
+  processedBy      String? // User ID of the supervisor who acted on the bid
+
+  @@index([shiftSlotId])
+  @@index([biddingStaffId])
+}
+
+model WorkforceDemandForecast {
+  id                 String   @id @default(uuid())
+  department         String // e.g., "ICU", "ER", "NICU", "OPD-Pediatrics"
+  forecastDate       DateTime
+  predictedCensus    Int
+  requiredStaffRatio Float // Staff-to-patient baseline ratio metric
+  confidenceInterval Float
+  createdAt          DateTime @default(now())
+}
+
+model BurnoutMetrics {
+  id               String   @id @default(uuid())
+  employeeId       String   @unique
+  burnoutIndex     Float // Aggregated scale from 0.00 to 1.00
+  consecutiveHours Float
+  absenteeismCount Int
+  sentimentDelta   Float // Negative/Positive shift from pulse surveys
+  updatedAt        DateTime @updatedAt
+
+  @@index([burnoutIndex])
+}
+
+// Medisys HMS v5.1 - Phase 14c: Insurance Claim Lifecycle & TPA
+model InsuranceProvider {
   id           String   @id @default(uuid())
-  billId       String
-  findings     Json     // Array of detected errors or compliance flags
-  scrubbedBy   String   @default("AI_ENGINE")
-  bill         Bill     @relation(fields: [billId], references: [id])
+  name         String   @unique
+  contactEmail String?
+  contactPhone String?
+  portalUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  claims       Claim[]
+}
+
+model Claim {
+  id              String            @id @default(uuid())
+  claimNumber     String            @unique
+  billId          String
+  patientId       String
+  providerId      String
+  status          String            @default("DRAFT") // DRAFT, SUBMITTED, IN_PROCESS, APPROVED, DENIED, PARTIAL
+  requestedAmount Float
+  approvedAmount  Float?
+  submissionDate  DateTime?
+  paymentDate     DateTime?
+  denialReason    String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  bill            Bill              @relation(fields: [billId], references: [id])
+  patient         Patient           @relation(fields: [patientId], references: [id])
+  provider        InsuranceProvider @relation(fields: [providerId], references: [id])
+  documents       ClaimDocument[]
+
+  @@index([status])
+  @@index([billId])
+  @@index([providerId])
+}
+
+model ClaimDocument {
+  id           String   @id @default(uuid())
+  claimId      String
+  documentType String   // EOB, DISCHARGE_SUMMARY, PRE_AUTH
+  fileUrl      String
+  uploadedAt   DateTime @default(now())
+  claim        Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
 }
