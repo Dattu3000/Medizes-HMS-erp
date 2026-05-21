@@ -148,3 +148,36 @@ export const getVisitInvoice = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Failed to generate visit invoice", error });
     }
 }
+
+// Scenario 2: Fetch all patients with pending bills (Pending Checkout Queue)
+export const getGlobalPendingBills = async (req: Request, res: Response) => {
+    try {
+        const unpaidBills = await prisma.bill.findMany({
+            where: { status: 'UNPAID' },
+            include: { patient: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const patientsMap = new Map<string, any>();
+        
+        unpaidBills.forEach(bill => {
+            if (!bill.patient || !bill.patientId) return;
+            if (!patientsMap.has(bill.patientId)) {
+                patientsMap.set(bill.patientId, {
+                    patient: bill.patient,
+                    bills: [],
+                    totalPending: 0
+                });
+            }
+            const data = patientsMap.get(bill.patientId);
+            data.bills.push(bill);
+            data.totalPending += bill.netPayable;
+        });
+
+        const pendingQueue = Array.from(patientsMap.values());
+        res.status(200).json(pendingQueue);
+    } catch (error) {
+        console.error("Global Pending Billing fetch error", error);
+        res.status(500).json({ message: "Server Error", error });
+    }
+}
