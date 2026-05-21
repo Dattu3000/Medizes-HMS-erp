@@ -53,8 +53,8 @@ export default function AccountsPage() {
                     fetch(`${API}/accounts/summary`, { headers: h }),
                     fetch(`${API}/accounts/expenses`, { headers: h })
                 ]);
-                setSummary(await r1.json());
-                setExpenses(await r2.json());
+                if (r1.ok) setSummary(await r1.json());
+                if (r2.ok) setExpenses(await r2.json());
             } else if (which === 'coa') {
                 const r = await fetch(`${API}/accounts/chart-of-accounts`, { headers: h });
                 const data = await r.json();

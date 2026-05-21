@@ -24,6 +24,7 @@ import ehrRoutes from './routes/ehr';
 import aiRoutes from './routes/ai';
 import claimsRoutes from './routes/claims';
 import { initCronJobs } from './services/cron';
+import { bindBranchContext } from './middlewares/contextBinder';
 
 dotenv.config();
 
@@ -37,8 +38,18 @@ app.use(express.json());
 // Initialize background services
 initCronJobs();
 
-// Routes
+// === UNAUTHENTICATED Routes (no branch context needed) ===
 app.use('/api/auth', authRoutes);
+
+// === BRANCH CONTEXT MIDDLEWARE ===
+// All routes below this line automatically bind the user's branchId
+// from JWT into AsyncLocalStorage for Prisma query isolation.
+// The authenticate middleware runs per-route, so bindBranchContext
+// is applied as a secondary middleware on the protected router.
+import { authenticate } from './middlewares/authMiddleware';
+app.use('/api', authenticate, bindBranchContext);
+
+// === PROTECTED Routes (branch-scoped) ===
 app.use('/api/admin', adminRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/ipd', ipdRoutes);

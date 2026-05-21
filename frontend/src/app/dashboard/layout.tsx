@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X, Server, Sun, Moon, FileText } from 'lucide-react';
 import Link from 'next/link';
+import SecurityBoundary from '@/components/SecurityBoundary';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -205,6 +206,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {children}
                 </div>
             </main>
+
+            {/* v6.0 Security Boundary — Tenant Isolation Violation Handler */}
+            <SecurityBoundary />
         </div>
     );
 }

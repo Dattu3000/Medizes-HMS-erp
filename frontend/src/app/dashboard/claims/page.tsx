@@ -138,14 +138,14 @@ export default function ClaimsDashboard() {
                         <div className="p-2 bg-red-500/10 rounded-lg"><AlertCircle size={20} className="text-red-400" /></div>
                         <h3 className="text-slate-400 text-sm font-medium">Denial Rate</h3>
                     </div>
-                    <div className="text-2xl font-bold relative z-10">{analytics?.denialRate?.toFixed(1)}%</div>
+                    <div className="text-2xl font-bold relative z-10">{(analytics?.denialRate || 0).toFixed(1)}%</div>
                 </div>
                 <div className="metric-card bg-[#111827] border border-[#1f2937] p-5 rounded-xl">
                     <div className="flex items-center gap-3 mb-2 relative z-10">
                         <div className="p-2 bg-purple-500/10 rounded-lg"><Activity size={20} className="text-purple-400" /></div>
                         <h3 className="text-slate-400 text-sm font-medium">Avg Days in AR</h3>
                     </div>
-                    <div className="text-2xl font-bold relative z-10">{analytics?.avgDaysInAR?.toFixed(1) || 0} <span className="text-sm font-normal text-slate-500">days</span></div>
+                    <div className="text-2xl font-bold relative z-10">{(analytics?.avgDaysInAR || 0).toFixed(1)} <span className="text-sm font-normal text-slate-500">days</span></div>
                 </div>
             </div>
 

@@ -122,6 +122,7 @@ model Patient {
   updatedAt       DateTime             @updatedAt
   safetyRiskLevel String?
   safetyFindings  Json?
+  branchId        String?
   receivables     AccountsReceivable[]
   admissions      Admission[]
   labOrders       LabOrder[]
@@ -130,6 +131,8 @@ model Patient {
   visits          Visit[]
   surgeries       SurgerySchedule[]
   claims          Claim[]
+
+  @@index([branchId])
 }
 
 model Visit {
@@ -148,12 +151,15 @@ model Visit {
   audioStreamUrl      String?
   soapNote            Json?
   consentToRecord     Boolean              @default(false)
+  branchId            String?
   bills               Bill[]
   labOrders           LabOrder[]
   prescriptions       Prescription[]
   doctor              Employee             @relation(fields: [doctorId], references: [id])
   patient             Patient              @relation(fields: [patientId], references: [id])
   telemedicineSession TelemedicineSession?
+
+  @@index([branchId])
 }
 
 model Bill {
@@ -173,10 +179,13 @@ model Bill {
   status               String              @default("UNPAID")
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
+  branchId             String?
   admission            Admission?          @relation(fields: [admissionId], references: [id])
   visit                Visit?              @relation(fields: [visitId], references: [id])
   insuranceScrubLogs   InsuranceScrubLog[]
   claims               Claim[]
+
+  @@index([branchId])
 }
 
 model LabOrder {
@@ -198,8 +207,11 @@ model LabOrder {
   resultsPayload Json?
   sampleStatus   String    @default("PENDING")
   aiSummary      Json?
+  branchId       String?
   patient        Patient   @relation(fields: [patientId], references: [id])
   visit          Visit?    @relation(fields: [visitId], references: [id])
+
+  @@index([branchId])
 }
 
 model Prescription {
@@ -210,8 +222,11 @@ model Prescription {
   status    String   @default("PENDING")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  branchId  String?
   patient   Patient  @relation(fields: [patientId], references: [id])
   visit     Visit    @relation(fields: [visitId], references: [id])
+
+  @@index([branchId])
 }
 
 model Ward {
@@ -221,8 +236,11 @@ model Ward {
   capacity  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  branchId  String?
   beds      Bed[]
   devices   Device[]
+
+  @@index([branchId])
 }
 
 model Bed {
@@ -233,8 +251,11 @@ model Bed {
   status     String      @default("AVAILABLE")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+  branchId   String?
   admissions Admission[]
   ward       Ward        @relation(fields: [wardId], references: [id])
+
+  @@index([branchId])
 }
 
 model Admission {
@@ -248,12 +269,15 @@ model Admission {
   depositAmount Float           @default(0)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  branchId      String?
   bed           Bed             @relation(fields: [bedId], references: [id])
   doctor        Employee        @relation(fields: [doctorId], references: [id])
   patient       Patient         @relation(fields: [patientId], references: [id])
   bills         Bill[]
   ipdCharges    IpdCharge[]
   nursingVitals NursingVitals[]
+
+  @@index([branchId])
 }
 
 model OperatingTheater {
@@ -262,7 +286,10 @@ model OperatingTheater {
   status    String            @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+  branchId  String?
   surgeries SurgerySchedule[]
+
+  @@index([branchId])
 }
 
 model SurgerySchedule {
@@ -277,10 +304,13 @@ model SurgerySchedule {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  branchId    String?
 
   patient Patient          @relation(fields: [patientId], references: [id])
   surgeon Employee         @relation(fields: [surgeonId], references: [id])
   ot      OperatingTheater @relation(fields: [otId], references: [id])
+
+  @@index([branchId])
 }
 
 model IpdCharge {
@@ -292,7 +322,10 @@ model IpdCharge {
   dateAdded   DateTime  @default(now())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  branchId    String?
   admission   Admission @relation(fields: [admissionId], references: [id])
+
+  @@index([branchId])
 }
 
 model NursingVitals {
@@ -309,7 +342,10 @@ model NursingVitals {
   recordedBy      String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  branchId        String?
   admission       Admission @relation(fields: [admissionId], references: [id])
+
+  @@index([branchId])
 }
 
 model LabCatalog {
@@ -339,6 +375,9 @@ model Notification {
   labOrderId   String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  branchId     String?
+
+  @@index([branchId])
 }
 
 model Referral {
@@ -351,7 +390,10 @@ model Referral {
   status        String   @default("PENDING")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  branchId      String?
   patient       Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([branchId])
 }
 
 model MedicineInventory {
@@ -458,6 +500,9 @@ model Expense {
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  branchId    String?
+
+  @@index([branchId])
 }
 
 model JournalEntry {
@@ -470,7 +515,10 @@ model JournalEntry {
   referenceType String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  branchId      String?
   lines         JournalLine[]
+
+  @@index([branchId])
 }
 
 model JournalLine {
@@ -494,7 +542,10 @@ model AccountsReceivable {
   status    String   @default("OUTSTANDING")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  branchId  String?
   patient   Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([branchId])
 }
 
 model AccountsPayable {
@@ -506,6 +557,9 @@ model AccountsPayable {
   status     String   @default("OUTSTANDING")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  branchId   String?
+
+  @@index([branchId])
 }
 
 model FinancialPeriod {
@@ -825,6 +879,7 @@ model Claim {
   denialReason    String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+  branchId        String?
   bill            Bill              @relation(fields: [billId], references: [id])
   patient         Patient           @relation(fields: [patientId], references: [id])
   provider        InsuranceProvider @relation(fields: [providerId], references: [id])
@@ -833,6 +888,7 @@ model Claim {
   @@index([status])
   @@index([billId])
   @@index([providerId])
+  @@index([branchId])
 }
 
 model ClaimDocument {

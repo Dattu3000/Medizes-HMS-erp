@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../utils/db';
 
 // EWS (Early Warning Score - NEWS2) Calculator
 const calculateNEWS2 = (vitals: { heartRate: number; bp: string; temperature: number; respiratoryRate: number; spo2: number }): number => {
