@@ -154,27 +154,36 @@ export const getGlobalPendingBills = async (req: Request, res: Response) => {
     try {
         const unpaidBills = await prisma.bill.findMany({
             where: { status: 'UNPAID' },
-            include: { patient: true },
             orderBy: { createdAt: 'desc' }
         });
 
-        const patientsMap = new Map<string, any>();
+        const patientIds = Array.from(new Set(unpaidBills.map(b => b.patientId).filter(Boolean))) as string[];
+
+        const patients = await prisma.patient.findMany({
+            where: { id: { in: patientIds } }
+        });
+
+        const patientMap = new Map(patients.map(p => [p.id, p]));
+        const groupMap = new Map<string, any>();
         
         unpaidBills.forEach(bill => {
-            if (!bill.patient || !bill.patientId) return;
-            if (!patientsMap.has(bill.patientId)) {
-                patientsMap.set(bill.patientId, {
-                    patient: bill.patient,
+            if (!bill.patientId) return;
+            const pat = patientMap.get(bill.patientId);
+            if (!pat) return;
+
+            if (!groupMap.has(bill.patientId)) {
+                groupMap.set(bill.patientId, {
+                    patient: pat,
                     bills: [],
                     totalPending: 0
                 });
             }
-            const data = patientsMap.get(bill.patientId);
+            const data = groupMap.get(bill.patientId);
             data.bills.push(bill);
             data.totalPending += bill.netPayable;
         });
 
-        const pendingQueue = Array.from(patientsMap.values());
+        const pendingQueue = Array.from(groupMap.values());
         res.status(200).json(pendingQueue);
     } catch (error) {
         console.error("Global Pending Billing fetch error", error);
