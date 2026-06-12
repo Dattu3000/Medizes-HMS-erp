@@ -20,10 +20,13 @@ export const bindBranchContext = (req: Request, res: Response, next: NextFunctio
         });
     }
 
+    const clientIpAddress = (req.ip || req.headers['x-forwarded-for']?.toString() || '127.0.0.1').split(',')[0].trim();
+
     const contextPayload: RequestContext = {
         branchId: tokenData.branchId,
         role: tokenData.role,
-        userId: tokenData.id
+        userId: tokenData.id,
+        ipAddress: clientIpAddress
     };
 
     // Run entire downstream handler chain inside an isolated async context

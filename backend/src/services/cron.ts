@@ -1,5 +1,7 @@
 import cron from 'node-cron';
 import { prisma } from '../utils/db';
+import { calculateMonthlyITCApportionment, crossReferenceDailyPharmacySales } from './taxEngineService';
+import { syncGstr2bInvoices } from './gstReconciliationService';
 
 export const initCronJobs = () => {
     // Service 1: Credential Cron Stripper
@@ -98,6 +100,42 @@ export const initCronJobs = () => {
             console.log('[CRON] Predictive Burnout Engine complete.');
         } catch (error) {
             console.error('[CRON] Error in Predictive Burnout Engine:', error);
+        }
+    });
+
+    // Service 3: Tax Engine Apportionment (Rule 42)
+    // Schedule: Monthly on the 1st day at 02:00 AM
+    cron.schedule('0 2 1 * *', async () => {
+        try {
+            const now = new Date();
+            // Apportionment is done for the previous month
+            let month = now.getMonth(); // 0-indexed, so getMonth() is the previous month's 1-indexed value
+            let year = now.getFullYear();
+            if (month === 0) {
+                month = 12;
+                year -= 1;
+            }
+            await calculateMonthlyITCApportionment(month, year);
+        } catch (error) {
+            console.error('[CRON] Error in Tax Apportionment Scheduler:', error);
+        }
+    });
+
+    // Service 4: Daily Pharmacy vs Tax Summaries Discrepancy Check & GSTR-2B Sync
+    // Schedule: Daily at 01:00 AM
+    cron.schedule('0 1 * * *', async () => {
+        try {
+            await crossReferenceDailyPharmacySales();
+            
+            // Sync GSTR-2B for current return period
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1; // 1-indexed
+            const returnPeriod = year * 100 + month;
+            const hospitalGstin = '27AAAAA5555A1Z5'; // Standard hospital GSTIN
+            await syncGstr2bInvoices(hospitalGstin, returnPeriod);
+        } catch (error) {
+            console.error('[CRON] Error in Daily Pharmacy Check & GSTR-2B Sync Scheduler:', error);
         }
     });
 };

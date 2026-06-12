@@ -4,14 +4,19 @@ import { useState, useEffect, useCallback } from 'react';
 import {
     IndianRupee, FileText, BarChart3, TrendingUp, TrendingDown, Download, Receipt,
     BookOpen, Scale, Wallet, Calendar, Clock, Brain, ChevronRight, Plus,
-    AlertTriangle, CheckCircle2, Info, Zap, ArrowUpRight, ArrowDownRight
+    AlertTriangle, CheckCircle2, Info, Zap, ArrowUpRight, ArrowDownRight,
+    ShieldAlert, ShieldCheck, Activity
 } from 'lucide-react';
+import { Rule42Dashboard } from '../../../components/finance/Rule42Dashboard';
+import { TdsTrackBoard } from '../../../components/finance/TdsTrackBoard';
+import { AnomalyAuditPanel } from '../../../components/finance/AnomalyAuditPanel';
+import { ledgerEntrySchema } from '../../../utils/financeValidations';
 
 const API = 'http://localhost:5000/api';
 const getAuth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 const fmt = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 
-type Tab = 'overview' | 'coa' | 'journal' | 'trial' | 'cashflow' | 'aging' | 'daybook' | 'ai';
+type Tab = 'overview' | 'tax' | 'tds' | 'audit' | 'coa' | 'journal' | 'trial' | 'cashflow' | 'aging' | 'daybook' | 'ai';
 
 export default function AccountsPage() {
     const [tab, setTab] = useState<Tab>('overview');
@@ -34,6 +39,10 @@ export default function AccountsPage() {
     const [gstAmount, setGstAmount] = useState('');
     const [tdsAmount, setTdsAmount] = useState('');
     const [paymentMode, setPaymentMode] = useState('BANK');
+    const [costCenterType, setCostCenterType] = useState('ADMIN');
+    const [taxEligibilityStatus, setTaxEligibilityStatus] = useState('TAXABLE');
+    const [hsnSacCode, setHsnSacCode] = useState('');
+    const [formError, setFormError] = useState('');
 
     // Journal form
     const [jeNarration, setJeNarration] = useState('');
@@ -103,11 +112,26 @@ export default function AccountsPage() {
 
     const addExpense = async () => {
         if (!amount || !description) return;
+        
+        // Zod validation interceptor (Pharmacy Guard)
+        const validation = ledgerEntrySchema.safeParse({
+            costCenterType,
+            taxEligibilityStatus,
+            hsnSacCode: hsnSacCode || undefined,
+            baseAmount: Number(amount)
+        });
+
+        if (!validation.success) {
+            setFormError(validation.error.issues[0].message);
+            return;
+        }
+        setFormError('');
+
         await fetch(`${API}/accounts/expenses`, {
             method: 'POST', headers: { ...getAuth(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ category, description, amount: Number(amount), gstAmount: Number(gstAmount || 0), tdsAmount: Number(tdsAmount || 0), paymentMode })
+            body: JSON.stringify({ category, description, amount: Number(amount), gstAmount: Number(gstAmount || 0), tdsAmount: Number(tdsAmount || 0), paymentMode, costCenterType, taxEligibilityStatus, hsnSacCode })
         });
-        setDescription(''); setAmount(''); setGstAmount(''); setTdsAmount('');
+        setDescription(''); setAmount(''); setGstAmount(''); setTdsAmount(''); setHsnSacCode('');
         fetchData('overview');
     };
 
@@ -134,6 +158,9 @@ export default function AccountsPage() {
 
     const tabs: { id: Tab; label: string; icon: any }[] = [
         { id: 'overview', label: 'P&L Overview', icon: IndianRupee },
+        { id: 'tax', label: 'Rule 42 ITC', icon: ShieldCheck },
+        { id: 'tds', label: 'Vendor TDS', icon: Activity },
+        { id: 'audit', label: 'Recon Audit', icon: ShieldAlert },
         { id: 'coa', label: 'Chart of Accounts', icon: BookOpen },
         { id: 'journal', label: 'Journal Entries', icon: FileText },
         { id: 'trial', label: 'Trial Balance', icon: Scale },
@@ -195,14 +222,25 @@ export default function AccountsPage() {
                                     <select value={category} onChange={e => setCategory(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white">
                                         {['RENT', 'MAINTENANCE', 'UTILITIES', 'VENDOR_PAYMENT', 'MEDICAL_SUPPLIES', 'MISC'].map(c => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
                                     </select>
-                                    <input placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white" />
+                                    <select value={costCenterType} onChange={e => setCostCenterType(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white">
+                                        {['PHARMACY', 'OPD', 'IPD', 'ADMIN'].map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                    <select value={taxEligibilityStatus} onChange={e => setTaxEligibilityStatus(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white">
+                                        {['EXEMPT', 'TAXABLE', 'PARTIAL_REVERSAL'].map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                    <input placeholder="HSN/SAC Code" value={hsnSacCode} onChange={e => setHsnSacCode(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white" />
+                                    
+                                    <input placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white col-span-2" />
                                     <input placeholder="Amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white" />
                                     <input placeholder="GST" type="number" value={gstAmount} onChange={e => setGstAmount(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white" />
                                     <input placeholder="TDS" type="number" value={tdsAmount} onChange={e => setTdsAmount(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white" />
                                     <select value={paymentMode} onChange={e => setPaymentMode(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white">
                                         {['BANK', 'CASH', 'UPI', 'CREDIT'].map(m => <option key={m} value={m}>{m}</option>)}
                                     </select>
-                                    <button onClick={addExpense} className="bg-emerald-600 text-white font-bold rounded-lg px-4 py-2 text-sm hover:bg-emerald-500 transition col-span-2">+ Record Expense</button>
+                                    <div className="col-span-2 flex items-center justify-between">
+                                        <button onClick={addExpense} className="bg-emerald-600 text-white font-bold rounded-lg px-4 py-2 text-sm hover:bg-emerald-500 transition">+ Record Expense</button>
+                                        {formError && <span className="text-xs text-rose-400 font-bold bg-rose-500/10 px-2 py-1 rounded">{formError}</span>}
+                                    </div>
                                 </div>
                             </div>
                             {/* Expense table */}
@@ -225,6 +263,21 @@ export default function AccountsPage() {
                                 </table>
                             </div>
                         </div>
+                    )}
+
+                    {/* ═══ RULE 42 ITC TAB ═══ */}
+                    {tab === 'tax' && (
+                        <Rule42Dashboard />
+                    )}
+
+                    {/* ═══ TDS TRACK BOARD TAB ═══ */}
+                    {tab === 'tds' && (
+                        <TdsTrackBoard />
+                    )}
+
+                    {/* ═══ ANOMALY AUDIT TAB ═══ */}
+                    {tab === 'audit' && (
+                        <AnomalyAuditPanel />
                     )}
 
                     {/* ═══ CHART OF ACCOUNTS ═══ */}

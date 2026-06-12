@@ -12,6 +12,7 @@ export interface RequestContext {
     branchId: string;
     role: string;
     userId: string;
+    ipAddress?: string;
 }
 
 export const contextStorage = new AsyncLocalStorage<RequestContext>();

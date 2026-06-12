@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/db';
-import { callGemma } from '../utils/aiService';
+import { callNemotron } from '../utils/aiService';
 
 // ─────────────────────────────────────────
 // BALANCE SHEET (Simplified Trial Balance)
@@ -709,7 +709,7 @@ export const detectBillingAnomaliesAI = async (req: Request, res: Response) => {
         Billing Records:
         ${JSON.stringify(billData)}`;
 
-        const analysis = await callGemma(prompt);
+        const analysis = await callNemotron(prompt);
 
         res.status(200).json({
             status: 'SUCCESS',

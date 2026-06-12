@@ -466,11 +466,17 @@ model Ledger {
   accountType  String        @default("DETAIL")
   code         String?       @unique
   isActive     Boolean       @default(true)
-  parentId     String?
+  parentId             String?
+  taxEligibilityStatus TaxEligibilityStatus?
+  hsnSacCode           String?
+  tdsCategoryCode      TdsCategoryCode?
+  costCenterId         String?
+
   journalLines JournalLine[]
   parent       Ledger?       @relation("LedgerHierarchy", fields: [parentId], references: [id])
   children     Ledger[]      @relation("LedgerHierarchy")
   transactions Transaction[]
+  costCenter   CostCenter?   @relation(fields: [costCenterId], references: [id])
 }
 
 model Transaction {
@@ -484,6 +490,7 @@ model Transaction {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   ledger        Ledger   @relation(fields: [ledgerId], references: [id])
+  disbursements Disbursement[]
 }
 
 model Expense {
@@ -901,3 +908,170 @@ model ClaimDocument {
 
   @@index([claimId])
 }
+
+// Enterprise Accounting & Tax Filing Extension
+
+enum TaxEligibilityStatus {
+  EXEMPT
+  TAXABLE
+  PARTIAL_REVERSAL
+}
+
+enum TdsCategoryCode {
+  SEC_194J
+  SEC_194C
+  SEC_192
+}
+
+model Vendor {
+  id             String         @id @default(uuid())
+  name           String
+  vendorSubType  String?        // e.g., 'SINGLE_PRACTITIONER', 'CORPORATE'
+  panNumber      String?        @unique
+  gstNumber      String?
+  contactEmail   String?
+  contactPhone   String?
+  address        String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  disbursements  Disbursement[]
+}
+
+model CostCenter {
+  id          String   @id @default(uuid())
+  name        String
+  type        String   // e.g., OPD, IPD, PHARMACY, ADMIN
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ledgers     Ledger[]
+}
+
+model TaxPayableSummary {
+  id               String   @id @default(uuid())
+  month            Int
+  year             Int
+  totalITC         Float
+  t1               Float    // Non-business
+  t2               Float    // Exempt only
+  t3               Float    // Blocked
+  c1               Float    // Eligible
+  c2               Float    // Common Pool
+  exemptRevenue    Float    // E
+  totalTurnover    Float    // F
+  reversalD1       Float    // Reversed
+  netItcAvailable  Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([month, year])
+}
+
+model Disbursement {
+  id               String   @id @default(uuid())
+  transactionId    String
+  vendorId         String
+  grossAmount      Float
+  tdsApplicable    Boolean  @default(false)
+  tdsSection       String?  // e.g., 194J, 192
+  tdsAmount        Float    @default(0)
+  netPayout        Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  vendor           Vendor   @relation(fields: [vendorId], references: [id])
+  transaction      Transaction @relation(fields: [transactionId], references: [id])
+}
+
+// ==========================================
+// Phase 2: High-Speed GST Reconciliation
+// ==========================================
+
+model CompanyGstin {
+  gstinId       String   @id @default(dbgenerated("uuid_generate_v4()")) @map("gstin_id") @db.Uuid
+  gstinNumber   String   @unique @map("gstin_number") @db.VarChar(15)
+  legalName     String   @map("legal_name") @db.VarChar(255)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("company_gstins")
+}
+
+model PurchaseRegisterInvoice {
+  prInvoiceId          String   @default(dbgenerated("uuid_generate_v4()")) @map("pr_invoice_id") @db.Uuid
+  receiverGstinId      String   @map("receiver_gstin_id") @db.Uuid
+  receiverGstin        String   @map("receiver_gstin") @db.VarChar(15)
+  supplierGstin        String   @map("supplier_gstin") @db.VarChar(15)
+  invoiceNumber        String   @map("invoice_number") @db.VarChar(50)
+  sanitizedInvoiceNumber String? @map("sanitized_invoice_number") @db.VarChar(50) // dbgenerated in raw SQL
+  invoiceDate          DateTime @map("invoice_date") @db.Date
+  returnPeriod         Int      @map("return_period")
+  taxableValue         Decimal  @default(0.00) @map("taxable_value") @db.Decimal(15, 2)
+  cgst                 Decimal  @default(0.00) @db.Decimal(15, 2)
+  sgstUtgst            Decimal  @default(0.00) @map("sgst_utgst") @db.Decimal(15, 2)
+  igst                 Decimal  @default(0.00) @db.Decimal(15, 2)
+  cess                 Decimal  @default(0.00) @db.Decimal(15, 2)
+  totalGst             Decimal? @map("total_gst") @db.Decimal(15, 2) // dbgenerated in raw SQL
+  costCenterCode       String?  @map("cost_center_code") @db.VarChar(50)
+  erpSource            String   @map("erp_source") @db.VarChar(50)
+  uploadedAt           DateTime @default(now()) @map("uploaded_at") @db.Timestamptz()
+
+  @@id([prInvoiceId, returnPeriod])
+  @@map("purchase_register_invoices")
+}
+
+model Gstr2bInvoice {
+  gstr2bInvoiceId      String   @default(dbgenerated("uuid_generate_v4()")) @map("gstr2b_invoice_id") @db.Uuid
+  receiverGstin        String   @map("receiver_gstin") @db.VarChar(15)
+  supplierGstin        String   @map("supplier_gstin") @db.VarChar(15)
+  supplierLegalName    String?  @map("supplier_legal_name") @db.VarChar(255)
+  invoiceNumber        String   @map("invoice_number") @db.VarChar(50)
+  sanitizedInvoiceNumber String? @map("sanitized_invoice_number") @db.VarChar(50) // dbgenerated in raw SQL
+  invoiceDate          DateTime @map("invoice_date") @db.Date
+  invoiceType          String?  @map("invoice_type") @db.VarChar(20)
+  returnPeriod         Int      @map("return_period")
+  gstr1FilingDate      DateTime? @map("gstr1_filing_date") @db.Date
+  itcAvailability      String?  @map("itc_availability") @db.VarChar(20)
+  itcReversalReason    String?  @map("itc_reversal_reason") @db.VarChar(255)
+  taxableValue         Decimal  @default(0.00) @map("taxable_value") @db.Decimal(15, 2)
+  cgst                 Decimal  @default(0.00) @db.Decimal(15, 2)
+  sgstUtgst            Decimal  @default(0.00) @map("sgst_utgst") @db.Decimal(15, 2)
+  igst                 Decimal  @default(0.00) @db.Decimal(15, 2)
+  cess                 Decimal  @default(0.00) @db.Decimal(15, 2)
+  totalGst             Decimal? @map("total_gst") @db.Decimal(15, 2) // dbgenerated in raw SQL
+  downloadedAt         DateTime @default(now()) @map("downloaded_at") @db.Timestamptz()
+
+  @@id([gstr2bInvoiceId, returnPeriod])
+  @@map("gstr2b_invoices")
+}
+
+model ReconInvoiceMatch {
+  reconId              String   @default(dbgenerated("uuid_generate_v4()")) @map("recon_id") @db.Uuid
+  returnPeriod         Int      @map("return_period")
+  receiverGstin        String   @map("receiver_gstin") @db.VarChar(15)
+  prInvoiceId          String?  @map("pr_invoice_id") @db.Uuid
+  gstr2bInvoiceId      String?  @map("gstr2b_invoice_id") @db.Uuid
+  matchCategory        String   @map("match_category") @db.VarChar(30)
+  varianceTaxableValue Decimal? @default(0.00) @map("variance_taxable_value") @db.Decimal(15, 2)
+  varianceTotalGst     Decimal? @default(0.00) @map("variance_total_gst") @db.Decimal(15, 2)
+  reconciledAt         DateTime @default(now()) @map("reconciled_at") @db.Timestamptz()
+  reconciledByUserId   String?  @map("reconciled_by_user_id") @db.Uuid
+
+  @@id([reconId, returnPeriod])
+  @@map("recon_invoice_matches")
+}
+
+model FinancialAuditLog {
+  id              String   @id @default(uuid())
+  tableName       String   // e.g., "Ledger", "Disbursement"
+  recordId        String   // The primary key of the target record
+  action          String   // "CREATE", "UPDATE", "DELETE"
+  oldSnapshot     Json?    // Null on CREATE
+  newSnapshot     Json?    // Null on DELETE
+  changedByUserId String
+  ipAddress       String?
+  timestamp       DateTime @default(now())
+
+  @@index([tableName, recordId])
+  @@index([timestamp])
+}
+

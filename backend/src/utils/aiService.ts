@@ -41,6 +41,39 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
+export const callNemotron = async (prompt: string): Promise<any> => {
+    const apiKey = process.env.NVIDIA_API_KEY;
+    if (!apiKey) {
+        throw new Error('NVIDIA_API_KEY is not set in environment variables.');
+    }
+
+    const client = new OpenAI({
+        baseURL: "https://integrate.api.nvidia.com/v1",
+        apiKey: apiKey,
+    });
+
+    const payload: any = {
+        model: "nvidia/nemotron-3-ultra-550b-a55b",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 1,
+        top_p: 0.95,
+        max_tokens: 16384,
+        extra_body: {
+            chat_template_kwargs: { enable_thinking: true },
+            reasoning_budget: 16384
+        },
+        stream: false
+    };
+
+    const response = await client.chat.completions.create(payload);
+    let content = response.choices[0].message?.content || "{}";
+
+    // Strip potential markdown code fences
+    content = content.replace(/```json/gi, "").replace(/```/g, "").trim();
+
+    return JSON.parse(content);
+};
+
 export const analyzeJobDescription = async (description: string) => {
     try {
         const prompt = `You are an expert HR AI assistant. Analyze the given job description for biased, non-inclusive language (e.g. "rockstar", "ninja", gendered terms, aggressive phrasing) and suggest a more professional, inclusive version.

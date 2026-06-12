@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { contextStorage } from '../security/context';
+import { financialAuditExtension } from './auditExtension';
 
 /**
  * Medisys HMS v6.0 — Isolated Prisma Client with Automatic Branch Scoping
@@ -28,7 +29,7 @@ for (const model of Prisma.dmmf.datamodel.models) {
     }
 }
 
-export const prisma = basePrisma.$extends({
+export const prisma = basePrisma.$extends(financialAuditExtension).$extends({
     query: {
         $allModels: {
             async $allOperations({ model, operation, args, query }: any) {
