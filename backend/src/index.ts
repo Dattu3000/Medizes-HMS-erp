@@ -24,6 +24,8 @@ import ehrRoutes from './routes/ehr';
 import aiRoutes from './routes/ai';
 import claimsRoutes from './routes/claims';
 import financeRoutes from './routes/finance';
+import governanceRoutes from './routes/governance';
+import analyticsRoutes from './routes/analyticsRoutes';
 import { initCronJobs } from './services/cron';
 import { bindBranchContext } from './middlewares/contextBinder';
 
@@ -71,6 +73,8 @@ app.use('/api/ehr', ehrRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/claims', claimsRoutes);
 app.use('/api/v1/finance', financeRoutes);
+app.use('/api/v1/governance', governanceRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'UP', timestamp: new Date() });

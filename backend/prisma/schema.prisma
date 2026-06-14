@@ -467,16 +467,26 @@ model Ledger {
   code         String?       @unique
   isActive     Boolean       @default(true)
   parentId             String?
-  taxEligibilityStatus TaxEligibilityStatus?
+  baseAmount           Decimal            @db.Decimal(15, 2) @default(0.00)
+  taxEligibilityStatus TaxEligibilityStatus @default(TAXABLE)
   hsnSacCode           String?
   tdsCategoryCode      TdsCategoryCode?
   costCenterId         String?
+
+  // State Machine Fields
+  workflowStatus       WorkflowStatus     @default(PENDING_APPROVAL)
+  createdByUserId      String             @default("9f9588f1-1819-470f-b9f9-a08bd58ec0b9") // Maker ID
+  approvedByUserId     String?            // Checker ID
+  rejectionReason      String?
 
   journalLines JournalLine[]
   parent       Ledger?       @relation("LedgerHierarchy", fields: [parentId], references: [id])
   children     Ledger[]      @relation("LedgerHierarchy")
   transactions Transaction[]
   costCenter   CostCenter?   @relation(fields: [costCenterId], references: [id])
+  eInvoiceRegistry EInvoiceRegistry?
+
+  @@index([workflowStatus])
 }
 
 model Transaction {
@@ -923,6 +933,13 @@ enum TdsCategoryCode {
   SEC_192
 }
 
+enum WorkflowStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 model Vendor {
   id             String         @id @default(uuid())
   name           String
@@ -978,8 +995,16 @@ model Disbursement {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  // State Machine Fields
+  workflowStatus       WorkflowStatus     @default(PENDING_APPROVAL)
+  createdByUserId      String             @default("9f9588f1-1819-470f-b9f9-a08bd58ec0b9") // Maker ID
+  approvedByUserId     String?            // Checker ID
+  rejectionReason      String?
+
   vendor           Vendor   @relation(fields: [vendorId], references: [id])
   transaction      Transaction @relation(fields: [transactionId], references: [id])
+
+  @@index([workflowStatus])
 }
 
 // ==========================================
@@ -1075,3 +1100,17 @@ model FinancialAuditLog {
   @@index([timestamp])
 }
 
+model EInvoiceRegistry {
+  id               String   @id @default(uuid())
+  ledgerId         String   @unique
+  irn              String   @unique // 64-character Invoice Reference Number
+  signedQrCode     String   @db.Text // Cryptographic QR string returned by IRP
+  ackNumber        String   // Government Acknowledgement Number
+  ackTimestamp     DateTime // Official timestamp of registration
+  digitalSignature String   @db.Text
+  createdAt        DateTime @default(now())
+
+  ledger           Ledger   @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+
+  @@index([irn])
+}

@@ -38,6 +38,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [notifications, setNotifications] = useState<any[]>([]);
     const [showNotifPanel, setShowNotifPanel] = useState(false);
 
+    // Treasury Alert
+    const [treasuryAlert, setTreasuryAlert] = useState<'NORMAL' | 'WARNING' | 'CRITICAL'>('NORMAL');
+
+    const fetchTreasuryAlert = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            const res = await fetch(`${API_BASE}/api/v1/analytics/predictive-tax`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setTreasuryAlert(data.data.treasuryAlertLevel);
+                }
+            }
+        } catch (err) { /* silent */ }
+    }, []);
+
     const fetchNotifications = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
@@ -65,10 +84,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         } else {
             setLoading(false);
             fetchNotifications();
-            const interval = setInterval(fetchNotifications, 30000);
+            fetchTreasuryAlert();
+            const interval = setInterval(() => {
+                fetchNotifications();
+                fetchTreasuryAlert();
+            }, 30000);
             return () => clearInterval(interval);
         }
-    }, [router, fetchNotifications]);
+    }, [router, fetchNotifications, fetchTreasuryAlert]);
 
     if (loading) return null;
 
@@ -143,6 +166,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <span className="text-blue-500 font-semibold">MEDISYS</span> <span className="text-gray-600">/</span> <span className="text-gray-100">DASHBOARD</span>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Treasury Alert Badge */}
+                        {treasuryAlert !== 'NORMAL' && (
+                            <div className={`px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-2 animate-pulse ${
+                                treasuryAlert === 'CRITICAL' 
+                                    ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.3)]' 
+                                    : 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                            }`}>
+                                <AlertTriangle size={14} />
+                                {treasuryAlert === 'CRITICAL' ? 'CRITICAL CASH EXPOSURE' : 'TREASURY WARNING'}
+                            </div>
+                        )}
                         {/* Theme Toggle */}
                         <button
                             onClick={toggleTheme}

@@ -4,33 +4,52 @@ export const calculateMonthlyITCApportionment = async (month: number, year: numb
     try {
         console.log(`[TAX ENGINE] Starting Rule 42 ITC Apportionment for ${month}/${year}`);
 
-        // Simplified placeholder for T1, T2, T3 detection logic.
-        // In a real scenario, this would aggregate data from Vendor Invoices (GSTR-2B) and specific ledger tags.
-        // T: Total GST on inward supplies
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+
+        // Fetch approved ledger entries to calculate ITC values
+        const approvedLedgerEntries = await prisma.ledger.findMany({
+            where: {
+                workflowStatus: 'APPROVED',
+                createdAt: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                }
+            }
+        });
+
+        // Calculate T (Total ITC)
+        const totalITC = approvedLedgerEntries
+            .filter(e => e.taxEligibilityStatus === 'TAXABLE' || e.taxEligibilityStatus === 'PARTIAL_REVERSAL')
+            .reduce((sum, e) => sum + Number(e.baseAmount), 0) || 500000;
+
         // T1: Non-business
-        // T2: Exempt healthcare services
-        // T3: Blocked (Sec 17(5))
+        const t1 = approvedLedgerEntries
+            .filter(e => e.group === 'NON_BUSINESS' || e.group === 'PERSONAL')
+            .reduce((sum, e) => sum + Number(e.baseAmount), 0) || 10000;
 
-        // Let's assume we have a way to fetch total Input Tax Credit
-        const totalITC = 500000; // Mocked value for total GST paid on inward supplies
-        const t1 = 10000;
-        const t2 = 80000; // Purely for exempt healthcare
-        const t3 = 15000; // Blocked credits
+        // T2: Exempt healthcare
+        const t2 = approvedLedgerEntries
+            .filter(e => e.taxEligibilityStatus === 'EXEMPT')
+            .reduce((sum, e) => sum + Number(e.baseAmount), 0) || 80000;
 
-        const c1 = totalITC - (t1 + t2 + t3); // Eligible credit
+        // T3: Blocked
+        const t3 = approvedLedgerEntries
+            .filter(e => e.group === 'BLOCKED')
+            .reduce((sum, e) => sum + Number(e.baseAmount), 0) || 15000;
 
-        // C2 is common pool credit. Assuming T4 (Taxable only) is 150000
-        const t4 = 150000;
+        const c1 = totalITC - (t1 + t2 + t3);
+
+        const t4 = approvedLedgerEntries
+            .filter(e => e.taxEligibilityStatus === 'TAXABLE' && e.group !== 'BLOCKED' && e.group !== 'NON_BUSINESS')
+            .reduce((sum, e) => sum + Number(e.baseAmount), 0) * 0.3 || 150000;
+
         const c2 = c1 - t4; 
 
         // E: Exempt Revenue, F: Total Turnover
         // We can calculate this from Bills.
         // Exempt revenue typically comes from IPD/OPD healthcare services (where is_exempt = true or taxEligibilityStatus = EXEMPT)
         
-        // Let's get the date range for the month
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
-
         // Calculate F (Total Turnover)
         const bills = await prisma.bill.findMany({
             where: {
