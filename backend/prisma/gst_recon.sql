@@ -102,9 +102,26 @@ CREATE TABLE IF NOT EXISTS pr_invoices_y2026m07 PARTITION OF purchase_register_i
 CREATE TABLE IF NOT EXISTS gstr2b_invoices_y2026m07 PARTITION OF gstr2b_invoices FOR VALUES FROM (202607) TO (202608);
 CREATE TABLE IF NOT EXISTS recon_matches_y2026m07 PARTITION OF recon_invoice_matches FOR VALUES FROM (202607) TO (202608);
 
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_pr_recon_lookup ON purchase_register_invoices (receiver_gstin, supplier_gstin, sanitized_invoice_number, return_period);
-CREATE INDEX IF NOT EXISTS idx_pr_high_value_gst ON purchase_register_invoices (return_period, total_gst) WHERE total_gst > 50000.00;
-CREATE INDEX IF NOT EXISTS idx_gstr2b_recon_lookup ON gstr2b_invoices (receiver_gstin, supplier_gstin, sanitized_invoice_number, return_period);
-CREATE INDEX IF NOT EXISTS idx_gstr2b_itc_blocked ON gstr2b_invoices (receiver_gstin, return_period) WHERE itc_availability = 'NOT_AVAILABLE';
-CREATE INDEX IF NOT EXISTS idx_recon_category_search ON recon_invoice_matches (receiver_gstin, return_period, match_category);
+-- =============================================================================
+-- FAIL-SAFE DEFAULT PARTITIONS
+-- =============================================================================
+-- Routes any rows with malformed or unexpected return_period values into a
+-- catch-all bucket instead of crashing the write pipeline with unhandled
+-- database rejection errors. Must be monitored and drained periodically.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS pr_invoices_default PARTITION OF purchase_register_invoices DEFAULT;
+CREATE TABLE IF NOT EXISTS gstr2b_invoices_default PARTITION OF gstr2b_invoices DEFAULT;
+CREATE TABLE IF NOT EXISTS recon_matches_default PARTITION OF recon_invoice_matches DEFAULT;
+
+-- =============================================================================
+-- INDEXES (CONCURRENTLY)
+-- =============================================================================
+-- IMPORTANT: CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
+-- If executing via Prisma's executeRaw or a migration tool, ensure each
+-- statement runs outside of BEGIN/COMMIT. In psql, run each line individually.
+-- =============================================================================
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pr_recon_lookup ON purchase_register_invoices (receiver_gstin, supplier_gstin, sanitized_invoice_number, return_period);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pr_high_value_gst ON purchase_register_invoices (return_period, total_gst) WHERE total_gst > 50000.00;
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_gstr2b_recon_lookup ON gstr2b_invoices (receiver_gstin, supplier_gstin, sanitized_invoice_number, return_period);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_gstr2b_itc_blocked ON gstr2b_invoices (receiver_gstin, return_period) WHERE itc_availability = 'NOT_AVAILABLE';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recon_category_search ON recon_invoice_matches (receiver_gstin, return_period, match_category);

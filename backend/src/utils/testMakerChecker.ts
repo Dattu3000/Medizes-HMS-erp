@@ -28,9 +28,18 @@ async function main() {
     console.log('Cleaning up old test ledgers...');
     await prisma.ledger.deleteMany({
         where: {
-            name: {
-                in: ['Test Maker-Checker APPROVED Ledger', 'Test Maker-Checker PENDING Ledger']
-            }
+            OR: [
+                {
+                    name: {
+                        in: ['Test Maker-Checker APPROVED Ledger', 'Test Maker-Checker PENDING Ledger']
+                    }
+                },
+                {
+                    name: {
+                        startsWith: 'FC_'
+                    }
+                }
+            ]
         }
     });
 

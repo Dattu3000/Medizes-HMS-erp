@@ -71,20 +71,6 @@ export const generateTds26qText = async (returnPeriod: number) => {
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
 
-        // Fetch disbursements with active TDS
-        const disbursements = await prisma.disbursement.findMany({
-            where: {
-                createdAt: {
-                    gte: startDate,
-                    lte: endDate
-                },
-                tdsApplicable: true
-            },
-            include: {
-                vendor: true
-            }
-        });
-
         // NSDL formatting constraints:
         // Caret (^) delimited columns, carriage-return + newline (\r\n) line endings.
         const lines: string[] = [];
@@ -99,17 +85,58 @@ export const generateTds26qText = async (returnPeriod: number) => {
 
         // 3. Deductee Detail Records (CD)
         // Record Type ^ Line No ^ Deductee Code ^ Deductee PAN ^ Deductee Name ^ Payment Date ^ Amount Paid ^ TDS Amount ^ Section Code
-        disbursements.forEach((d, index) => {
-            const lineNo = index + 1;
-            const deducteeCode = d.vendor.vendorSubType === 'CORPORATE' ? '01' : '02'; // 01 for Company, 02 for others
-            const pan = d.vendor.panNumber || 'PANREQUIRED';
-            const name = d.vendor.name.toUpperCase();
-            const dateStr = d.createdAt.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
-            const gross = d.grossAmount.toFixed(2);
-            const tds = d.tdsAmount.toFixed(2);
-            const section = d.tdsSection || '194J';
+        await prisma.$transaction(async (tx) => {
+            const queryText = `
+                DECLARE tds_cursor CURSOR FOR
+                SELECT 
+                    d."grossAmount",
+                    d."tdsAmount",
+                    d."tdsSection",
+                    d."createdAt",
+                    v."vendorSubType",
+                    v."panNumber",
+                    v.name AS "vendorName"
+                FROM "Disbursement" d
+                JOIN "Vendor" v ON d."vendorId" = v.id
+                WHERE d."createdAt" >= '${startDate.toISOString()}'::TIMESTAMP
+                  AND d."createdAt" <= '${endDate.toISOString()}'::TIMESTAMP
+                  AND d."tdsApplicable" = true
+            `;
+            await tx.$executeRawUnsafe(queryText);
 
-            lines.push(`CD^${lineNo}^${deducteeCode}^${pan}^${name}^${dateStr}^${gross}^${tds}^${section}`);
+            let hasMore = true;
+            let lineNo = 1;
+            const batchSize = 1000;
+
+            while (hasMore) {
+                const chunk: any[] = await tx.$queryRawUnsafe(`FETCH ${batchSize} FROM tds_cursor`);
+                if (chunk.length === 0) {
+                    hasMore = false;
+                    break;
+                }
+
+                for (const row of chunk) {
+                    const deducteeCode = row.vendorSubType === 'CORPORATE' ? '01' : '02'; // 01 for Company, 02 for others
+                    const pan = row.panNumber || 'PANREQUIRED';
+                    const name = row.vendorName.toUpperCase();
+                    const rowDate = new Date(row.createdAt);
+                    const dateStr = rowDate.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
+                    const gross = Number(row.grossAmount).toFixed(2);
+                    const tds = Number(row.tdsAmount).toFixed(2);
+                    const section = row.tdsSection || '194J';
+
+                    lines.push(`CD^${lineNo}^${deducteeCode}^${pan}^${name}^${dateStr}^${gross}^${tds}^${section}`);
+                    lineNo++;
+                }
+
+                if (chunk.length < batchSize) {
+                    hasMore = false;
+                }
+            }
+
+            await tx.$executeRawUnsafe(`CLOSE tds_cursor`);
+        }, {
+            timeout: 60000 // Extended timeout for large exports
         });
 
         // Join lines with strict \r\n carriage-returns as required by the government validation utility (FVU)

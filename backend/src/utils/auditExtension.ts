@@ -27,6 +27,7 @@ export const financialAuditExtension = Prisma.defineExtension((client) => {
                     const context = contextStorage.getStore();
                     const userId = context?.userId || 'SYSTEM_CRON_CONTEXT';
                     const ip = context?.ipAddress || '127.0.0.1';
+                    const tenantId = context?.branchId || null;
 
                     // Capture old snapshot for updates/deletes/upserts
                     let oldSnapshot: any = null;
@@ -87,7 +88,8 @@ export const financialAuditExtension = Prisma.defineExtension((client) => {
                                 oldSnapshot: oldSnapshot ? JSON.parse(JSON.stringify(oldSnapshot)) : undefined,
                                 newSnapshot: newSnapshot ? JSON.parse(JSON.stringify(newSnapshot)) : undefined,
                                 changedByUserId: userId,
-                                ipAddress: ip
+                                ipAddress: ip,
+                                tenantId: tenantId
                             }
                         });
                     } catch (err) {

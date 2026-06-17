@@ -1094,10 +1094,12 @@ model FinancialAuditLog {
   newSnapshot     Json?    // Null on DELETE
   changedByUserId String
   ipAddress       String?
+  tenantId        String?  // Branch/tenant identifier for RLS-compliant audit scoping
   timestamp       DateTime @default(now())
 
   @@index([tableName, recordId])
   @@index([timestamp])
+  @@index([tenantId])
 }
 
 model EInvoiceRegistry {

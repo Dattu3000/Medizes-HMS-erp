@@ -2,6 +2,35 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { contextStorage } from '../security/context';
 import { financialAuditExtension } from './auditExtension';
 
+// ============================================================================
+// RLS Session Injection Extension
+// ============================================================================
+// Injects `SET LOCAL app.current_tenant_id = '<branchId>'` into the PostgreSQL
+// session context at the start of every database operation. This primes the
+// Row-Level Security (RLS) policies defined in rls_policies.sql so that the
+// database itself enforces tenant isolation — a second layer of defense
+// alongside the application-layer Prisma query filter below.
+// ============================================================================
+const rlsSessionExtension = Prisma.defineExtension((client) => {
+    return client.$extends({
+        query: {
+            $allModels: {
+                async $allOperations({ args, query }: any) {
+                    const context = contextStorage.getStore();
+                    if (context?.branchId) {
+                        // SET LOCAL scopes the setting to the current transaction only,
+                        // preventing leakage across pooled connections.
+                        await (client as any).$executeRawUnsafe(
+                            `SET LOCAL app.current_tenant_id = '${context.branchId}'`
+                        );
+                    }
+                    return query(args);
+                },
+            },
+        },
+    });
+});
+
 /**
  * Medisys HMS v6.0 — Isolated Prisma Client with Automatic Branch Scoping
  *
@@ -29,7 +58,7 @@ for (const model of Prisma.dmmf.datamodel.models) {
     }
 }
 
-export const prisma = basePrisma.$extends(financialAuditExtension).$extends({
+export const prisma = basePrisma.$extends(rlsSessionExtension).$extends(financialAuditExtension).$extends({
     query: {
         $allModels: {
             async $allOperations({ model, operation, args, query }: any) {

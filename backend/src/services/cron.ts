@@ -138,4 +138,17 @@ export const initCronJobs = () => {
             console.error('[CRON] Error in Daily Pharmacy Check & GSTR-2B Sync Scheduler:', error);
         }
     });
+
+    // Service 5: Dynamic Partition Pre-Provisional Infrastructure
+    // Schedule: Monthly on the 1st day at 00:00 AM (midnight)
+    cron.schedule('0 0 1 * *', async () => {
+        try {
+            console.log('[CRON] Provisioning future monthly GST partitions...');
+            await prisma.$executeRawUnsafe('SELECT provision_monthly_partitions()');
+            console.log('[CRON] Dynamic partition provisioning complete.');
+        } catch (error) {
+            console.error('[CRON] Error in Dynamic Partition Provisioning Scheduler:', error);
+        }
+    });
 };
+
