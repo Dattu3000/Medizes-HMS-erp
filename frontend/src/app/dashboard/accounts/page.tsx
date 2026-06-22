@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     IndianRupee, FileText, BarChart3, TrendingUp, TrendingDown, Download, Receipt,
     BookOpen, Scale, Wallet, Calendar, Clock, Brain, ChevronRight, Plus,
@@ -113,8 +113,8 @@ export default function AccountsPage() {
         setLoading(false);
     }, [dayBookDate, ledgerList.length]);
 
-    useEffect(() => { fetchData('overview'); }, []);
-    useEffect(() => { fetchData(tab); }, [tab]);
+    // Fetch tab data on tab load/change
+    useEffect(() => { fetchData(tab); }, [tab, fetchData]);
 
     const seedCoA = async () => {
         await fetch(`${API}/accounts/chart-of-accounts/seed`, { method: 'POST', headers: { ...getAuth(), 'Content-Type': 'application/json' } });
@@ -189,23 +189,27 @@ export default function AccountsPage() {
         return 'bg-red-600/30 text-red-400';
     };
 
-    // Aggregate expense by category for visualization
-    const expenseData = Object.entries(
-        (expenses || []).reduce((acc: Record<string, number>, curr: any) => {
-            const cat = curr.category || 'MISC';
-            acc[cat] = (acc[cat] || 0) + (curr.amount || 0);
-            return acc;
-        }, {})
-    ).map(([name, value]) => ({ name: name.replace(/_/g, ' '), value }));
+    // Aggregate expense by category for visualization (Memoized to prevent render loops)
+    const expenseData = useMemo(() => {
+        return Object.entries(
+            (expenses || []).reduce((acc: Record<string, number>, curr: any) => {
+                const cat = curr.category || 'MISC';
+                acc[cat] = (acc[cat] || 0) + (curr.amount || 0);
+                return acc;
+            }, {})
+        ).map(([name, value]) => ({ name: name.replace(/_/g, ' '), value }));
+    }, [expenses]);
 
-    // Prepare AR vs AP aging chart data
-    const agingChartData = arAging && apAging ? [
-        { name: 'Current', AR: arAging.buckets.current || 0, AP: apAging.buckets.current || 0 },
-        { name: '1-30d', AR: arAging.buckets.days30 || 0, AP: apAging.buckets.days30 || 0 },
-        { name: '31-60d', AR: arAging.buckets.days60 || 0, AP: apAging.buckets.days60 || 0 },
-        { name: '61-90d', AR: arAging.buckets.days90 || 0, AP: apAging.buckets.days90 || 0 },
-        { name: '90d+', AR: arAging.buckets.over90 || 0, AP: apAging.buckets.over90 || 0 },
-    ] : [];
+    // Prepare AR vs AP aging chart data (Memoized to prevent render loops)
+    const agingChartData = useMemo(() => {
+        return arAging?.buckets && apAging?.buckets ? [
+            { name: 'Current', AR: arAging.buckets.current || 0, AP: apAging.buckets.current || 0 },
+            { name: '1-30d', AR: arAging.buckets.days30 || 0, AP: apAging.buckets.days30 || 0 },
+            { name: '31-60d', AR: arAging.buckets.days60 || 0, AP: apAging.buckets.days60 || 0 },
+            { name: '61-90d', AR: arAging.buckets.days90 || 0, AP: apAging.buckets.days90 || 0 },
+            { name: '90d+', AR: arAging.buckets.over90 || 0, AP: apAging.buckets.over90 || 0 },
+        ] : [];
+    }, [arAging, apAging]);
 
     // Density padding token
     const rowPadding = density === 'COMPACT' ? 'p-1.5' : 'p-3';
