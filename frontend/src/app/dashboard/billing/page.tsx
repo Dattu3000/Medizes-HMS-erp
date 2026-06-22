@@ -22,6 +22,7 @@ export default function BillingPage() {
     
     // Payment State
     const [discount, setDiscount] = useState<number>(0);
+    const [cashReceived, setCashReceived] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
 
@@ -89,6 +90,7 @@ export default function BillingPage() {
         setBills([]);
         setSelectedBillIds([]);
         setDiscount(0);
+        setCashReceived('');
         setSuccessMsg('');
     };
 
@@ -125,6 +127,7 @@ export default function BillingPage() {
                 fetchPendingBills(selectedPatient.uhid);
                 fetchQueue(); // Refresh queue to remove patient if zero balance
                 setDiscount(0);
+                setCashReceived('');
             } else {
                 alert(data.message || "Failed to process payment");
             }
@@ -156,6 +159,12 @@ export default function BillingPage() {
     const selectedBillsObj = bills.filter(b => selectedBillIds.includes(b.id));
     const rawTotal = selectedBillsObj.reduce((sum, b) => sum + b.subTotal + b.gstAmount, 0);
     const netPayable = Math.max(rawTotal - discount, 0);
+
+    const selectedSubTotal = selectedBillsObj.reduce((sum, b) => sum + b.subTotal, 0);
+    const selectedGstAmount = selectedBillsObj.reduce((sum, b) => sum + b.gstAmount, 0);
+    const discountError = discount < 0 ? 'Discount cannot be negative.' : discount > rawTotal ? 'Discount cannot exceed total bill.' : '';
+    const cashRecNum = Number(cashReceived) || 0;
+    const changeToReturn = cashRecNum > 0 ? Math.max(cashRecNum - netPayable, 0) : 0;
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-6 h-full flex flex-col">
@@ -383,30 +392,78 @@ export default function BillingPage() {
 
                                 {/* Checkout Footer */}
                                 <div className="p-6 bg-slate-900 border-t border-white/10 shrink-0">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                                         
-                                        {/* Discount Control */}
-                                        <div className="bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                Apply Discount (₹)
-                                            </label>
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                    <IndianRupee size={16} className="text-slate-500" />
+                                        {/* Column 1: Controls & Estimator */}
+                                        <div className="space-y-4">
+                                            {/* Discount Control */}
+                                            <div className="bg-black/30 p-4 rounded-xl border border-white/5">
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                    Apply Discount (₹)
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <IndianRupee size={16} className="text-slate-500" />
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        className={`w-full bg-slate-800 border pl-9 pr-4 py-3 rounded-lg text-white font-bold transition-all focus:ring-1 outline-none placeholder-slate-600 disabled:opacity-50 ${discountError ? 'border-rose-500 focus:ring-rose-500 focus:border-rose-500' : 'border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'}`}
+                                                        value={discount || ''}
+                                                        onChange={e => setDiscount(Number(e.target.value))}
+                                                        placeholder="0.00"
+                                                        disabled={bills.length === 0}
+                                                    />
                                                 </div>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    className="w-full bg-slate-800 border border-slate-700 pl-9 pr-4 py-3 rounded-lg text-white font-bold transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none placeholder-slate-600 disabled:opacity-50"
-                                                    value={discount || ''}
-                                                    onChange={e => setDiscount(Number(e.target.value))}
-                                                    placeholder="0.00"
-                                                    disabled={bills.length === 0}
-                                                />
+                                                {discountError && (
+                                                    <span className="text-xs text-rose-400 font-bold mt-2 block animate-pulse">
+                                                        ⚠ {discountError}
+                                                    </span>
+                                                )}
                                             </div>
+
+                                            {/* Settle Calculator & Tax Estimator */}
+                                            {selectedBillIds.length > 0 && (
+                                                <div className="bg-slate-950 p-4 rounded-xl border border-white/5 space-y-3.5">
+                                                    <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Cash Desk & Tax Estimator</div>
+                                                    
+                                                    {/* Tax Breakdown */}
+                                                    <div className="grid grid-cols-2 gap-2 text-xs border-b border-white/5 pb-3">
+                                                        <div className="text-slate-500">CGST (9%): <span className="font-mono text-slate-300">₹{(selectedGstAmount / 2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                                                        <div className="text-slate-500">SGST (9%): <span className="font-mono text-slate-300">₹{(selectedGstAmount / 2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                                                    </div>
+
+                                                    {/* Cash Received Change Calculator */}
+                                                    <div className="space-y-2">
+                                                        <label className="block text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                                                            Cash Tendered (₹)
+                                                        </label>
+                                                        <div className="flex gap-2">
+                                                            <div className="relative flex-1">
+                                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                                    <IndianRupee size={14} className="text-slate-600" />
+                                                                </div>
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="0.00"
+                                                                    className="w-full bg-slate-900 border border-slate-800 pl-8 pr-3 py-2 rounded-lg text-sm text-white font-bold transition-all focus:border-indigo-500 outline-none"
+                                                                    value={cashReceived}
+                                                                    onChange={e => setCashReceived(e.target.value)}
+                                                                />
+                                                            </div>
+                                                            {cashRecNum > 0 && (
+                                                                <div className="bg-slate-900 border border-slate-800 px-3 py-2 rounded-lg flex flex-col justify-center min-w-[120px]">
+                                                                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Change Due</span>
+                                                                    <span className="text-sm font-black font-mono text-emerald-400">₹{changeToReturn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {/* Ledger Totals */}
+                                        {/* Column 2: Ledger Totals */}
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center text-slate-400 text-sm px-2">
                                                 <span>Subtotal Selected</span>
@@ -425,7 +482,7 @@ export default function BillingPage() {
 
                                     <button
                                         onClick={handlePayment}
-                                        disabled={loading || selectedBillIds.length === 0 || netPayable < 0}
+                                        disabled={loading || selectedBillIds.length === 0 || netPayable < 0 || !!discountError}
                                         className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 text-white text-lg font-black py-4 rounded-xl shadow-[0_10px_30px_rgba(79,70,229,0.3)] transition-all flex items-center justify-center gap-3 relative overflow-hidden group"
                                     >
                                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out" />

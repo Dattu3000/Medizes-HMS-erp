@@ -5,8 +5,12 @@ import {
     IndianRupee, FileText, BarChart3, TrendingUp, TrendingDown, Download, Receipt,
     BookOpen, Scale, Wallet, Calendar, Clock, Brain, ChevronRight, Plus,
     AlertTriangle, CheckCircle2, Info, Zap, ArrowUpRight, ArrowDownRight,
-    ShieldAlert, ShieldCheck, Activity
+    ShieldAlert, ShieldCheck, Activity, User, Shield
 } from 'lucide-react';
+import {
+    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell
+} from 'recharts';
+import { SlideDrawer } from '../../../components/ui/SlideDrawer';
 import { Rule42Dashboard } from '../../../components/finance/Rule42Dashboard';
 import { TdsTrackBoard } from '../../../components/finance/TdsTrackBoard';
 import { AnomalyAuditPanel } from '../../../components/finance/AnomalyAuditPanel';
@@ -15,6 +19,8 @@ import { ledgerEntrySchema } from '../../../utils/financeValidations';
 const API = 'http://localhost:5000/api';
 const getAuth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 const fmt = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ec4899', '#14b8a6', '#f43f5e'];
 
 type Tab = 'overview' | 'tax' | 'tds' | 'audit' | 'coa' | 'journal' | 'trial' | 'cashflow' | 'aging' | 'daybook' | 'ai';
 
@@ -31,6 +37,11 @@ export default function AccountsPage() {
     const [aiInsights, setAiInsights] = useState<any>(null);
     const [expenses, setExpenses] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+
+    // Visual controls
+    const [density, setDensity] = useState<'COMPACT' | 'SPACIOUS'>('SPACIOUS');
+    const [selectedExpense, setSelectedExpense] = useState<any>(null);
+    const [isExpenseDrawerOpen, setIsExpenseDrawerOpen] = useState(false);
 
     // Expense form
     const [category, setCategory] = useState('RENT');
@@ -178,6 +189,32 @@ export default function AccountsPage() {
         return 'bg-red-600/30 text-red-400';
     };
 
+    // Aggregate expense by category for visualization
+    const expenseData = Object.entries(
+        (expenses || []).reduce((acc: Record<string, number>, curr: any) => {
+            const cat = curr.category || 'MISC';
+            acc[cat] = (acc[cat] || 0) + (curr.amount || 0);
+            return acc;
+        }, {})
+    ).map(([name, value]) => ({ name: name.replace(/_/g, ' '), value }));
+
+    // Prepare AR vs AP aging chart data
+    const agingChartData = arAging && apAging ? [
+        { name: 'Current', AR: arAging.buckets.current || 0, AP: apAging.buckets.current || 0 },
+        { name: '1-30d', AR: arAging.buckets.days30 || 0, AP: apAging.buckets.days30 || 0 },
+        { name: '31-60d', AR: arAging.buckets.days60 || 0, AP: apAging.buckets.days60 || 0 },
+        { name: '61-90d', AR: arAging.buckets.days90 || 0, AP: apAging.buckets.days90 || 0 },
+        { name: '90d+', AR: arAging.buckets.over90 || 0, AP: apAging.buckets.over90 || 0 },
+    ] : [];
+
+    // Density padding token
+    const rowPadding = density === 'COMPACT' ? 'p-1.5' : 'p-3';
+
+    const handleExpenseRowClick = (e: any) => {
+        setSelectedExpense(e);
+        setIsExpenseDrawerOpen(true);
+    };
+
     return (
         <>
             <div className="flex justify-between items-center mb-6">
@@ -243,24 +280,85 @@ export default function AccountsPage() {
                                     </div>
                                 </div>
                             </div>
-                            {/* Expense table */}
-                            <div className="overflow-x-auto rounded-xl border border-white/10">
-                                <table className="w-full text-xs">
-                                    <thead className="bg-black/30 text-glass-muted"><tr><th className="p-3 text-left">Voucher</th><th className="p-3">Category</th><th className="p-3">Description</th><th className="p-3 text-right">Amount</th><th className="p-3 text-right">GST</th><th className="p-3">Status</th><th className="p-3">Action</th></tr></thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {expenses.slice(0, 15).map((e: any) => (
-                                            <tr key={e.id} className="hover:bg-white/5">
-                                                <td className="p-3 font-mono text-white">{e.voucherNo}</td>
-                                                <td className="p-3"><span className="bg-slate-700 px-2 py-0.5 rounded text-white">{e.category}</span></td>
-                                                <td className="p-3 text-white/70">{e.description}</td>
-                                                <td className="p-3 text-right font-bold text-white">{fmt(e.amount)}</td>
-                                                <td className="p-3 text-right text-amber-400">{fmt(e.gstAmount)}</td>
-                                                <td className="p-3"><span className={`px-2 py-0.5 rounded text-xs font-bold ${e.status === 'PAID' ? 'bg-emerald-600/20 text-emerald-400' : 'bg-yellow-600/20 text-yellow-400'}`}>{e.status}</span></td>
-                                                <td className="p-3">{e.status === 'PENDING' && <button onClick={() => payExp(e.id)} className="bg-emerald-600 text-white px-2 py-1 rounded text-xs font-bold">Pay</button>}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+
+                            {/* Section header with density toggles */}
+                            <div className="flex justify-between items-center bg-black/10 px-4 py-2 rounded-lg border border-white/5">
+                                <span className="text-xs text-glass-muted font-bold uppercase tracking-wider flex items-center gap-1.5"><Receipt size={14} /> Voucher Journals Register</span>
+                                
+                                <div className="bg-slate-950 border border-slate-800 rounded-lg p-1 flex">
+                                    <button 
+                                        onClick={() => setDensity('COMPACT')}
+                                        className={`px-3 py-0.5 rounded text-[10px] font-black tracking-wide uppercase transition ${density === 'COMPACT' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        Compact
+                                    </button>
+                                    <button 
+                                        onClick={() => setDensity('SPACIOUS')}
+                                        className={`px-3 py-0.5 rounded text-[10px] font-black tracking-wide uppercase transition ${density === 'SPACIOUS' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        Spacious
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Grid container for Expense Table and Category Chart */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                {/* Expense table */}
+                                <div className="lg:col-span-7 overflow-x-auto rounded-xl border border-white/10 h-fit">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-black/30 text-glass-muted border-b border-white/10"><tr><th className="p-3 text-left">Voucher</th><th className="p-3">Category</th><th className="p-3">Description</th><th className="p-3 text-right">Amount</th><th className="p-3 text-right">GST</th><th className="p-3">Status</th><th className="p-3">Action</th></tr></thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {expenses.slice(0, 15).map((e: any) => (
+                                                <tr 
+                                                    key={e.id} 
+                                                    onClick={() => handleExpenseRowClick(e)}
+                                                    className="hover:bg-white/5 cursor-pointer select-none transition"
+                                                >
+                                                    <td className={`${rowPadding} font-mono text-white`}>{e.voucherNo}</td>
+                                                    <td className={rowPadding}><span className="bg-slate-700 px-2 py-0.5 rounded text-white">{e.category}</span></td>
+                                                    <td className={`${rowPadding} text-white/70`}>{e.description}</td>
+                                                    <td className={`${rowPadding} text-right font-bold text-white`}>{fmt(e.amount)}</td>
+                                                    <td className={`${rowPadding} text-right text-amber-400`}>{fmt(e.gstAmount)}</td>
+                                                    <td className={rowPadding}><span className={`px-2 py-0.5 rounded text-xs font-bold ${e.status === 'PAID' ? 'bg-emerald-600/20 text-emerald-400' : 'bg-yellow-600/20 text-yellow-400'}`}>{e.status}</span></td>
+                                                    <td className={rowPadding} onClick={(event) => event.stopPropagation()}>
+                                                        {e.status === 'PENDING' && <button onClick={() => payExp(e.id)} className="bg-emerald-600 text-white px-2 py-1 rounded text-xs font-bold cursor-pointer hover:bg-emerald-500">Pay</button>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Category breakdown chart */}
+                                <div className="lg:col-span-5 bg-black/20 border border-white/10 rounded-xl p-5 flex flex-col justify-between min-h-[300px]">
+                                    <div>
+                                        <h3 className="font-bold text-glass-title text-sm mb-4 flex items-center gap-2">
+                                            <BarChart3 size={15} className="text-rose-400" /> Expenses by Category
+                                        </h3>
+                                        {expenseData.length === 0 ? (
+                                            <div className="text-xs text-glass-muted text-center py-10">No recorded expenses to visualize.</div>
+                                        ) : (
+                                            <div className="h-[250px] w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <BarChart data={expenseData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                                        <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" fontSize={10} tickLine={false} />
+                                                        <YAxis stroke="rgba(255,255,255,0.4)" fontSize={10} tickLine={false} />
+                                                        <Tooltip
+                                                            formatter={(value: any) => [fmt(Number(value)), 'Expense']}
+                                                            contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
+                                                        />
+                                                        <Bar dataKey="value" fill="#f43f5e" radius={[4, 4, 0, 0]}>
+                                                            {expenseData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                            ))}
+                                                        </Bar>
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -351,7 +449,7 @@ export default function AccountsPage() {
                             {/* Journal register */}
                             <div className="overflow-x-auto rounded-xl border border-white/10">
                                 <table className="w-full text-xs">
-                                    <thead className="bg-black/30 text-glass-muted"><tr><th className="p-3 text-left">Entry #</th><th className="p-3">Date</th><th className="p-3">Narration</th><th className="p-3">Lines</th><th className="p-3">Status</th></tr></thead>
+                                    <thead className="bg-black/30 text-glass-muted border-b border-white/10"><tr><th className="p-3 text-left">Entry #</th><th className="p-3">Date</th><th className="p-3">Narration</th><th className="p-3">Lines</th><th className="p-3">Status</th></tr></thead>
                                     <tbody className="divide-y divide-white/5">
                                         {journals.map((je: any) => (
                                             <tr key={je.id} className="hover:bg-white/5">
@@ -384,7 +482,7 @@ export default function AccountsPage() {
                             </div>
                             <div className="overflow-x-auto rounded-xl border border-white/10">
                                 <table className="w-full text-xs">
-                                    <thead className="bg-black/30 text-glass-muted"><tr><th className="p-3 text-left">Code</th><th className="p-3 text-left">Account</th><th className="p-3">Group</th><th className="p-3 text-right">Total Debit</th><th className="p-3 text-right">Total Credit</th><th className="p-3 text-right">Balance</th></tr></thead>
+                                    <thead className="bg-black/30 text-glass-muted border-b border-white/10"><tr><th className="p-3 text-left">Code</th><th className="p-3 text-left">Account</th><th className="p-3">Group</th><th className="p-3 text-right">Total Debit</th><th className="p-3 text-right">Total Credit</th><th className="p-3 text-right">Balance</th></tr></thead>
                                     <tbody className="divide-y divide-white/5">
                                         {trialBalance.trialBalance.map((tb: any) => (
                                             <tr key={tb.code || tb.name} className="hover:bg-white/5">
@@ -453,52 +551,79 @@ export default function AccountsPage() {
 
                     {/* ═══ AR / AP AGING ═══ */}
                     {tab === 'aging' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* AR */}
-                            <div className="space-y-3">
-                                <h3 className="font-bold text-glass-title flex items-center gap-2"><ArrowDownRight size={15} className="text-blue-400" /> Accounts Receivable (Patients Owe Us)</h3>
-                                {arAging && (
-                                    <>
-                                        <div className="grid grid-cols-5 gap-2 text-center">
-                                            {[
-                                                { label: 'Current', value: arAging.buckets.current, key: 'current' },
-                                                { label: '1-30d', value: arAging.buckets.days30, key: 'days30' },
-                                                { label: '31-60d', value: arAging.buckets.days60, key: 'days60' },
-                                                { label: '61-90d', value: arAging.buckets.days90, key: 'days90' },
-                                                { label: '90d+', value: arAging.buckets.over90, key: 'over90' },
-                                            ].map(b => (
-                                                <div key={b.key} className={`rounded-lg p-3 ${agingColor(b.key)}`}>
-                                                    <div className="text-[10px] font-bold uppercase">{b.label}</div>
-                                                    <div className="text-sm font-black">{fmt(b.value)}</div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="text-sm text-center text-glass-muted">Total Outstanding: <b className="text-white">{fmt(arAging.totalOutstanding)}</b> ({arAging.count} bills)</div>
-                                    </>
-                                )}
-                            </div>
-                            {/* AP */}
-                            <div className="space-y-3">
-                                <h3 className="font-bold text-glass-title flex items-center gap-2"><ArrowUpRight size={15} className="text-rose-400" /> Accounts Payable (We Owe Vendors)</h3>
-                                {apAging && (
-                                    <>
-                                        <div className="grid grid-cols-5 gap-2 text-center">
-                                            {[
-                                                { label: 'Current', value: apAging.buckets.current, key: 'current' },
-                                                { label: '1-30d', value: apAging.buckets.days30, key: 'days30' },
-                                                { label: '31-60d', value: apAging.buckets.days60, key: 'days60' },
-                                                { label: '61-90d', value: apAging.buckets.days90, key: 'days90' },
-                                                { label: '90d+', value: apAging.buckets.over90, key: 'over90' },
-                                            ].map(b => (
-                                                <div key={b.key} className={`rounded-lg p-3 ${agingColor(b.key)}`}>
-                                                    <div className="text-[10px] font-bold uppercase">{b.label}</div>
-                                                    <div className="text-sm font-black">{fmt(b.value)}</div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="text-sm text-center text-glass-muted">Total Outstanding: <b className="text-white">{fmt(apAging.totalOutstanding)}</b> ({apAging.count} expenses)</div>
-                                    </>
-                                )}
+                        <div className="space-y-6">
+                            {/* AR vs AP Aging Comparison Chart */}
+                            {arAging && apAging && (
+                                <div className="bg-black/20 border border-white/10 rounded-xl p-5">
+                                    <h3 className="font-bold text-glass-title text-sm mb-4 flex items-center gap-2">
+                                        <Scale size={15} className="text-violet-400" /> Accounts Receivable vs Accounts Payable Comparison
+                                    </h3>
+                                    <div className="h-[250px] w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={agingChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                                <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" fontSize={11} tickLine={false} />
+                                                <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} tickLine={false} />
+                                                <Tooltip
+                                                    formatter={(value: any) => [fmt(Number(value)), '']}
+                                                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
+                                                />
+                                                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+                                                <Bar dataKey="AR" fill="#3b82f6" name="Receivable (AR)" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="AP" fill="#f43f5e" name="Payable (AP)" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* AR */}
+                                <div className="space-y-3">
+                                    <h3 className="font-bold text-glass-title flex items-center gap-2"><ArrowDownRight size={15} className="text-blue-400" /> Accounts Receivable (Patients Owe Us)</h3>
+                                    {arAging && (
+                                        <>
+                                            <div className="grid grid-cols-5 gap-2 text-center">
+                                                {[
+                                                    { label: 'Current', value: arAging.buckets.current, key: 'current' },
+                                                    { label: '1-30d', value: arAging.buckets.days30, key: 'days30' },
+                                                    { label: '31-60d', value: arAging.buckets.days60, key: 'days60' },
+                                                    { label: '61-90d', value: arAging.buckets.days90, key: 'days90' },
+                                                    { label: '90d+', value: arAging.buckets.over90, key: 'over90' },
+                                                ].map(b => (
+                                                    <div key={b.key} className={`rounded-lg p-3 ${agingColor(b.key)}`}>
+                                                        <div className="text-[10px] font-bold uppercase">{b.label}</div>
+                                                        <div className="text-sm font-black">{fmt(b.value)}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="text-sm text-center text-glass-muted">Total Outstanding: <b className="text-white">{fmt(arAging.totalOutstanding)}</b> ({arAging.count} bills)</div>
+                                        </>
+                                    )}
+                                </div>
+                                {/* AP */}
+                                <div className="space-y-3">
+                                    <h3 className="font-bold text-glass-title flex items-center gap-2"><ArrowUpRight size={15} className="text-rose-400" /> Accounts Payable (We Owe Vendors)</h3>
+                                    {apAging && (
+                                        <>
+                                            <div className="grid grid-cols-5 gap-2 text-center">
+                                                {[
+                                                    { label: 'Current', value: apAging.buckets.current, key: 'current' },
+                                                    { label: '1-30d', value: apAging.buckets.days30, key: 'days30' },
+                                                    { label: '31-60d', value: apAging.buckets.days60, key: 'days60' },
+                                                    { label: '61-90d', value: apAging.buckets.days90, key: 'days90' },
+                                                    { label: '90d+', value: apAging.buckets.over90, key: 'over90' },
+                                                ].map(b => (
+                                                    <div key={b.key} className={`rounded-lg p-3 ${agingColor(b.key)}`}>
+                                                        <div className="text-[10px] font-bold uppercase">{b.label}</div>
+                                                        <div className="text-sm font-black">{fmt(b.value)}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="text-sm text-center text-glass-muted">Total Outstanding: <b className="text-white">{fmt(apAging.totalOutstanding)}</b> ({apAging.count} expenses)</div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -539,40 +664,127 @@ export default function AccountsPage() {
 
                     {/* ═══ AI FINANCIAL ADVISOR ═══ */}
                     {tab === 'ai' && (
-                        <div className="space-y-4 max-w-4xl mx-auto">
+                        <div className="space-y-6 max-w-4xl mx-auto">
                             {!aiInsights && <button onClick={() => fetchData('ai')} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 hover:opacity-90 transition"><Brain size={18} /> Run AI Financial Analysis</button>}
                             {aiInsights && (
                                 <>
-                                    <div className="grid grid-cols-3 gap-3">
+                                    {/* Three Speedometer-Style Radial Gauges */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {[
-                                            { label: 'Profit Margin', value: `${aiInsights.summary.profitMargin}%`, color: Number(aiInsights.summary.profitMargin) > 15 ? 'text-emerald-400' : 'text-rose-400' },
-                                            { label: 'Collection Rate', value: `${aiInsights.summary.collectionRate}%`, color: Number(aiInsights.summary.collectionRate) > 85 ? 'text-emerald-400' : 'text-yellow-400' },
-                                            { label: 'Payroll Ratio', value: `${aiInsights.summary.payrollRatio}%`, color: Number(aiInsights.summary.payrollRatio) < 55 ? 'text-emerald-400' : 'text-rose-400' },
+                                            {
+                                                label: 'Profit Margin',
+                                                value: parseFloat(aiInsights.summary.profitMargin || 0),
+                                                displayValue: `${aiInsights.summary.profitMargin}%`,
+                                                targetText: 'Target: >15%',
+                                                color: parseFloat(aiInsights.summary.profitMargin || 0) >= 15 ? '#10b981' : parseFloat(aiInsights.summary.profitMargin || 0) >= 0 ? '#f59e0b' : '#f43f5e'
+                                            },
+                                            {
+                                                label: 'Collection Rate',
+                                                value: parseFloat(aiInsights.summary.collectionRate || 0),
+                                                displayValue: `${aiInsights.summary.collectionRate}%`,
+                                                targetText: 'Target: >85%',
+                                                color: parseFloat(aiInsights.summary.collectionRate || 0) >= 85 ? '#10b981' : parseFloat(aiInsights.summary.collectionRate || 0) >= 70 ? '#f59e0b' : '#f43f5e'
+                                            },
+                                            {
+                                                label: 'Payroll Ratio',
+                                                value: parseFloat(aiInsights.summary.payrollRatio || 0),
+                                                displayValue: `${aiInsights.summary.payrollRatio}%`,
+                                                targetText: 'Target: <55%',
+                                                color: parseFloat(aiInsights.summary.payrollRatio || 0) <= 55 ? '#10b981' : parseFloat(aiInsights.summary.payrollRatio || 0) <= 70 ? '#f59e0b' : '#f43f5e'
+                                            },
                                         ].map(k => (
-                                            <div key={k.label} className="bg-black/30 border border-white/10 rounded-xl p-4 text-center">
-                                                <div className="text-xs text-glass-muted mb-1 uppercase font-bold">{k.label}</div>
-                                                <div className={`text-2xl font-black ${k.color}`}>{k.value}</div>
+                                            <div key={k.label} className="bg-black/30 border border-white/10 rounded-xl p-5 flex flex-col items-center justify-center relative overflow-hidden">
+                                                <div className="text-xs text-glass-muted mb-2 uppercase font-bold tracking-wider">{k.label}</div>
+                                                <div className="w-[160px] h-[110px] relative flex items-center justify-center">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <PieChart>
+                                                            <Pie
+                                                                data={[
+                                                                    { name: 'Value', value: Math.min(100, Math.max(0, k.value)) },
+                                                                    { name: 'Remaining', value: 100 - Math.min(100, Math.max(0, k.value)) }
+                                                                ]}
+                                                                cx="50%"
+                                                                cy="90%"
+                                                                startAngle={180}
+                                                                endAngle={0}
+                                                                innerRadius={50}
+                                                                outerRadius={65}
+                                                                dataKey="value"
+                                                                stroke="none"
+                                                            >
+                                                                <Cell fill={k.color} />
+                                                                <Cell fill="rgba(255,255,255,0.06)" />
+                                                            </Pie>
+                                                        </PieChart>
+                                                    </ResponsiveContainer>
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center pt-8">
+                                                        <span className="text-2xl font-black text-white">{k.displayValue}</span>
+                                                        <span className="text-[10px] text-glass-muted font-semibold mt-0.5">{k.targetText}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
-                                    {(aiInsights.insights || []).map((i: any, idx: number) => (
-                                        <div key={idx} className={`p-4 rounded-xl border flex gap-3 items-start ${i.type === 'WARNING' ? 'border-yellow-500/30 bg-yellow-600/10' : i.type === 'SUCCESS' ? 'border-emerald-500/30 bg-emerald-600/10' : 'border-blue-500/30 bg-blue-600/10'}`}>
-                                            {i.type === 'WARNING' ? <AlertTriangle size={18} className="text-yellow-400 mt-0.5" /> : i.type === 'SUCCESS' ? <CheckCircle2 size={18} className="text-emerald-400 mt-0.5" /> : <Info size={18} className="text-blue-400 mt-0.5" />}
-                                            <div><div className="font-bold text-white text-sm">{i.title}</div><div className="text-xs text-glass-muted mt-1">{i.detail}</div></div>
-                                        </div>
-                                    ))}
-                                    {(aiInsights.anomalies || []).map((a: any, idx: number) => (
-                                        <div key={idx} className="p-4 rounded-xl border border-rose-500/30 bg-rose-600/10 flex gap-3 items-start">
-                                            <Zap size={18} className="text-rose-400 mt-0.5" />
-                                            <div><div className="font-bold text-rose-400 text-sm">{a.title}</div><div className="text-xs text-glass-muted mt-1">{a.detail}</div></div>
-                                        </div>
-                                    ))}
-                                    {(aiInsights.recommendations || []).map((r: any, idx: number) => (
-                                        <div key={idx} className="p-4 rounded-xl border border-violet-500/30 bg-violet-600/10 flex gap-3 items-start">
-                                            <Brain size={18} className="text-violet-400 mt-0.5" />
-                                            <div><div className="font-bold text-violet-400 text-sm">{r.title}</div><div className="text-xs text-glass-muted mt-1">{r.detail}</div></div>
-                                        </div>
-                                    ))}
+
+                                    {/* Advisory Lists with glassmorphism & neon left-borders */}
+                                    <div className="space-y-4">
+                                        {aiInsights.insights && aiInsights.insights.length > 0 && (
+                                            <div className="space-y-3">
+                                                <h4 className="text-xs font-bold uppercase tracking-wider text-glass-muted flex items-center gap-1.5"><Info size={13} /> Performance Insights</h4>
+                                                <div className="space-y-2">
+                                                    {aiInsights.insights.map((i: any, idx: number) => {
+                                                        const isWarning = i.type === 'WARNING';
+                                                        const isSuccess = i.type === 'SUCCESS';
+                                                        return (
+                                                            <div key={idx} className={`p-4 rounded-xl border border-white/10 backdrop-blur-md bg-white/[0.02] border-l-4 ${
+                                                                isWarning ? 'border-l-yellow-500' : isSuccess ? 'border-l-emerald-500' : 'border-l-blue-500'
+                                                            } flex gap-3 items-start hover:bg-white/[0.04] transition duration-200 shadow-md`}>
+                                                                {isWarning ? <AlertTriangle size={18} className="text-yellow-400 shrink-0 mt-0.5" /> : isSuccess ? <CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" /> : <Info size={18} className="text-blue-400 shrink-0 mt-0.5" />}
+                                                                <div>
+                                                                    <div className="font-bold text-white text-sm">{i.title}</div>
+                                                                    <div className="text-xs text-glass-muted mt-1">{i.detail}</div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {aiInsights.anomalies && aiInsights.anomalies.length > 0 && (
+                                            <div className="space-y-3 pt-2">
+                                                <h4 className="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5"><Zap size={13} /> Critical Anomalies</h4>
+                                                <div className="space-y-2">
+                                                    {aiInsights.anomalies.map((a: any, idx: number) => (
+                                                        <div key={idx} className="p-4 rounded-xl border border-white/10 backdrop-blur-md bg-white/[0.02] border-l-4 border-l-rose-500 flex gap-3 items-start hover:bg-white/[0.04] transition duration-200 shadow-md">
+                                                            <Zap size={18} className="text-rose-400 shrink-0 mt-0.5 animate-pulse" />
+                                                            <div>
+                                                                <div className="font-bold text-white text-sm flex items-center gap-1.5">{a.title} <span className="bg-rose-500/20 text-rose-400 text-[9px] px-1.5 py-0.5 rounded font-black tracking-wider uppercase">Risk Alert</span></div>
+                                                                <div className="text-xs text-glass-muted mt-1">{a.detail}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {aiInsights.recommendations && aiInsights.recommendations.length > 0 && (
+                                            <div className="space-y-3 pt-2">
+                                                <h4 className="text-xs font-bold uppercase tracking-wider text-violet-400 flex items-center gap-1.5"><Brain size={13} /> Advisory Recommendations</h4>
+                                                <div className="space-y-2">
+                                                    {aiInsights.recommendations.map((r: any, idx: number) => (
+                                                        <div key={idx} className="p-4 rounded-xl border border-white/10 backdrop-blur-md bg-white/[0.02] border-l-4 border-l-violet-500 flex gap-3 items-start hover:bg-white/[0.04] transition duration-200 shadow-md">
+                                                            <Brain size={18} className="text-violet-400 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <div className="font-bold text-white text-sm">{r.title}</div>
+                                                                <div className="text-xs text-glass-muted mt-1">{r.detail}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </>
                             )}
                         </div>
@@ -580,6 +792,94 @@ export default function AccountsPage() {
 
                 </div>
             </div>
+
+            {/* Slide Drawer for Expense Voucher Details & Sign-Off Audit */}
+            {selectedExpense && (
+                <SlideDrawer
+                    isOpen={isExpenseDrawerOpen}
+                    onClose={() => setIsExpenseDrawerOpen(false)}
+                    title={`Voucher Review: ${selectedExpense.voucherNo}`}
+                >
+                    <div className="space-y-6">
+                        {/* Transaction Card */}
+                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="text-[10px] uppercase font-bold text-slate-500">Expense Category</div>
+                                    <div className="text-sm font-bold text-white mt-0.5">{selectedExpense.category.replace(/_/g, ' ')}</div>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    selectedExpense.status === 'PAID' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                }`}>
+                                    {selectedExpense.status}
+                                </span>
+                            </div>
+
+                            <div className="text-xs text-slate-300 bg-slate-900 p-3 rounded-lg border border-white/5">
+                                <span className="font-semibold text-slate-400 block mb-1">Voucher Description</span>
+                                {selectedExpense.description}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 border-t border-slate-900 pt-4">
+                                <div>
+                                    <span className="text-[10px] uppercase font-bold text-slate-500">Cost Center Allocation</span>
+                                    <div className="text-xs font-semibold text-white mt-0.5">{selectedExpense.costCenterType || 'ADMIN'}</div>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] uppercase font-bold text-slate-500">Payment Mode</span>
+                                    <div className="text-xs font-semibold text-white mt-0.5">{selectedExpense.paymentMode || 'BANK'}</div>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] uppercase font-bold text-slate-500">GST Input Credit</span>
+                                    <div className="text-xs font-semibold text-amber-400 mt-0.5">{fmt(selectedExpense.gstAmount || 0)}</div>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] uppercase font-bold text-slate-500">TDS Withheld</span>
+                                    <div className="text-xs font-semibold text-rose-400 mt-0.5">{fmt(selectedExpense.tdsAmount || 0)}</div>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-slate-900 pt-4 flex justify-between items-center">
+                                <span className="text-xs text-slate-400 font-bold">Voucher Net Amount</span>
+                                <span className="text-lg font-black text-white font-mono">{fmt(selectedExpense.amount)}</span>
+                            </div>
+                        </div>
+
+                        {/* Sign-off audit trail */}
+                        <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-5 space-y-4">
+                            <h4 className="text-xs uppercase font-bold tracking-wider text-slate-400 flex items-center gap-2"><ShieldCheck size={13} className="text-emerald-400" /> Digital Audit Sign-off</h4>
+                            
+                            <div className="relative pl-6 border-l-2 border-slate-800 space-y-4 text-xs">
+                                {/* Creator */}
+                                <div className="relative">
+                                    <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center"><Check size={8} className="text-white" /></div>
+                                    <div className="font-bold text-slate-200">Voucher Recorded</div>
+                                    <div className="text-[10px] text-slate-500 mt-0.5">By system finance controller</div>
+                                </div>
+                                {/* Auditor */}
+                                <div className="relative">
+                                    <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center"><Check size={8} className="text-white" /></div>
+                                    <div className="font-bold text-slate-200">Rule 42 Tax Eligibility Check</div>
+                                    <div className="text-[10px] text-slate-500 mt-0.5">Eligibility: <span className="text-emerald-400 font-bold">{selectedExpense.taxEligibilityStatus || 'TAXABLE'}</span></div>
+                                </div>
+                                {/* Approver */}
+                                <div className="relative">
+                                    <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 border-slate-950 flex items-center justify-center ${selectedExpense.status === 'PAID' ? 'bg-emerald-500' : 'bg-slate-800'}`}>{selectedExpense.status === 'PAID' && <Check size={8} className="text-white" />}</div>
+                                    <div className="font-bold text-slate-200">Manager Payment Approval</div>
+                                    <div className="text-[10px] text-slate-500 mt-0.5">{selectedExpense.status === 'PAID' ? 'Approved & Disbursed' : 'Awaiting manual payout trigger'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Simulated Invoice receipt scan visual */}
+                        <div className="bg-slate-950/20 border-2 border-dashed border-slate-800 rounded-xl p-5 text-center">
+                            <FileText size={24} className="mx-auto text-slate-600 mb-2" />
+                            <div className="text-xs font-bold text-slate-400">Simulated Receipt attachment.pdf</div>
+                            <div className="text-[10px] text-slate-600 mt-0.5">HSN/SAC Code: {selectedExpense.hsnSacCode || 'N/A'}</div>
+                        </div>
+                    </div>
+                </SlideDrawer>
+            )}
         </>
     );
 }

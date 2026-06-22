@@ -100,6 +100,8 @@ export default function DoctorEHRPage() {
     const [rxSearch, setRxSearch] = useState('');
     const [rxItems, setRxItems] = useState<{ drugName: string; dosage: string; frequency: string; days: string }[]>([]);
     const [submittingRx, setSubmittingRx] = useState(false);
+    const [rxErrors, setRxErrors] = useState<string | null>(null);
+    const [invalidRxIndices, setInvalidRxIndices] = useState<Set<number>>(new Set());
 
     // Notifications
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -290,7 +292,7 @@ export default function DoctorEHRPage() {
         setScribeStatus('INACTIVE');
     };
 
-    // â”€â”€â”€ Lab Ordering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Lab Ordering ────────────────────────────────────────────────
         const handleUndoLab = async (id: string) => {
         if (!confirm('Are you sure you want to undo this lab order?')) return;
         try {
@@ -313,11 +315,12 @@ export default function DoctorEHRPage() {
         finally { setOrderingLab(false); }
     };
 
-    // â”€â”€â”€ Prescription â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Prescription ──────────────────────────────────
     const addRxItem = (drugName: string) => {
         if (rxItems.find(r => r.drugName === drugName)) return;
         setRxItems([...rxItems, { drugName, dosage: '', frequency: '', days: '' }]);
         setRxSearch('');
+        setRxErrors(null);
     };
 
     const updateRxItem = (i: number, field: string, value: string) => {
@@ -326,9 +329,33 @@ export default function DoctorEHRPage() {
         setRxItems(updated);
     };
 
-    const removeRxItem = (i: number) => setRxItems(rxItems.filter((_, idx) => idx !== i));
+    const clearRxError = (index: number) => {
+        if (invalidRxIndices.has(index)) {
+            const nextIndices = new Set(invalidRxIndices);
+            nextIndices.delete(index);
+            setInvalidRxIndices(nextIndices);
+            if (nextIndices.size === 0) {
+                setRxErrors(null);
+            }
+        }
+    };
 
-        const handleUndoRx = async (id: string) => {
+    const removeRxItem = (i: number) => {
+        setRxItems(rxItems.filter((_, idx) => idx !== i));
+        if (invalidRxIndices.has(i)) {
+            const nextIndices = new Set<number>();
+            invalidRxIndices.forEach(val => {
+                if (val > i) nextIndices.add(val - 1);
+                else if (val < i) nextIndices.add(val);
+            });
+            setInvalidRxIndices(nextIndices);
+            if (nextIndices.size === 0) {
+                setRxErrors(null);
+            }
+        }
+    };
+
+    const handleUndoRx = async (id: string) => {
         if (!confirm('Are you sure you want to undo this prescription?')) return;
         try {
             const res = await apiFetch(`/patient/ehr/prescription/${id}`, { method: 'DELETE' });
@@ -339,6 +366,25 @@ export default function DoctorEHRPage() {
 
     const handleSubmitRx = async () => {
         if (!selectedVisit || rxItems.length === 0) return;
+
+        // Client-side validation checks
+        const invalidSet = new Set<number>();
+        for (let i = 0; i < rxItems.length; i++) {
+            const item = rxItems[i];
+            const daysNum = Number(item.days);
+            if (!item.dosage.trim() || !item.frequency.trim() || isNaN(daysNum) || daysNum <= 0) {
+                invalidSet.add(i);
+            }
+        }
+
+        if (invalidSet.size > 0) {
+            setInvalidRxIndices(invalidSet);
+            setRxErrors('Please fill in all prescription fields with valid values. Highlighted fields in red are missing or incorrect.');
+            return;
+        }
+
+        setRxErrors(null);
+        setInvalidRxIndices(new Set());
         setSubmittingRx(true);
         try {
             // 1. AI Interaction Check
@@ -693,24 +739,35 @@ export default function DoctorEHRPage() {
 
                                         {/* Selected Rx Items */}
                                         {rxItems.length > 0 && (
-                                            <div className="space-y-2">
+                                            <div className="space-y-3">
                                                 <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Prescription Items</h4>
-                                                {rxItems.map((item, i) => (
-                                                    <div key={i} className="bg-slate-900/50 border border-slate-700 rounded-lg p-3">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-[13px] font-semibold text-gray-200">{item.drugName}</span>
-                                                            <button onClick={() => removeRxItem(i)}><X size={14} className="text-red-400" /></button>
-                                                        </div>
-                                                        <div className="grid grid-cols-3 gap-2">
-                                                            <input placeholder="Dosage" value={item.dosage} onChange={e => updateRxItem(i, 'dosage', e.target.value)}
-                                                                className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-[12px] text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-600" />
-                                                            <input placeholder="Frequency" value={item.frequency} onChange={e => updateRxItem(i, 'frequency', e.target.value)}
-                                                                className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-[12px] text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-600" />
-                                                            <input placeholder="Days" value={item.days} onChange={e => updateRxItem(i, 'days', e.target.value)}
-                                                                className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-[12px] text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-600" />
-                                                        </div>
+                                                
+                                                {rxErrors && (
+                                                    <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-[12px] font-medium flex items-start gap-2 animate-pulse">
+                                                        <ShieldAlert size={14} className="shrink-0 mt-0.5 text-red-400" />
+                                                        <span>{rxErrors}</span>
                                                     </div>
-                                                ))}
+                                                )}
+
+                                                {rxItems.map((item, i) => {
+                                                    const isInvalid = invalidRxIndices.has(i);
+                                                    return (
+                                                        <div key={i} className="bg-slate-900/50 border border-slate-700 rounded-lg p-3">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="text-[13px] font-semibold text-gray-200">{item.drugName}</span>
+                                                                <button onClick={() => removeRxItem(i)}><X size={14} className="text-red-400" /></button>
+                                                            </div>
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                <input placeholder="Dosage" value={item.dosage} onChange={e => { updateRxItem(i, 'dosage', e.target.value); clearRxError(i); }}
+                                                                    className={`bg-slate-800 border rounded px-2 py-1.5 text-[12px] text-gray-200 focus:outline-none focus:ring-1 transition-colors ${isInvalid && !item.dosage.trim() ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-blue-600'}`} />
+                                                                <input placeholder="Frequency" value={item.frequency} onChange={e => { updateRxItem(i, 'frequency', e.target.value); clearRxError(i); }}
+                                                                    className={`bg-slate-800 border rounded px-2 py-1.5 text-[12px] text-gray-200 focus:outline-none focus:ring-1 transition-colors ${isInvalid && !item.frequency.trim() ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-blue-600'}`} />
+                                                                <input placeholder="Days" value={item.days} onChange={e => { updateRxItem(i, 'days', e.target.value); clearRxError(i); }}
+                                                                    className={`bg-slate-800 border rounded px-2 py-1.5 text-[12px] text-gray-200 focus:outline-none focus:ring-1 transition-colors ${isInvalid && (isNaN(Number(item.days)) || Number(item.days) <= 0) ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-blue-600'}`} />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                                 <button onClick={handleSubmitRx} disabled={submittingRx}
                                                     className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold transition disabled:opacity-50 w-full justify-center">
                                                     <Send size={14} /> {submittingRx ? 'Submitting...' : 'Submit Prescription'}

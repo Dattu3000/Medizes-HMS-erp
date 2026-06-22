@@ -17,6 +17,7 @@ export default function PatientsPage() {
         bloodGroup: '', city: '', address: ''
     });
     const [regSuccess, setRegSuccess] = useState<any>(null);
+    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
     // OPD Booking State
     const [searchQuery, setSearchQuery] = useState('');
@@ -71,8 +72,47 @@ export default function PatientsPage() {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setRegSuccess(null);
+
+        // Client-side validations
+        const errors: Record<string, string> = {};
+
+        // Name validation (min 2 chars, letters only)
+        const nameRegex = /^[a-zA-Z\s]{2,}$/;
+        if (!nameRegex.test(form.firstName.trim())) {
+            errors.firstName = 'First name must contain at least 2 characters (letters only).';
+        }
+        if (!nameRegex.test(form.lastName.trim())) {
+            errors.lastName = 'Last name must contain at least 2 characters (letters only).';
+        }
+
+        // Mobile validation (exactly 10 digits)
+        const mobileRegex = /^[0-9]{10}$/;
+        if (!mobileRegex.test(form.mobile.trim())) {
+            errors.mobile = 'Mobile number must be exactly 10 digits.';
+        }
+
+        // Email validation (optional but format check if entered)
+        if (form.email.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(form.email.trim())) {
+                errors.email = 'Please enter a valid email address.';
+            }
+        }
+
+        // Age validation (0 to 125)
+        const ageNum = parseInt(form.age);
+        if (isNaN(ageNum) || ageNum < 0 || ageNum > 125) {
+            errors.age = 'Age must be a number between 0 and 125.';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setValidationErrors(errors);
+            return;
+        }
+
+        setValidationErrors({});
+        setLoading(true);
         try {
             const res = await fetch(`${API_BASE}/api/patient/register`, {
                 method: 'POST',
@@ -170,9 +210,9 @@ export default function PatientsPage() {
                                         <Card padding="lg" className="bg-[#1e293b] flex-1">
                                             <h3 className="font-bold text-gray-50 text-[15px] mb-6">Patient Demographics</h3>
                                             <div className="space-y-4">
-                                                <Input required label="First Name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
-                                                <Input required label="Last Name" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
-                                                <Input required label="Age" type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                                                <Input required label="First Name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} error={validationErrors.firstName} />
+                                                <Input required label="Last Name" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} error={validationErrors.lastName} />
+                                                <Input required label="Age" type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} error={validationErrors.age} />
                                                 <Select
                                                     required
                                                     label="Gender"
@@ -194,8 +234,8 @@ export default function PatientsPage() {
                                         <Card padding="lg" className="bg-[#1e293b] flex-1">
                                             <h3 className="font-bold text-gray-50 text-[15px] mb-6">Contact Information</h3>
                                             <div className="space-y-4">
-                                                <Input required label="Mobile No." maxLength={10} value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} />
-                                                <Input label="Email Address" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                                                <Input required label="Mobile No." maxLength={10} value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} error={validationErrors.mobile} />
+                                                <Input label="Email Address" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} error={validationErrors.email} />
                                                 <Input label="City" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
                                                 <Input label="Detailed Address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
                                             </div>
@@ -218,7 +258,7 @@ export default function PatientsPage() {
                                                 <Button type="submit" disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 border-transparent">
                                                     {loading ? 'Processing...' : 'SAVE & GENERATE ID'}
                                                 </Button>
-                                                <Button type="button" variant="outline" className="w-full" onClick={() => setForm({ firstName: '', lastName: '', age: '', gender: 'Male', mobile: '', email: '', bloodGroup: '', city: '', address: '' })}>
+                                                <Button type="button" variant="outline" className="w-full" onClick={() => { setForm({ firstName: '', lastName: '', age: '', gender: 'Male', mobile: '', email: '', bloodGroup: '', city: '', address: '' }); setValidationErrors({}); }}>
                                                     CANCEL / CLEAR
                                                 </Button>
                                                 <button type="button" onClick={() => setActiveTab('opd')} className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-700 border border-white/5 text-gray-200 rounded-[30px] px-5 py-3 transition mt-8">

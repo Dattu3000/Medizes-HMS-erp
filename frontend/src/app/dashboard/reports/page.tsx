@@ -7,6 +7,10 @@ import {
     FlaskConical, Bed, Activity, CheckCircle2,
     Stethoscope, Building2, Percent, TestTube2, UserCheck
 } from 'lucide-react';
+import {
+    ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar,
+    XAxis, YAxis, CartesianGrid, Legend, AreaChart, Area, LineChart, Line
+} from 'recharts';
 
 const API = `${API_BASE}/api`;
 const getAuth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
@@ -24,6 +28,8 @@ const exportToCSV = (filename: string, rows: any[][]) => {
     link.click();
     document.body.removeChild(link);
 };
+
+const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ec4899', '#14b8a6', '#f43f5e'];
 
 type Tab = 'analytics' | 'balance' | 'gst' | 'payroll' | 'revenue' | 'operational' | 'trends' | 'collection';
 
@@ -125,7 +131,7 @@ export default function ReportsPage() {
 
                 <div className="p-6 flex-1 overflow-auto">
 
-                    {/* â•â•â• ANALYTICS â•â•â• */}
+                    {/* ═══ ANALYTICS ═══ */}
                     {tab === 'analytics' && analytics && analytics.patients && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -147,26 +153,66 @@ export default function ReportsPage() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-glass-title mb-3 flex items-center gap-2 pb-2 border-b border-white/10"><Activity size={15} /> Revenue by Module</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {Object.entries(analytics.billing.byModule as Record<string, number>).map(([type, amount]) => (
-                                        <div key={type} className="bg-black/20 border border-white/10 rounded-xl p-4">
-                                            <div className="flex justify-between mb-2"><span className="text-white text-sm font-bold">{type.replace(/_/g, ' ')}</span><span className="font-black text-glass-title">{fmt(amount)}</span></div>
-                                            <div className="w-full bg-white/10 rounded-full h-1.5"><div className="bg-violet-500 h-1.5 rounded-full" style={{ width: `${pct(amount, analytics.billing.totalRevenue)}%` }} /></div>
-                                            <div className="text-[10px] text-glass-muted mt-1 text-right">{pct(amount, analytics.billing.totalRevenue)}%</div>
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-black/20 border border-white/10 rounded-xl p-6">
+                                    <div className="md:col-span-4 h-[200px] relative flex items-center justify-center">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={Object.entries(analytics.billing.byModule as Record<string, number>).map(([type, amount]) => ({
+                                                        name: type.replace(/_/g, ' '),
+                                                        value: amount
+                                                    }))}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={55}
+                                                    outerRadius={75}
+                                                    paddingAngle={4}
+                                                    dataKey="value"
+                                                    stroke="none"
+                                                >
+                                                    {Object.entries(analytics.billing.byModule as Record<string, number>).map((_, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip
+                                                    formatter={(value: any) => [fmt(Number(value)), 'Revenue']}
+                                                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                            <span className="text-[9px] uppercase tracking-wider text-glass-muted">Total Billed</span>
+                                            <span className="text-sm font-black text-white">{fmt(analytics.billing.totalRevenue)}</span>
                                         </div>
-                                    ))}
+                                    </div>
+                                    <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                                        {Object.entries(analytics.billing.byModule as Record<string, number>).map(([type, amount], index) => (
+                                            <div key={type} className="bg-black/30 border border-white/5 rounded-xl p-3 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                                                    <div className="truncate">
+                                                        <div className="text-white text-xs font-bold truncate">{type.replace(/_/g, ' ')}</div>
+                                                        <div className="text-[9px] text-glass-muted">{pct(amount, analytics.billing.totalRevenue)}% of total</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <div className="font-bold text-xs text-glass-title">{fmt(amount)}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* â•â•â• BALANCE SHEET â•â•â• */}
+                    {/* ═══ BALANCE SHEET ═══ */}
                     {tab === 'balance' && balance && balance.income && (
                         <div className="max-w-4xl mx-auto space-y-4">
-                            <div className="flex justify-end"><button onClick={() => window.print()} className="bg-slate-700 text-white font-bold px-3 py-1.5 flex items-center gap-2 rounded-lg text-xs"><Printer size={13} /> Print</button></div>
+                            <div className="flex justify-end"><button onClick={() => window.print()} className="bg-slate-700 text-white font-bold px-3 py-1.5 flex items-center gap-2 rounded-lg text-xs hover:bg-slate-600 transition"><Printer size={13} /> Print</button></div>
                             <div className={`p-5 rounded-xl border-2 flex justify-between items-center ${balance.surplus === 'PROFIT' ? 'bg-emerald-600/10 border-emerald-400/50' : 'bg-rose-600/10 border-rose-400/50'}`}>
                                 <div>
-                                    <div className="text-xs font-bold uppercase mb-1 text-glass-muted">{balance.surplus === 'PROFIT' ? 'ðŸ“ˆ Net Profit' : 'ðŸ“‰ Net Loss'}</div>
+                                    <div className="text-xs font-bold uppercase mb-1 text-glass-muted">{balance.surplus === 'PROFIT' ? '📈 Net Profit' : '📉 Net Loss'}</div>
                                     <div className={`text-3xl font-black ${balance.surplus === 'PROFIT' ? 'text-emerald-400' : 'text-rose-400'}`}>{fmt(Math.abs(balance.netProfitOrLoss))}</div>
                                 </div>
                                 <div className="text-right text-xs space-y-1 text-glass-muted">
@@ -190,15 +236,15 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* â•â•â• GST â•â•â• */}
+                    {/* ═══ GST REPORTS ═══ */}
                     {tab === 'gst' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 flex-wrap">
-                                <select className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" value={gstMonth} onChange={e => setGstMonth(Number(e.target.value))}>
+                                <select className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" value={gstMonth} onChange={e => setGstMonth(Number(e.target.value))}>
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}</option>)}
                                 </select>
-                                <input type="number" className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm w-20 text-white" value={gstYear} onChange={e => setGstYear(Number(e.target.value))} />
-                                <button onClick={() => load('gst')} className="bg-violet-600 text-white font-bold px-4 py-2 rounded-lg text-xs">Apply</button>
+                                <input type="number" className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm w-20 text-white focus:outline-none" value={gstYear} onChange={e => setGstYear(Number(e.target.value))} />
+                                <button onClick={() => load('gst')} className="bg-violet-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-violet-500 transition">Apply</button>
                             </div>
                             {gst && gst.gstr3b && (
                                 <>
@@ -208,7 +254,7 @@ export default function ReportsPage() {
                                         <div className={`${gst.gstr3b.netGstPayable > 0 ? 'bg-rose-600/10 border-rose-500/30' : 'bg-emerald-600/10 border-emerald-500/30'} rounded-xl p-4`}><div className="text-[10px] uppercase text-glass-muted mb-1">Net Payable</div><div className="text-2xl font-black text-white">{fmt(gst.gstr3b.netGstPayable)}</div></div>
                                     </div>
                                     <div className="flex justify-between items-center"><h3 className="font-bold text-glass-title text-sm">GSTR-1 Register ({gst.period})</h3>
-                                        <button onClick={() => { exportToCSV(`GSTR1_${gst.period.replace('/', '-')}.csv`, [['Bill No', 'Type', 'Taxable', 'GST', 'Total', 'Date'], ...gst.gstr1.lines.map((l: any) => [l.billNo, l.type, l.taxableValue, l.gstAmount, l.totalValue, new Date(l.date).toLocaleDateString('en-IN')])]); }} className="text-xs bg-slate-700 text-white px-3 py-1 rounded-lg flex items-center gap-1"><Download size={12} /> CSV</button>
+                                        <button onClick={() => { exportToCSV(`GSTR1_${gst.period.replace('/', '-')}.csv`, [['Bill No', 'Type', 'Taxable', 'GST', 'Total', 'Date'], ...gst.gstr1.lines.map((l: any) => [l.billNo, l.type, l.taxableValue, l.gstAmount, l.totalValue, new Date(l.date).toLocaleDateString('en-IN')])]); }} className="text-xs bg-slate-700 text-white px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-slate-600 transition"><Download size={12} /> CSV</button>
                                     </div>
                                     <div className="overflow-x-auto rounded-xl border border-white/10"><table className="w-full text-xs"><thead className="bg-black/30 text-glass-muted"><tr><th className="p-2 text-left">Bill</th><th className="p-2">Type</th><th className="p-2 text-right">Taxable</th><th className="p-2 text-right">GST</th><th className="p-2 text-right">Total</th><th className="p-2">Date</th></tr></thead><tbody className="divide-y divide-white/5">
                                         {gst.gstr1.lines.map((l: any) => (<tr key={l.billNo} className="hover:bg-white/5"><td className="p-2 font-mono text-violet-400">{l.billNo}</td><td className="p-2 text-white/70">{l.type}</td><td className="p-2 text-right text-white">{fmt(l.taxableValue)}</td><td className="p-2 text-right text-amber-400">{fmt(l.gstAmount)}</td><td className="p-2 text-right font-bold text-white">{fmt(l.totalValue)}</td><td className="p-2 text-glass-muted">{new Date(l.date).toLocaleDateString('en-IN')}</td></tr>))}
@@ -218,15 +264,15 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* â•â•â• PAYROLL â•â•â• */}
+                    {/* ═══ PAYROLL ═══ */}
                     {tab === 'payroll' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 flex-wrap">
-                                <select className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" value={prMonth} onChange={e => setPrMonth(Number(e.target.value))}>
+                                <select className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" value={prMonth} onChange={e => setPrMonth(Number(e.target.value))}>
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}</option>)}
                                 </select>
-                                <input type="number" className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm w-20 text-white" value={prYear} onChange={e => setPrYear(Number(e.target.value))} />
-                                <button onClick={() => load('payroll')} className="bg-violet-600 text-white font-bold px-4 py-2 rounded-lg text-xs">Apply</button>
+                                <input type="number" className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm w-20 text-white focus:outline-none" value={prYear} onChange={e => setPrYear(Number(e.target.value))} />
+                                <button onClick={() => load('payroll')} className="bg-violet-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-violet-500 transition">Apply</button>
                             </div>
                             {payroll && payroll.compliance && (
                                 <>
@@ -236,7 +282,7 @@ export default function ReportsPage() {
                                         <div className="bg-violet-600/10 border border-violet-500/30 rounded-xl p-4"><div className="text-[10px] uppercase text-glass-muted mb-1">Prof. Tax</div><div className="text-xl font-black text-violet-400">{fmt(payroll.compliance.pt.total)}</div></div>
                                     </div>
                                     <div className="flex justify-between items-center"><h3 className="font-bold text-glass-title text-sm">Payslips — {payroll.period}</h3>
-                                        <button onClick={() => { exportToCSV(`Payroll_${payroll.period.replace('/', '-')}.csv`, [['EmpID', 'Name', 'Gross', 'EPF', 'ESI', 'PT', 'Net'], ...payroll.payslips.map((p: any) => [p.employeeId, p.name, p.grossSalary, p.epfEmployee, p.esiEmployee, p.pt, p.netTakeHome])]); }} className="text-xs bg-slate-700 text-white px-3 py-1 rounded-lg flex items-center gap-1"><Download size={12} /> CSV</button>
+                                        <button onClick={() => { exportToCSV(`Payroll_${payroll.period.replace('/', '-')}.csv`, [['EmpID', 'Name', 'Gross', 'EPF', 'ESI', 'PT', 'Net'], ...payroll.payslips.map((p: any) => [p.employeeId, p.name, p.grossSalary, p.epfEmployee, p.esiEmployee, p.pt, p.netTakeHome])]); }} className="text-xs bg-slate-700 text-white px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-slate-600 transition"><Download size={12} /> CSV</button>
                                     </div>
                                     <div className="space-y-2">
                                         {payroll.payslips.map((p: any) => (
@@ -256,107 +302,245 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* â•â•â• REVENUE INTELLIGENCE â•â•â• */}
+                    {/* ═══ REVENUE INTELLIGENCE ═══ */}
                     {tab === 'revenue' && (
-                        <div className="space-y-6">
+                        <div className="space-y-8">
                             {doctorRev && doctorRev.doctors && (
                                 <div>
-                                    <div className="flex justify-between items-center mb-3"><h3 className="font-bold text-glass-title flex items-center gap-2"><Stethoscope size={15} /> Doctor-wise Revenue</h3>
-                                        <button onClick={() => { exportToCSV('DoctorRevenue.csv', [['Rank', 'Doctor', 'Department', 'Revenue', 'Bills', 'Avg/Bill', '%'], ...doctorRev.doctors.map((d: any) => [d.rank, d.name, d.department, d.revenue, d.billCount, d.avgPerBill, d.percentage])]); }} className="text-xs bg-slate-700 text-white px-3 py-1 rounded-lg flex items-center gap-1"><Download size={12} /> CSV</button>
+                                    <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-glass-title flex items-center gap-2"><Stethoscope size={15} /> Doctor-wise Revenue</h3>
+                                        <button onClick={() => { exportToCSV('DoctorRevenue.csv', [['Rank', 'Doctor', 'Department', 'Revenue', 'Bills', 'Avg/Bill', '%'], ...doctorRev.doctors.map((d: any) => [d.rank, d.name, d.department, d.revenue, d.billCount, d.avgPerBill, d.percentage])]); }} className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-slate-600 transition"><Download size={12} /> CSV</button>
                                     </div>
-                                    <div className="space-y-2">
-                                        {doctorRev.doctors.map((d: any) => (
-                                            <div key={d.rank} className="bg-black/20 border border-white/10 rounded-xl p-4 flex items-center gap-4">
-                                                <div className="w-8 h-8 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 font-black text-sm">#{d.rank}</div>
-                                                <div className="flex-1">
-                                                    <div className="font-bold text-white text-sm">{d.name}</div>
-                                                    <div className="text-[10px] text-glass-muted">{d.department} • {d.billCount} bills • Avg {fmt(Number(d.avgPerBill))}</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="font-black text-emerald-400">{fmt(d.revenue)}</div>
-                                                    <div className="text-[10px] text-glass-muted">{d.percentage}%</div>
-                                                </div>
-                                                <div className="w-20 bg-white/10 rounded-full h-1.5"><div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${d.percentage}%` }} /></div>
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                        <div className="lg:col-span-5 bg-black/20 border border-white/10 rounded-xl p-5 h-[340px] flex flex-col justify-between">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-glass-muted">Top Doctors By Revenue</span>
+                                            <div className="flex-1 w-full mt-4">
+                                                <ResponsiveContainer width="100%" height="90%">
+                                                    <BarChart data={doctorRev.doctors.slice(0, 5).map((d: any) => ({ name: d.name.replace('Dr. ', ''), revenue: d.revenue }))} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
+                                                        <XAxis type="number" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
+                                                        <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} width={70} />
+                                                        <Tooltip formatter={(value: any) => fmt(Number(value))} contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                                        <Bar dataKey="revenue" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
                                             </div>
-                                        ))}
-                                        {doctorRev.doctors.length === 0 && <div className="text-center p-6 text-glass-muted">No doctor-linked revenue data yet</div>}
+                                        </div>
+                                        <div className="lg:col-span-7 space-y-2 max-h-[340px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {doctorRev.doctors.map((d: any) => (
+                                                <div key={d.rank} className="bg-black/20 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 font-black text-xs shrink-0">#{d.rank}</div>
+                                                        <div>
+                                                            <div className="font-bold text-white text-sm">{d.name}</div>
+                                                            <div className="text-[10px] text-glass-muted mt-0.5">{d.department} • {d.billCount} bills</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-right shrink-0">
+                                                            <div className="font-black text-emerald-400 text-sm">{fmt(d.revenue)}</div>
+                                                            <div className="text-[10px] text-glass-muted">{d.percentage}%</div>
+                                                        </div>
+                                                        <div className="w-16 bg-white/10 rounded-full h-1.5 shrink-0 hidden sm:block"><div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${d.percentage}%` }} /></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {doctorRev.doctors.length === 0 && <div className="text-center p-6 text-glass-muted">No doctor-linked revenue data yet</div>}
+                                        </div>
                                     </div>
                                 </div>
                             )}
                             {deptRev && deptRev.departments && (
                                 <div>
-                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><Building2 size={15} /> Department-wise Revenue</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {deptRev.departments.map((d: any) => (
-                                            <div key={d.department} className="bg-black/20 border border-white/10 rounded-xl p-4">
-                                                <div className="flex justify-between mb-2"><span className="font-bold text-white text-sm">{d.department}</span><span className="font-black text-emerald-400">{fmt(d.revenue)}</span></div>
-                                                <div className="w-full bg-white/10 rounded-full h-1.5"><div className="bg-violet-500 h-1.5 rounded-full" style={{ width: `${d.percentage}%` }} /></div>
-                                                <div className="flex justify-between text-[10px] text-glass-muted mt-1"><span>{d.billCount} bills</span><span>{d.percentage}%</span></div>
+                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-4"><Building2 size={15} /> Department-wise Revenue</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                        <div className="lg:col-span-5 bg-black/20 border border-white/10 rounded-xl p-5 h-[320px] flex flex-col justify-between items-center relative">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-glass-muted w-full text-left">Department Share</span>
+                                            <div className="flex-1 w-full relative flex items-center justify-center">
+                                                <ResponsiveContainer width="100%" height="90%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={deptRev.departments.map((d: any) => ({ name: d.department, value: d.revenue }))}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            innerRadius={50}
+                                                            outerRadius={70}
+                                                            paddingAngle={3}
+                                                            dataKey="value"
+                                                            stroke="none"
+                                                        >
+                                                            {deptRev.departments.map((_, index) => (
+                                                                <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip formatter={(value: any) => fmt(Number(value))} contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {deptRev.departments.map((d: any, index: number) => (
+                                                <div key={d.department} className="bg-black/20 border border-white/10 rounded-xl p-4 flex flex-col justify-between">
+                                                    <div className="flex justify-between mb-2">
+                                                        <span className="font-bold text-white text-sm flex items-center gap-2">
+                                                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[(index + 2) % COLORS.length] }} />
+                                                            {d.department}
+                                                        </span>
+                                                        <span className="font-black text-emerald-400">{fmt(d.revenue)}</span>
+                                                    </div>
+                                                    <div className="w-full bg-white/10 rounded-full h-1.5"><div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${d.percentage}%` }} /></div>
+                                                    <div className="flex justify-between text-[10px] text-glass-muted mt-1"><span>{d.billCount} bills</span><span>{d.percentage}%</span></div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* â•â•â• OPERATIONAL â•â•â• */}
+                    {/* ═══ OPERATIONAL ═══ */}
                     {tab === 'operational' && (
-                        <div className="space-y-6">
+                        <div className="space-y-8">
                             {bedOcc && bedOcc.overall && (
                                 <div>
-                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><Bed size={15} /> Bed Occupancy</h3>
-                                    <div className="bg-black/20 border border-white/10 rounded-xl p-4 mb-3 text-center">
-                                        <div className="text-3xl font-black text-white">{bedOcc.overall.occupancyRate}%</div>
-                                        <div className="text-xs text-glass-muted">{bedOcc.overall.occupied} / {bedOcc.overall.totalBeds} beds occupied</div>
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                        {bedOcc.wards.map((w: any) => (
-                                            <div key={w.ward} className="bg-black/20 border border-white/10 rounded-lg p-3">
-                                                <div className="font-bold text-white text-xs mb-1">{w.ward}</div>
-                                                <div className="text-lg font-black text-white">{w.occupancyRate}%</div>
-                                                <div className="w-full bg-white/10 rounded-full h-1 mt-1"><div className={`h-1 rounded-full ${Number(w.occupancyRate) > 80 ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${w.occupancyRate}%` }} /></div>
-                                                <div className="text-[10px] text-glass-muted mt-1">{w.occupied}/{w.totalBeds}</div>
+                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-4"><Bed size={15} /> Bed Occupancy</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                        <div className="lg:col-span-7 flex flex-col gap-4">
+                                            <div className="bg-black/20 border border-white/10 rounded-xl p-6 text-center">
+                                                <div className="text-4xl font-black text-white">{bedOcc.overall.occupancyRate}%</div>
+                                                <div className="text-xs text-glass-muted mt-1">{bedOcc.overall.occupied} / {bedOcc.overall.totalBeds} beds occupied overall</div>
                                             </div>
-                                        ))}
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                                {bedOcc.wards.map((w: any) => (
+                                                    <div key={w.ward} className="bg-black/20 border border-white/10 rounded-xl p-3 flex flex-col justify-between">
+                                                        <div className="font-bold text-white text-xs truncate">{w.ward}</div>
+                                                        <div className="text-md font-bold text-white mt-1">{w.occupancyRate}%</div>
+                                                        <div className="w-full bg-white/10 rounded-full h-1 mt-1.5"><div className={`h-1 rounded-full ${Number(w.occupancyRate) > 80 ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${w.occupancyRate}%` }} /></div>
+                                                        <div className="text-[9px] text-glass-muted mt-1">{w.occupied}/{w.totalBeds} beds</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="lg:col-span-5 bg-black/20 border border-white/10 rounded-xl p-5 h-[260px]">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-glass-muted">Ward Rates Comparison</span>
+                                            <div className="flex-1 h-[90%] w-full mt-2">
+                                                <ResponsiveContainer width="100%" height="95%">
+                                                    <BarChart data={bedOcc.wards.map((w: any) => ({ name: w.ward, rate: Number(w.occupancyRate) }))}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                                        <XAxis dataKey="name" stroke="#64748b" fontSize={8} tickLine={false} axisLine={false} />
+                                                        <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} unit="%" />
+                                                        <Tooltip formatter={(value: any) => [`${value}%`, 'Occupancy']} contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                                        <Bar dataKey="rate" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
                             {labVol && labVol.byTest && (
                                 <div>
-                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><TestTube2 size={15} /> Lab Volume ({labVol.totalOrders} orders)</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                        {labVol.byTest.slice(0, 9).map((t: any) => (
-                                            <div key={t.testName} className="bg-black/20 border border-white/10 rounded-lg p-3">
-                                                <div className="font-bold text-white text-xs truncate">{t.testName}</div>
-                                                <div className="text-lg font-black text-white">{t.total}</div>
-                                                <div className="flex gap-2 text-[10px]"><span className="text-emerald-400">{t.completed} done</span><span className="text-yellow-400">{t.pending} pending</span></div>
+                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-4"><TestTube2 size={15} /> Lab Volume ({labVol.totalOrders} orders)</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                        <div className="lg:col-span-6 bg-black/20 border border-white/10 rounded-xl p-5 h-[280px]">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-glass-muted">Top Tests Volume Distribution</span>
+                                            <div className="flex-1 h-[90%] w-full mt-2">
+                                                <ResponsiveContainer width="100%" height="95%">
+                                                    <BarChart data={labVol.byTest.slice(0, 5).map((t: any) => ({ name: t.testName.substring(0, 10), completed: t.completed, pending: t.pending }))}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                                        <XAxis dataKey="name" stroke="#64748b" fontSize={8} tickLine={false} axisLine={false} />
+                                                        <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                                        <Legend wrapperStyle={{ fontSize: '9px' }} />
+                                                        <Bar dataKey="completed" name="Completed" fill="#10b981" stackId="a" />
+                                                        <Bar dataKey="pending" name="Pending" fill="#f59e0b" stackId="a" radius={[3, 3, 0, 0]} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="lg:col-span-6 grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {labVol.byTest.slice(0, 9).map((t: any) => (
+                                                <div key={t.testName} className="bg-black/20 border border-white/10 rounded-xl p-3 flex flex-col justify-between">
+                                                    <div className="font-bold text-white text-xs truncate" title={t.testName}>{t.testName}</div>
+                                                    <div className="text-lg font-black text-white mt-1">{t.total}</div>
+                                                    <div className="flex gap-2 text-[9px] mt-1.5"><span className="text-emerald-400">{t.completed} ok</span><span className="text-yellow-400">{t.pending} wait</span></div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             )}
                             {demographics && demographics.ageBuckets && (
                                 <div>
-                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><UserCheck size={15} /> Patient Demographics ({demographics.totalPatients})</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        <div className="bg-black/20 border border-white/10 rounded-xl p-4">
-                                            <div className="text-xs font-bold text-glass-muted mb-2 uppercase">Age Distribution</div>
-                                            {Object.entries(demographics.ageBuckets as Record<string, number>).map(([range, count]) => (
-                                                <div key={range} className="flex justify-between text-xs py-1"><span className="text-white/70">{range}</span><span className="text-white font-bold">{count}</span></div>
-                                            ))}
+                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-4"><UserCheck size={15} /> Patient Demographics ({demographics.totalPatients})</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {/* Age */}
+                                        <div className="bg-black/20 border border-white/10 rounded-xl p-5 h-[250px] flex flex-col justify-between">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-glass-muted">Age Distribution</span>
+                                            <div className="flex-1 h-[85%] w-full mt-2">
+                                                <ResponsiveContainer width="100%" height="95%">
+                                                    <BarChart data={Object.entries(demographics.ageBuckets).map(([k, v]) => ({ name: k, count: v }))}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                                        <XAxis dataKey="name" stroke="#64748b" fontSize={8} tickLine={false} axisLine={false} />
+                                                        <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} allowDecimals={false} />
+                                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                                        <Bar dataKey="count" fill="#3b82f6" name="Patients" radius={[3, 3, 0, 0]} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
                                         </div>
-                                        <div className="bg-black/20 border border-white/10 rounded-xl p-4">
-                                            <div className="text-xs font-bold text-glass-muted mb-2 uppercase">Gender</div>
-                                            {Object.entries(demographics.genderDistribution as Record<string, number>).map(([g, c]) => (
-                                                <div key={g} className="flex justify-between text-xs py-1"><span className="text-white/70">{g}</span><span className="text-white font-bold">{c}</span></div>
-                                            ))}
+                                        {/* Gender */}
+                                        <div className="bg-black/20 border border-white/10 rounded-xl p-5 h-[250px] flex flex-col justify-between items-center relative">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-glass-muted w-full text-left">Gender Distribution</span>
+                                            <div className="flex-1 w-full relative flex items-center justify-center">
+                                                <ResponsiveContainer width="100%" height="90%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={Object.entries(demographics.genderDistribution).map(([k, v]) => ({ name: k, value: v }))}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            innerRadius={40}
+                                                            outerRadius={60}
+                                                            paddingAngle={4}
+                                                            dataKey="value"
+                                                            stroke="none"
+                                                        >
+                                                            {Object.entries(demographics.genderDistribution).map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
+                                                        </Pie>
+                                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                            <div className="flex justify-center gap-3 text-[10px] text-gray-400 mt-2">
+                                                {Object.entries(demographics.genderDistribution).map(([name, val], idx) => (
+                                                    <span key={name} className="flex items-center gap-1">
+                                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} /> {name} ({val})
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="bg-black/20 border border-white/10 rounded-xl p-4">
-                                            <div className="text-xs font-bold text-glass-muted mb-2 uppercase">Blood Groups</div>
-                                            {Object.entries(demographics.bloodGroups as Record<string, number>).map(([bg, c]) => (
-                                                <div key={bg} className="flex justify-between text-xs py-1"><span className="text-white/70">{bg}</span><span className="text-white font-bold">{c}</span></div>
-                                            ))}
+                                        {/* Blood Group */}
+                                        <div className="bg-black/20 border border-white/10 rounded-xl p-5 h-[250px] flex flex-col justify-between items-center relative">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-glass-muted w-full text-left">Blood Groups</span>
+                                            <div className="flex-1 w-full relative flex items-center justify-center">
+                                                <ResponsiveContainer width="100%" height="90%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={Object.entries(demographics.bloodGroups).map(([k, v]) => ({ name: k, value: v }))}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            innerRadius={40}
+                                                            outerRadius={60}
+                                                            paddingAngle={3}
+                                                            dataKey="value"
+                                                            stroke="none"
+                                                        >
+                                                            {Object.entries(demographics.bloodGroups).map((_, idx) => <Cell key={idx} fill={COLORS[(idx + 4) % COLORS.length]} />)}
+                                                        </Pie>
+                                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -364,66 +548,115 @@ export default function ReportsPage() {
                         </div>
                     )}
 
-                    {/* â•â•â• FINANCIAL TRENDS â•â•â• */}
-                    {tab === 'trends' && (
+                    {/* ═══ FINANCIAL TRENDS ═══ */}
+                    {tab === 'trends' && revTrend && revTrend.months && expTrend && expTrend.months && (
                         <div className="space-y-6">
-                            {revTrend && revTrend.months && (
-                                <div>
-                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><TrendingUp size={15} /> Revenue Trend (6 Months)</h3>
-                                    <div className="grid grid-cols-6 gap-2">
-                                        {revTrend.months.map((m: any) => (
-                                            <div key={m.month} className="bg-black/20 border border-white/10 rounded-lg p-3 text-center">
-                                                <div className="text-[10px] text-glass-muted mb-1">{m.month}</div>
-                                                <div className="text-sm font-black text-emerald-400">{fmt(m.revenue)}</div>
-                                                <div className="text-[10px] text-glass-muted">{m.billCount} bills</div>
-                                                {m.growth && Number(m.growth) !== 0 && (
-                                                    <div className={`text-[10px] font-bold mt-1 ${Number(m.growth) > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {Number(m.growth) > 0 ? 'â†‘' : 'â†“'}{m.growth}%
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
+                            <div className="bg-black/20 border border-white/10 rounded-xl p-5 h-[380px] flex flex-col justify-between">
+                                <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                                    <h3 className="font-bold text-glass-title text-sm flex items-center gap-2"><TrendingUp size={15} /> Revenue vs. Expense Flow (6 Months)</h3>
+                                    <div className="flex gap-4 text-[10px] font-bold">
+                                        <span className="flex items-center gap-1 text-emerald-400"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Cash Inflow</span>
+                                        <span className="flex items-center gap-1 text-rose-400"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Cash Outflow</span>
+                                        <span className="flex items-center gap-1 text-indigo-400"><span className="w-2.5 h-1 bg-indigo-500 rounded-sm"></span> Net Surplus</span>
                                     </div>
                                 </div>
-                            )}
-                            {expTrend && expTrend.months && (
-                                <div>
-                                    <h3 className="font-bold text-glass-title flex items-center gap-2 mb-3"><TrendingDown size={15} /> Expense Trend (6 Months)</h3>
-                                    <div className="grid grid-cols-6 gap-2">
-                                        {expTrend.months.map((m: any) => (
-                                            <div key={m.month} className="bg-black/20 border border-white/10 rounded-lg p-3 text-center">
-                                                <div className="text-[10px] text-glass-muted mb-1">{m.month}</div>
-                                                <div className="text-sm font-black text-rose-400">{fmt(m.total)}</div>
-                                                <div className="text-[10px] text-glass-muted">OpEx: {fmt(m.operatingExpenses)}</div>
-                                                <div className="text-[10px] text-glass-muted">Payroll: {fmt(m.payroll)}</div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="flex-1 w-full">
+                                    <ResponsiveContainer width="100%" height="95%">
+                                        <AreaChart
+                                            data={revTrend.months.map((rm: any) => {
+                                                const em = expTrend.months.find((e: any) => e.month === rm.month) || { total: 0 };
+                                                return {
+                                                    month: rm.month,
+                                                    revenue: rm.revenue,
+                                                    expense: em.total,
+                                                    net: rm.revenue - em.total
+                                                };
+                                            })}
+                                            margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                                        >
+                                            <defs>
+                                                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                                </linearGradient>
+                                                <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                            <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
+                                            <Tooltip formatter={(value: any) => fmt(Number(value))} contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                            <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
+                                            <Area type="monotone" dataKey="expense" name="Expense" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorExp)" />
+                                            <Line type="monotone" dataKey="net" name="Net Surplus" stroke="#6366f1" strokeWidth={3} dot={{ r: 3 }} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 </div>
-                            )}
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                                {revTrend.months.map((m: any) => {
+                                    const em = expTrend.months.find((e: any) => e.month === m.month) || { total: 0 };
+                                    const netVal = m.revenue - em.total;
+                                    return (
+                                        <div key={m.month} className="bg-black/20 border border-white/10 rounded-xl p-3 text-center flex flex-col justify-between">
+                                            <div>
+                                                <div className="text-[10px] text-glass-muted font-bold uppercase">{m.month}</div>
+                                                <div className="text-xs font-semibold text-emerald-400 mt-1">{fmt(m.revenue)} In</div>
+                                                <div className="text-xs font-semibold text-rose-400 mt-0.5">{fmt(em.total)} Out</div>
+                                            </div>
+                                            <div className={`text-xs font-bold mt-2 pt-1 border-t border-white/5 ${netVal >= 0 ? 'text-indigo-400' : 'text-rose-500'}`}>
+                                                {netVal >= 0 ? '+' : ''}{fmt(netVal)}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
 
-                    {/* â•â•â• COLLECTION EFFICIENCY â•â•â• */}
+                    {/* ═══ COLLECTION EFFICIENCY ═══ */}
                     {tab === 'collection' && collection && collection.overall && (
-                        <div className="space-y-4 max-w-4xl mx-auto">
-                            <div className={`p-5 rounded-xl border-2 text-center ${Number(collection.overall.efficiency) >= 85 ? 'border-emerald-400/50 bg-emerald-600/10' : 'border-yellow-400/50 bg-yellow-600/10'}`}>
-                                <div className="text-xs font-bold text-glass-muted uppercase mb-1">Overall Collection Efficiency</div>
-                                <div className="text-4xl font-black text-white">{collection.overall.efficiency}%</div>
-                                <div className="text-xs text-glass-muted mt-1">Billed: {fmt(collection.overall.billed)} • Collected: {fmt(collection.overall.collected)}</div>
+                        <div className="space-y-6 max-w-5xl mx-auto">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                <div className="lg:col-span-4 flex flex-col gap-4">
+                                    <div className={`p-6 rounded-xl border-2 text-center flex-1 flex flex-col justify-center items-center ${Number(collection.overall.efficiency) >= 85 ? 'border-emerald-500/30 bg-emerald-600/10' : 'border-yellow-500/30 bg-yellow-600/10'}`}>
+                                        <div className="text-xs font-bold text-glass-muted uppercase mb-2">Overall Collection Efficiency</div>
+                                        <div className="text-5xl font-black text-white">{collection.overall.efficiency}%</div>
+                                        <div className="text-xs text-glass-muted mt-4">Billed: <span className="text-white font-semibold">{fmt(collection.overall.billed)}</span></div>
+                                        <div className="text-xs text-glass-muted mt-1.5">Collected: <span className="text-emerald-400 font-semibold">{fmt(collection.overall.collected)}</span></div>
+                                    </div>
+                                </div>
+                                <div className="lg:col-span-8 bg-black/20 border border-white/10 rounded-xl p-5 h-[300px] flex flex-col justify-between">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-glass-muted">6-Month Collection vs. Billing Gap</span>
+                                    <div className="flex-1 w-full mt-2">
+                                        <ResponsiveContainer width="100%" height="95%">
+                                            <BarChart data={collection.months.map((m: any) => ({ month: m.month, billed: m.billed, collected: m.collected, efficiency: Number(m.efficiency) }))} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                                <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
+                                                <Tooltip formatter={(value: any, name: any) => name === 'efficiency' ? [`${value}%`, 'Efficiency'] : [fmt(Number(value)), name === 'billed' ? 'Total Billed' : 'Total Collected']} contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }} />
+                                                <Legend wrapperStyle={{ fontSize: '9px' }} />
+                                                <Bar dataKey="billed" name="Billed" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                                                <Bar dataKey="collected" name="Collected" fill="#10b981" radius={[3, 3, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="grid grid-cols-6 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
                                 {collection.months.map((m: any) => (
-                                    <div key={m.month} className="bg-black/20 border border-white/10 rounded-xl p-4 text-center">
-                                        <div className="text-[10px] font-bold text-glass-muted mb-2">{m.month}</div>
-                                        <div className={`text-lg font-black ${Number(m.efficiency) >= 85 ? 'text-emerald-400' : Number(m.efficiency) >= 60 ? 'text-yellow-400' : 'text-rose-400'}`}>{m.efficiency}%</div>
-                                        <div className="text-[10px] text-glass-muted mt-1">Billed: {fmt(m.billed)}</div>
-                                        <div className="text-[10px] text-glass-muted">Got: {fmt(m.collected)}</div>
-                                        <div className="text-[10px] text-rose-400 font-bold">Gap: {fmt(m.outstanding)}</div>
+                                    <div key={m.month} className="bg-black/20 border border-white/10 rounded-xl p-3 text-center flex flex-col justify-between">
+                                        <div>
+                                            <div className="text-[10px] font-bold text-glass-muted uppercase">{m.month}</div>
+                                            <div className={`text-md font-black mt-1 ${Number(m.efficiency) >= 85 ? 'text-emerald-400' : Number(m.efficiency) >= 60 ? 'text-yellow-400' : 'text-rose-400'}`}>{m.efficiency}%</div>
+                                        </div>
+                                        <div className="text-[10px] text-glass-muted mt-2 border-t border-white/5 pt-1">Gap: <span className="text-rose-400 font-bold">{fmt(m.outstanding)}</span></div>
                                     </div>
                                 ))}
                             </div>
-                            <button onClick={() => { exportToCSV('CollectionEfficiency.csv', [['Month', 'Billed', 'Collected', 'Efficiency', 'Outstanding'], ...collection.months.map((m: any) => [m.month, m.billed, m.collected, m.efficiency, m.outstanding])]); }} className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 mx-auto"><Download size={12} /> Export CSV</button>
+                            <button onClick={() => { exportToCSV('CollectionEfficiency.csv', [['Month', 'Billed', 'Collected', 'Efficiency', 'Outstanding'], ...collection.months.map((m: any) => [m.month, m.billed, m.collected, m.efficiency, m.outstanding])]); }} className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 flex items-center gap-1.5 rounded-lg mx-auto transition"><Download size={13} /> Export CSV</button>
                         </div>
                     )}
 
