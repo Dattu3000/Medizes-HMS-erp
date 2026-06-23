@@ -83,7 +83,7 @@ export default function StandaloneLabReport() {
             {/* A4 Printable Sheet */}
             <div className="w-full max-w-4xl bg-white shadow-2xl overflow-hidden print:shadow-none print:max-w-none print:w-[100%]" style={{ minHeight: '29.7cm' }}>
                 {/* Header Header */}
-                <div className="bg-slate-900 text-white p-8 flexitems-center justify-between print:bg-white print:text-slate-900 print:border-b-2 print:border-slate-800">
+                <div className="bg-slate-900 text-white p-8 flex items-center justify-between print:bg-white print:text-slate-900 print:border-b-2 print:border-slate-800">
                     <div>
                         <h1 className="text-3xl font-extrabold tracking-tight">Medisys<span className="text-blue-500 font-light">HMS</span></h1>
                         <p className="text-sm mt-1 opacity-80 font-mono">LABORATORY REPORT</p>

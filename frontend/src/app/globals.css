@@ -10,6 +10,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-mono), 'JetBrains Mono', 'Fira Code', monospace;
+  --shadow-halo-indigo: 0 0 25px -5px rgba(99, 102, 241, 0.15), 0 0 10px -3px rgba(99, 102, 241, 0.1);
+  --shadow-halo-emerald: 0 0 25px -5px rgba(16, 185, 129, 0.15), 0 0 10px -3px rgba(16, 185, 129, 0.1);
+  --shadow-halo-amber: 0 0 25px -5px rgba(245, 158, 11, 0.15), 0 0 10px -3px rgba(245, 158, 11, 0.1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -95,4 +98,23 @@ html.theme-light.transition-theme .preserve-color {
 
 html.transition-theme {
     transition: filter 0.5s ease, background-color 0.5s ease;
+}
+
+/* Premium low-profile scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0f172a; /* matches slate-950 */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e293b; /* matches slate-800 */
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #334155; /* matches slate-700 */
 }

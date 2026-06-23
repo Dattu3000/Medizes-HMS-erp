@@ -13,7 +13,10 @@ export default function DashboardOverview() {
         fetch(`${API_BASE}/api/reports/analytics`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to load dashboard overview data');
+                return res.json();
+            })
             .then(resData => {
                 setData(resData);
                 setLoading(false);

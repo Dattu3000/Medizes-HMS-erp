@@ -23,11 +23,14 @@ export default function TrainingCenter() {
                 fetch(`${API}/training/my-enrollments`, { headers: h })
             ]);
 
-            const recData = await recRes.json();
-            const enrData = await enrRes.json();
-
-            if (recData.recommendations) setRecommendations(recData.recommendations);
-            if (enrData.enrollments) setEnrollments(enrData.enrollments);
+            if (recRes.ok) {
+                const recData = await recRes.json();
+                if (recData.recommendations) setRecommendations(recData.recommendations);
+            }
+            if (enrRes.ok) {
+                const enrData = await enrRes.json();
+                if (enrData.enrollments) setEnrollments(enrData.enrollments);
+            }
         } catch (e) {
             console.error('Error fetching training data:', e);
         }

@@ -83,7 +83,7 @@ export default function IoTDashboard() {
             }
 
             // Sending critical NEWS2 vitals
-            await apiFetch('/iot/vitals', {
+            const res = await apiFetch('/iot/vitals', {
                 method: 'POST',
                 body: JSON.stringify({
                     deviceMac: device.macAddress,
@@ -98,8 +98,12 @@ export default function IoTDashboard() {
                 })
             });
             
-            // Just for visual effect in UI
-            alert('Critical vitals injected. EWS engine has triggered RRT Notification!');
+            if (res.ok) {
+                // Just for visual effect in UI
+                alert('Critical vitals injected. EWS engine has triggered RRT Notification!');
+            } else {
+                alert('Failed to inject critical vitals.');
+            }
         } catch (err) {
             console.error(err);
         } finally {

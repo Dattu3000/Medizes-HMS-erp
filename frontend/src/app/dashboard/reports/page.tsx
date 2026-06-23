@@ -59,38 +59,47 @@ export default function ReportsPage() {
         setLoading(true);
         try {
             const h = getAuth();
-            if (which === 'analytics') { setAnalytics(await (await fetch(`${API}/reports/analytics`, { headers: h })).json()); }
-            else if (which === 'balance') { setBalance(await (await fetch(`${API}/reports/balance-sheet`, { headers: h })).json()); }
-            else if (which === 'gst') { setGst(await (await fetch(`${API}/reports/gst?month=${gstMonth}&year=${gstYear}`, { headers: h })).json()); }
-            else if (which === 'payroll') { setPayroll(await (await fetch(`${API}/reports/payroll-compliance?month=${prMonth}&year=${prYear}`, { headers: h })).json()); }
+            const safeFetch = async (url: string) => {
+                const res = await fetch(url, { headers: h });
+                if (!res.ok) {
+                    console.error(`Fetch failed for ${url}: status ${res.status}`);
+                    return null;
+                }
+                return res.json();
+            };
+
+            if (which === 'analytics') { setAnalytics(await safeFetch(`${API}/reports/analytics`)); }
+            else if (which === 'balance') { setBalance(await safeFetch(`${API}/reports/balance-sheet`)); }
+            else if (which === 'gst') { setGst(await safeFetch(`${API}/reports/gst?month=${gstMonth}&year=${gstYear}`)); }
+            else if (which === 'payroll') { setPayroll(await safeFetch(`${API}/reports/payroll-compliance?month=${prMonth}&year=${prYear}`)); }
             else if (which === 'revenue') {
-                const [r1, r2] = await Promise.all([
-                    fetch(`${API}/reports/revenue-by-doctor`, { headers: h }),
-                    fetch(`${API}/reports/revenue-by-department`, { headers: h })
+                const [dr, dept] = await Promise.all([
+                    safeFetch(`${API}/reports/revenue-by-doctor`),
+                    safeFetch(`${API}/reports/revenue-by-department`)
                 ]);
-                setDoctorRev(await r1.json());
-                setDeptRev(await r2.json());
+                setDoctorRev(dr);
+                setDeptRev(dept);
             }
             else if (which === 'operational') {
-                const [r1, r2, r3] = await Promise.all([
-                    fetch(`${API}/reports/bed-occupancy`, { headers: h }),
-                    fetch(`${API}/reports/lab-volume`, { headers: h }),
-                    fetch(`${API}/reports/patient-demographics`, { headers: h })
+                const [bo, lv, demo] = await Promise.all([
+                    safeFetch(`${API}/reports/bed-occupancy`),
+                    safeFetch(`${API}/reports/lab-volume`),
+                    safeFetch(`${API}/reports/patient-demographics`)
                 ]);
-                setBedOcc(await r1.json());
-                setLabVol(await r2.json());
-                setDemographics(await r3.json());
+                setBedOcc(bo);
+                setLabVol(lv);
+                setDemographics(demo);
             }
             else if (which === 'trends') {
-                const [r1, r2] = await Promise.all([
-                    fetch(`${API}/reports/revenue-trend`, { headers: h }),
-                    fetch(`${API}/reports/expense-trend`, { headers: h })
+                const [rt, et] = await Promise.all([
+                    safeFetch(`${API}/reports/revenue-trend`),
+                    safeFetch(`${API}/reports/expense-trend`)
                 ]);
-                setRevTrend(await r1.json());
-                setExpTrend(await r2.json());
+                setRevTrend(rt);
+                setExpTrend(et);
             }
             else if (which === 'collection') {
-                setCollection(await (await fetch(`${API}/reports/collection-efficiency`, { headers: h })).json());
+                setCollection(await safeFetch(`${API}/reports/collection-efficiency`));
             }
         } catch (e) { console.error(e); }
         setLoading(false);

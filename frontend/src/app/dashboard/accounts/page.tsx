@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     IndianRupee, FileText, BarChart3, TrendingUp, TrendingDown, Download, Receipt,
     BookOpen, Scale, Wallet, Calendar, Clock, Brain, ChevronRight, Plus,
     AlertTriangle, CheckCircle2, Info, Zap, ArrowUpRight, ArrowDownRight,
-    ShieldAlert, ShieldCheck, Activity, User, Shield
+    ShieldAlert, ShieldCheck, Activity, User, Shield, Check
 } from 'lucide-react';
 import {
     ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell
@@ -61,6 +61,9 @@ export default function AccountsPage() {
     const [ledgerList, setLedgerList] = useState<any[]>([]);
     const [jeError, setJeError] = useState('');
 
+    // Ref to track if ledgers have been loaded (avoids re-render loop)
+    const ledgersLoadedRef = useRef(false);
+
     // Day book date
     const [dayBookDate, setDayBookDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -77,41 +80,56 @@ export default function AccountsPage() {
                 if (r2.ok) setExpenses(await r2.json());
             } else if (which === 'coa') {
                 const r = await fetch(`${API}/accounts/chart-of-accounts`, { headers: h });
+                if (!r.ok) throw new Error(`CoA fetch failed: ${r.status}`);
                 const data = await r.json();
                 setCoa(data);
                 // Build flat ledger list for journal entry dropdowns
-                if (data.tree) setLedgerList(data.tree.flatMap((t: any) => [t, ...(t.children || [])]));
+                if (data.tree) {
+                    setLedgerList(data.tree.flatMap((t: any) => [t, ...(t.children || [])]));
+                    ledgersLoadedRef.current = true;
+                }
             } else if (which === 'journal') {
                 const r = await fetch(`${API}/accounts/journal-entries`, { headers: h });
+                if (!r.ok) throw new Error(`Journals fetch failed: ${r.status}`);
                 setJournals(await r.json());
-                if (ledgerList.length === 0) {
+                // Use ref to check if ledgers loaded — avoids re-render dependency
+                if (!ledgersLoadedRef.current) {
                     const r2 = await fetch(`${API}/accounts/chart-of-accounts`, { headers: h });
-                    const d = await r2.json();
-                    if (d.tree) setLedgerList(d.tree.flatMap((t: any) => [t, ...(t.children || [])]));
+                    if (r2.ok) {
+                        const d = await r2.json();
+                        if (d.tree) {
+                            setLedgerList(d.tree.flatMap((t: any) => [t, ...(t.children || [])]));
+                            ledgersLoadedRef.current = true;
+                        }
+                    }
                 }
             } else if (which === 'trial') {
                 const r = await fetch(`${API}/accounts/trial-balance`, { headers: h });
+                if (!r.ok) throw new Error(`Trial balance fetch failed: ${r.status}`);
                 setTrialBalance(await r.json());
             } else if (which === 'cashflow') {
                 const r = await fetch(`${API}/accounts/cash-flow`, { headers: h });
+                if (!r.ok) throw new Error(`Cash flow fetch failed: ${r.status}`);
                 setCashFlow(await r.json());
             } else if (which === 'aging') {
                 const [r1, r2] = await Promise.all([
                     fetch(`${API}/accounts/receivable-aging`, { headers: h }),
                     fetch(`${API}/accounts/payable-aging`, { headers: h })
                 ]);
-                setArAging(await r1.json());
-                setApAging(await r2.json());
+                if (r1.ok) setArAging(await r1.json());
+                if (r2.ok) setApAging(await r2.json());
             } else if (which === 'daybook') {
                 const r = await fetch(`${API}/accounts/day-book?date=${dayBookDate}`, { headers: h });
+                if (!r.ok) throw new Error(`Day book fetch failed: ${r.status}`);
                 setDayBook(await r.json());
             } else if (which === 'ai') {
                 const r = await fetch(`${API}/accounts/ai/analyze`, { method: 'POST', headers: { ...h, 'Content-Type': 'application/json' } });
+                if (!r.ok) throw new Error(`AI analysis failed: ${r.status}`);
                 setAiInsights(await r.json());
             }
         } catch (e) { console.error(e); }
         setLoading(false);
-    }, [dayBookDate, ledgerList.length]);
+    }, [dayBookDate]);
 
     // Fetch tab data on tab load/change
     useEffect(() => { fetchData(tab); }, [tab, fetchData]);

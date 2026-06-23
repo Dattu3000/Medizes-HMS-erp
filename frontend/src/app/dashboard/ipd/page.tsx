@@ -547,7 +547,7 @@ export default function IPDPage() {
                                             <div className="border-t border-slate-800 pt-4 shrink-0">
                                                 <div className="flex justify-between text-[13px] text-gray-400 mb-1">
                                                     <span>Gross Charges</span>
-                                                    <span>₹{(selectedAdmission.ipdCharges?.reduce((sum: number, c: any) => sum + c.amount, 0) || 0).toFixed(2)}</span>
+                                                    <span>₹{(selectedAdmission.ipdCharges?.reduce((sum: number, c: any) => sum + Number(c.amount), 0) || 0).toFixed(2)}</span>
                                                 </div>
                                                 <div className="flex justify-between text-[13px] text-gray-400 mb-3">
                                                     <span>Security Deposit</span>
