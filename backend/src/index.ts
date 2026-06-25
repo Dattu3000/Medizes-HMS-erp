@@ -27,6 +27,8 @@ import financeRoutes from './routes/finance';
 import governanceRoutes from './routes/governance';
 import analyticsRoutes from './routes/analyticsRoutes';
 import doctorPortalRouter from './routes/doctorPortalRouter';
+import v2BillingRoutes from './routes/v2Billing';
+import v3ClinicalRoutes from './routes/v3Clinical';
 import { initCronJobs } from './services/cron';
 import { bindBranchContext } from './middlewares/contextBinder';
 
@@ -73,6 +75,8 @@ app.use('/api/iot', iotRoutes);
 app.use('/api/ehr', ehrRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/claims', claimsRoutes);
+app.use('/api/v1', v2BillingRoutes);
+app.use('/api/v1', v3ClinicalRoutes);
 app.use('/api/v1/finance', financeRoutes);
 app.use('/api/v1/governance', governanceRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);

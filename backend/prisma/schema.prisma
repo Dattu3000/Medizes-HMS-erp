@@ -1116,3 +1116,117 @@ model EInvoiceRegistry {
 
   @@index([irn])
 }
+
+enum ClaimStatus {
+  PRE_AUTH
+  CLAIM_SUBMITTED
+  RECON_HAIRCUT
+  SETTLED
+}
+
+enum BatchStatus {
+  ACTIVE
+  NEAR_EXPIRY
+  EXPIRED
+  WRITTEN_OFF
+}
+
+model PatientFolio {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientName      String
+  abhaId           String?       @unique
+  isActive         Boolean       @default(true)
+  billingItems     BillingItem[]
+  tpaClaims        TpaClaim[]
+  createdAt        DateTime      @default(now())
+}
+
+model BillingItem {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  folioId          String        @db.Uuid
+  folio            PatientFolio  @relation(fields: [folioId], references: [id])
+  eventRefUuid     String?       @unique // Idempotency check key from EHR/LIMS
+  description      String
+  baseAmount       Decimal       @db.Decimal(18, 2)
+  taxAmount        Decimal       @db.Decimal(18, 2)
+  icd11Code        String?       // AI Suggested Diagnostic Target Code
+  isReconciled     Boolean       @default(false)
+}
+
+model TpaClaim {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  folioId          String        @db.Uuid
+  folio            PatientFolio  @relation(fields: [folioId], references: [id])
+  tpaName          String
+  preAuthApprovedAmt Decimal     @db.Decimal(18, 2)
+  settledAmount    Decimal       @db.Decimal(18, 2) @default(0.00)
+  status           ClaimStatus   @default(PRE_AUTH)
+  auditLogId       String?       @db.Uuid
+}
+
+model InventoryBatch {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  skuCode          String
+  batchNumber      String        @unique
+  expiryDate       DateTime
+  quantity         Int
+  unitCost         Decimal       @db.Decimal(18, 2)
+  status           BatchStatus   @default(ACTIVE)
+  itcReversed      Boolean       @default(false)
+}
+
+enum OpVelocityState {
+  ON_TIME
+  LAGGING
+  CRITICAL_DELAY
+}
+
+enum PanicAlertStatus {
+  FIRED
+  ACKNOWLEDGED
+  ESCALATED
+}
+
+model OpQueue {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  doctorId        String          
+  patientFolioId  String          @db.Uuid
+  tokenNumber     Int
+  triageScore     Int             @default(1)
+  velocityState   OpVelocityState @default(ON_TIME)
+  projectedWaitMin Int
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([doctorId, velocityState])
+}
+
+model LabPanelResult {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientFolioId   String          @db.Uuid
+  testCode         String          
+  biomarkerName    String
+  quantitativeValue Decimal        @db.Decimal(12, 4)
+  unitOfMeasure    String          
+  isAbsolutePanic  Boolean         @default(false)
+  panicAlert       PanicAlert?
+  createdAt        DateTime        @default(now())
+
+  @@index([patientFolioId, testCode])
+}
+
+model PanicAlert {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labPanelResultId String           @unique @db.Uuid
+  labPanelResult   LabPanelResult   @relation(fields: [labPanelResultId], references: [id], onDelete: Cascade)
+  notifiedDoctorId String           
+  alertStatus      PanicAlertStatus @default(FIRED)
+  alertFiredAt     DateTime         @default(now())
+  acknowledgedAt   DateTime?
+  escalationFiredAt DateTime?
+  deltaDurationMs  Int?             
+
+  @@index([notifiedDoctorId, alertStatus])
+}
+
+

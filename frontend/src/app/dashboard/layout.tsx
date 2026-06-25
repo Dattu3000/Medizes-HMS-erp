@@ -2,7 +2,7 @@
 import { API_BASE } from '@/lib/api';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X, Server, Sun, Moon, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, LogOut, Pill, UsersRound, FilePlus2, IndianRupee, BarChart3, ShieldCheck, Wallet, Stethoscope, Bell, AlertTriangle, X, Server, Sun, Moon, FileText, Sparkles, Gauge } from 'lucide-react';
 import Link from 'next/link';
 import SecurityBoundary from '@/components/SecurityBoundary';
 import { CommandPalette } from '@/components/ui/CommandPalette';
@@ -114,6 +114,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { name: 'HR Module', href: '/dashboard/hr', icon: UsersRound },
         { name: 'Billing Desk', href: '/dashboard/billing', icon: Wallet },
         { name: 'Claims & TPA', href: '/dashboard/claims', icon: FileText },
+        { name: 'AI Autopilot', href: '/dashboard/ai-billing', icon: Sparkles },
+        { name: 'Clinical Velocity', href: '/dashboard/clinical-velocity', icon: Gauge },
         { name: 'Accounts', href: '/dashboard/accounts', icon: IndianRupee },
         { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
         { name: 'System Admin', href: '/dashboard/admin', icon: ShieldCheck },

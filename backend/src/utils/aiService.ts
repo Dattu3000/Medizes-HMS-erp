@@ -164,3 +164,48 @@ Return your analysis in raw JSON format exactly like this:
         };
     }
 };
+
+export const parseClinicalNarrativeICD11 = async (narrative: string) => {
+    try {
+        const prompt = `You are a medical coding AI assistant. Parse the following clinical narrative or doctor's prescription text:
+"""
+${narrative}
+"""
+
+Identify the primary diagnosis or procedure, and map it to:
+1. Standard ICD-11 classification code.
+2. Estimated base billable amount (₹).
+3. Estimated tax component GST (₹) calculated at 5% of base billable amount.
+
+Return your analysis in raw JSON format exactly like this:
+{
+    "procedure": "string (name of the identified medical procedure or diagnosis)",
+    "icd11Code": "string (the standard ICD-11 classification code, e.g. 8A41.0)",
+    "baseAmount": number (estimated billable amount, e.g. 8500),
+    "taxAmount": number (estimated GST component, 5% of baseAmount, e.g. 425)
+}`;
+
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: prompt }],
+            response_format: { type: "json_object" }
+        });
+
+        const result = JSON.parse(response.choices[0].message.content || "{}");
+        return {
+            procedure: result.procedure || "Consultation / Procedure",
+            icd11Code: result.icd11Code || "8A41.0",
+            baseAmount: result.baseAmount || 5000,
+            taxAmount: result.taxAmount || 250
+        };
+    } catch (error) {
+        console.error("AI Error (ICD-11 Parse):", error);
+        return {
+            procedure: "Standard Medical Service",
+            icd11Code: "8A41.0",
+            baseAmount: 5000,
+            taxAmount: 250
+        };
+    }
+};
+
