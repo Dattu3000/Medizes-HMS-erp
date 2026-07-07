@@ -41,10 +41,9 @@ setInterval(async () => {
                     tableName: 'PanicAlert',
                     recordId: alert.id,
                     action: 'UPDATE_SLA_BREACH',
-                    oldSnapshot: JSON.stringify(alert),
-                    newSnapshot: JSON.stringify({ status: 'ESCALATED', escalatedAt: new Date() }),
-                    changedByUserId: 'SYSTEM_CRON',
-                    details: 'Physician override acknowledgment SLA breach (180s exceeded).'
+                    oldSnapshot: JSON.parse(JSON.stringify(alert)),
+                    newSnapshot: { status: 'ESCALATED', escalatedAt: new Date().toISOString(), details: 'Physician override acknowledgment SLA breach (180s exceeded).' },
+                    changedByUserId: 'SYSTEM_CRON'
                 }
             });
         }
@@ -413,10 +412,12 @@ router.post('/clinical/panic/acknowledge', async (req: Request, res: Response) =
                 tableName: 'PanicAlert',
                 recordId: panicAlertId,
                 action: 'ACKNOWLEDGE',
-                oldSnapshot: JSON.stringify(alert),
-                newSnapshot: JSON.stringify(updatedAlert),
-                changedByUserId: reviewerDoctorId,
-                details: `Panic alert acknowledged in ${seconds}s. Action Taken: ${clinicalActionTaken || 'None specified'}.`
+                oldSnapshot: JSON.parse(JSON.stringify(alert)),
+                newSnapshot: {
+                    ...JSON.parse(JSON.stringify(updatedAlert)),
+                    details: `Panic alert acknowledged in ${seconds}s. Action Taken: ${clinicalActionTaken || 'None specified'}.`
+                },
+                changedByUserId: reviewerDoctorId
             }
         });
 
