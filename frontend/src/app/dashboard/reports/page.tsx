@@ -377,7 +377,7 @@ export default function ReportsPage() {
                                                             dataKey="value"
                                                             stroke="none"
                                                         >
-                                                            {deptRev.departments.map((_, index) => (
+                                                            {deptRev.departments.map((_: any, index: number) => (
                                                                 <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
                                                             ))}
                                                         </Pie>
@@ -523,7 +523,7 @@ export default function ReportsPage() {
                                             <div className="flex justify-center gap-3 text-[10px] text-gray-400 mt-2">
                                                 {Object.entries(demographics.genderDistribution).map(([name, val], idx) => (
                                                     <span key={name} className="flex items-center gap-1">
-                                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} /> {name} ({val})
+                                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} /> {name} ({val as any})
                                                     </span>
                                                 ))}
                                             </div>
